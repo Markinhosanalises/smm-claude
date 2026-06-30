@@ -31,7 +31,7 @@ module.exports = async (req, res) => {
     const lucroGlobal = config?.lucroPercentualGlobal ?? 30;
     const cotacao = config?.cotacaoUSDBRL || null; // se null, não converte (assume taxa já na moeda final)
 
-    const ativos = Object.values(catalogo || {}).filter((s) => s.ativo);
+    const ativos = Object.values(catalogo || {}).filter((s) => s && s.ativo);
 
     const { redeSocial, servicoTipo } = req.query;
 
