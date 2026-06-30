@@ -84,7 +84,10 @@
         <label>Cotação USD → BRL (a taxa do fornecedor vem em dólar)</label>
         <input id="cfg-cotacao" type="number" step="0.01" placeholder="Ex: 5.40">
       </div>
-      <div></div>
+      <div>
+        <label>WhatsApp de suporte (com DDI, só números)</label>
+        <input id="cfg-whats" placeholder="Ex: 5521999999999">
+      </div>
     </div>
     <button id="cfg-salvar">Salvar configuração</button>
     <button class="secundario" id="cfg-saldo-btn">Atualizar saldo</button>
@@ -94,6 +97,7 @@
   <div class="card">
     <h2>Catálogo de serviços</h2>
     <button id="sync-btn">Sincronizar com o fornecedor</button>
+    <button class="secundario" id="ver-ativos-btn">Ver somente ativos</button>
     <p class="msg" id="sync-msg"></p>
     <div style="margin-top:14px;">
       <label>Buscar por nome, categoria, rede ou ID (a lista completa é grande demais pra mostrar tudo de uma vez)</label>
@@ -111,7 +115,7 @@
       <table id="tabela-servicos">
         <thead>
           <tr>
-            <th>Ativo</th><th>Nome</th><th>Categoria orig.</th><th>Rede social</th>
+            <th>Ativo</th><th>Ícone</th><th>Nome</th><th>Categoria orig.</th><th>Rede social</th>
             <th>Tipo</th><th>Custo /1000</th><th>Lucro % (vazio=global)</th><th>Preço final /1000</th><th></th>
           </tr>
         </thead>
@@ -129,6 +133,19 @@
           <tr><th>ID</th><th>Serviço</th><th>Qtd</th><th>Valor</th><th>Status</th><th>Criado em</th></tr>
         </thead>
         <tbody id="tabela-pedidos-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Tickets de suporte</h2>
+    <button class="secundario" id="tickets-btn">Atualizar lista</button>
+    <div style="overflow-x:auto;margin-top:14px;">
+      <table>
+        <thead>
+          <tr><th>Nome</th><th>WhatsApp</th><th>Mensagem</th><th>Pedido</th><th>Status</th><th>Resposta</th><th></th></tr>
+        </thead>
+        <tbody id="tabela-tickets-body"></tbody>
       </table>
     </div>
   </div>
@@ -155,6 +172,7 @@
       carregarConfig();
       carregarServicos();
       carregarPedidos();
+      carregarTickets();
     } else {
       $('login-msg').textContent = 'Erro ao validar PIN';
     }
@@ -166,6 +184,7 @@
     $('cfg-url').value = data.url || '';
     $('cfg-lucro').value = data.lucroPercentualGlobal ?? 30;
     $('cfg-cotacao').value = data.cotacaoUSDBRL || '';
+    $('cfg-whats').value = data.whatsappSuporte || '';
     lucroGlobalAtual = Number(data.lucroPercentualGlobal ?? 30);
     cotacaoAtual = Number(data.cotacaoUSDBRL || 0);
   }
@@ -175,6 +194,7 @@
       pin: PIN,
       lucroPercentualGlobal: $('cfg-lucro').value,
       cotacaoUSDBRL: $('cfg-cotacao').value,
+      whatsappSuporte: $('cfg-whats').value,
     };
     if($('cfg-url').value && $('cfg-key').value){
       body.url = $('cfg-url').value;
@@ -214,13 +234,14 @@
     }
   });
 
-  async function carregarServicos(termo){
+  async function carregarServicos(termo, somenteAtivos){
     const q = termo ? `&busca=${encodeURIComponent(termo)}` : '';
+    const qAtivos = somenteAtivos ? `&somenteAtivos=1` : '';
     const ordem = $('ordenar-servico').value;
     const qOrdem = ordem ? `&ordenar=${ordem}` : '';
     let data;
     try {
-      const r = await fetch(`${API_BASE}/api/admin-services?pin=${encodeURIComponent(PIN)}${q}${qOrdem}`);
+      const r = await fetch(`${API_BASE}/api/admin-services?pin=${encodeURIComponent(PIN)}${q}${qAtivos}${qOrdem}`);
       data = await r.json();
       if(!r.ok){
         $('servicos-msg').textContent = data.erro || `Erro ${r.status} ao buscar serviços. Tente novamente em alguns segundos.`;
@@ -251,6 +272,20 @@
       const precoFinalInicial = calcularPrecoFinal(s.taxaCusto, s.lucroPercentual);
       tr.innerHTML = `
         <td><input type="checkbox" ${s.ativo ? 'checked' : ''} data-campo="ativo" data-id="${s.idFornecedor}"></td>
+        <td>
+          <select data-campo="icone" data-id="${s.idFornecedor}">
+            <option value="" ${!s.icone ? 'selected':''}>Sem ícone</option>
+            <option value="🇧🇷" ${s.icone==='🇧🇷'?'selected':''}>🇧🇷 Brasil</option>
+            <option value="🌍" ${s.icone==='🌍'?'selected':''}>🌍 Mundial</option>
+            <option value="⭐" ${s.icone==='⭐'?'selected':''}>⭐ Premium</option>
+            <option value="⚡" ${s.icone==='⚡'?'selected':''}>⚡ Entrega rápida</option>
+            <option value="🔒" ${s.icone==='🔒'?'selected':''}>🔒 Garantido/Refill</option>
+            <option value="👥" ${s.icone==='👥'?'selected':''}>👥 Seguidores</option>
+            <option value="❤️" ${s.icone==='❤️'?'selected':''}>❤️ Curtidas</option>
+            <option value="💬" ${s.icone==='💬'?'selected':''}>💬 Comentários</option>
+            <option value="▶️" ${s.icone==='▶️'?'selected':''}>▶️ Visualizações</option>
+          </select>
+        </td>
         <td><input value="${s.nomeCustomizado || ''}" data-campo="nomeCustomizado" data-id="${s.idFornecedor}"></td>
         <td>${s.categoriaOriginal || ''}</td>
         <td><input value="${s.redeSocial || ''}" placeholder="instagram" data-campo="redeSocial" data-id="${s.idFornecedor}"></td>
@@ -312,6 +347,42 @@
 
   $('pedidos-btn').addEventListener('click', carregarPedidos);
 
+  async function carregarTickets(){
+    const r = await fetch(`${API_BASE}/api/tickets?pin=${encodeURIComponent(PIN)}`);
+    const data = await r.json();
+    const tbody = $('tabela-tickets-body');
+    tbody.innerHTML = '';
+    (data.tickets || []).forEach((t) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${t.nome || ''}</td>
+        <td>${t.whatsapp || ''}</td>
+        <td style="max-width:220px;">${t.mensagem || ''}</td>
+        <td>${t.pedidoId ? t.pedidoId.slice(-6) : '-'}</td>
+        <td><span class="tag ${t.status === 'resolvido' ? 'ativo' : 'inativo'}">${t.status}</span></td>
+        <td><input value="${t.resposta || ''}" data-resposta="${t.id}" placeholder="Responder..."></td>
+        <td><button class="secundario btn-resolver-ticket" data-id="${t.id}">${t.status === 'resolvido' ? 'Reabrir' : 'Marcar resolvido'}</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.btn-resolver-ticket').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const respostaInput = document.querySelector(`[data-resposta="${id}"]`);
+        const ticketAtual = (data.tickets || []).find((t) => t.id === id);
+        const novoStatus = ticketAtual.status === 'resolvido' ? 'aberto' : 'resolvido';
+        await fetch(`${API_BASE}/api/tickets`, {
+          method: 'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ pin: PIN, ticketId: id, status: novoStatus, resposta: respostaInput.value })
+        });
+        carregarTickets();
+      });
+    });
+  }
+
+  $('tickets-btn').addEventListener('click', carregarTickets);
+
   function calcularPrecoFinal(custo, lucroPercentual){
     const lucro = (lucroPercentual === '' || lucroPercentual === null || lucroPercentual === undefined)
       ? lucroGlobalAtual
@@ -327,6 +398,11 @@
     const valor = e.target.value;
     if(valor.length > 0 && valor.length < 3) return; // espera pelo menos 3 letras
     buscaTimeout = setTimeout(() => carregarServicos(valor), 500);
+  });
+
+  $('ver-ativos-btn').addEventListener('click', () => {
+    $('busca-servico').value = '';
+    carregarServicos('', true);
   });
 
   $('ordenar-servico').addEventListener('change', () => {
