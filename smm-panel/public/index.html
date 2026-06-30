@@ -14,9 +14,9 @@
   body{
     margin:0;background:var(--bg);color:var(--text);
     font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
-    padding:48px 16px 100px;
+    padding:0 0 100px;
   }
-  .container{width:100%;max-width:460px;margin:0 auto;}
+  .container{width:100%;max-width:460px;margin:0 auto;padding:0 16px;}
   .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;margin-bottom:20px;}
   .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 6px;font-weight:600;}
   .title{font-size:22px;font-weight:700;margin:0 0 4px;line-height:1.25;}
@@ -59,65 +59,181 @@
     background:#25D366;display:flex;align-items:center;justify-content:center;
     font-size:26px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.4);text-decoration:none;
   }
-  .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px;color:var(--muted);}
+  .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px;color:var(--muted);padding-top:16px;}
   .top-bar button{background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;}
   .hidden{display:none !important;}
+  /* ===== HERO DE LOGIN ===== */
+  .auth-hero{
+    position:relative;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    padding:32px 16px;
+    background: linear-gradient(135deg, #0b0d10 0%, #0d1a12 50%, #0b0d10 100%);
+  }
+  .auth-hero::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(124,255,178,.07) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(124,255,178,.05) 0%, transparent 50%);
+    pointer-events:none;
+  }
+  /* ícones flutuantes no fundo */
+  .floating-icons{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .fi{
+    position:absolute;
+    font-size:32px;
+    opacity:.06;
+    animation: floatUp linear infinite;
+    user-select:none;
+  }
+  @keyframes floatUp{
+    0%  { transform: translateY(110vh) rotate(0deg);   opacity:0;   }
+    5%  { opacity:.08; }
+    95% { opacity:.08; }
+    100%{ transform: translateY(-20vh) rotate(360deg); opacity:0;   }
+  }
+  /* card de login flutuante */
+  .auth-card{
+    position:relative;
+    z-index:2;
+    width:100%;
+    max-width:380px;
+    background:rgba(21,24,28,.92);
+    border:1px solid rgba(124,255,178,.15);
+    border-radius:24px;
+    padding:36px 32px;
+    backdrop-filter:blur(12px);
+    box-shadow:0 24px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(124,255,178,.05);
+  }
+  .auth-logo{
+    text-align:center;
+    margin-bottom:24px;
+  }
+  .auth-logo .logo-circle{
+    width:64px;height:64px;border-radius:50%;
+    background:linear-gradient(135deg, #7CFFB2, #00c97a);
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:28px;margin-bottom:12px;
+    box-shadow:0 8px 24px rgba(124,255,178,.3);
+  }
+  .auth-logo h1{
+    font-size:20px;font-weight:800;margin:0 0 4px;
+    background:linear-gradient(135deg,#7CFFB2,#fff);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .auth-logo p{font-size:12.5px;color:var(--muted);margin:0;}
+  .auth-divider{
+    display:flex;align-items:center;gap:10px;margin:18px 0;
+  }
+  .auth-divider span{font-size:11px;color:var(--muted);white-space:nowrap;}
+  .auth-divider::before,.auth-divider::after{
+    content:'';flex:1;height:1px;background:var(--line);
+  }
+  .auth-input{
+    width:100%;background:rgba(14,16,19,.8);border:1px solid var(--line);
+    color:var(--text);padding:13px 16px;border-radius:12px;font-size:14px;
+    outline:none;margin-bottom:12px;transition:border-color .2s,box-shadow .2s;
+  }
+  .auth-input:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(124,255,178,.1);
+  }
+  .auth-btn{
+    width:100%;background:linear-gradient(135deg,#7CFFB2,#00c97a);
+    color:#061409;border:none;padding:14px;border-radius:12px;
+    font-size:15px;font-weight:800;cursor:pointer;
+    transition:filter .15s,transform .1s;
+    letter-spacing:.02em;
+  }
+  .auth-btn:hover{filter:brightness(1.08);}
+  .auth-btn:active{transform:scale(.98);}
+  .auth-toggle{
+    text-align:center;margin-top:16px;font-size:13px;color:var(--muted);
+  }
+  .auth-toggle button{
+    background:none;border:none;color:var(--accent);
+    font-size:13px;font-weight:700;cursor:pointer;padding:0;
+  }
+  .auth-msg{font-size:12.5px;margin-top:10px;min-height:16px;text-align:center;}
+  .auth-msg.erro{color:#ff8b8b;}
+  .auth-msg.ok{color:var(--accent);}
+  .redes-badges{
+    display:flex;justify-content:center;gap:10px;margin-bottom:22px;flex-wrap:wrap;
+  }
+  .rede-badge{
+    display:flex;align-items:center;gap:5px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+    border-radius:20px;padding:5px 12px;font-size:12px;color:var(--muted);
+  }
 </style>
 </head>
 <body>
-
+<!-- HERO DE LOGIN -->
+<div class="auth-hero" id="auth-hero">
+  <!-- ícones flutuando no fundo -->
+  <div class="floating-icons" id="floating-icons"></div>
+  <!-- card central -->
+  <div class="auth-card" id="auth-card">
+    <div class="auth-logo">
+      <div class="logo-circle">🚀</div>
+      <h1>Engaja aí</h1>
+      <p>Impulsione seu perfil nas redes sociais</p>
+    </div>
+    <div class="redes-badges">
+      <div class="rede-badge">📸 Instagram</div>
+      <div class="rede-badge">🎵 TikTok</div>
+      <div class="rede-badge">▶️ YouTube</div>
+      <div class="rede-badge">𝕏 Twitter</div>
+      <div class="rede-badge">📘 Facebook</div>
+    </div>
+    <div class="auth-divider"><span>Acesse sua conta</span></div>
+    <input class="auth-input" id="auth-whats" placeholder="📱 WhatsApp (com DDD)" type="tel">
+    <input class="auth-input" id="auth-senha" placeholder="🔒 Senha" type="password">
+    <input class="auth-input hidden" id="auth-nome" placeholder="👤 Seu nome">
+    <button class="auth-btn" id="btn-login">Entrar</button>
+    <div class="auth-toggle">
+      <button id="btn-toggle-cadastro">Não tenho conta — criar uma</button>
+    </div>
+    <p class="auth-msg" id="auth-msg"></p>
+  </div>
+</div>
+<!-- ÁREA LOGADO -->
+<div class="hidden" id="area-logada">
 <div class="container">
-
   <div class="top-bar" id="top-bar">
     <span id="saudacao">Visitante</span>
-    <button id="btn-login-logout">Entrar</button>
+    <button id="btn-login-logout">Sair</button>
   </div>
-
-  <!-- LOGIN / CADASTRO -->
-  <div class="card" id="auth-card">
-    <p class="eyebrow">Acesso</p>
-    <h2 class="title">Entre ou crie sua conta</h2>
-    <p class="sub">Use seu WhatsApp pra acompanhar seus pedidos depois.</p>
-
-    <label class="label">WhatsApp (com DDD)</label>
-    <input class="input" id="auth-whats" placeholder="Ex: 21999999999">
-    <label class="label">Senha</label>
-    <input class="input" id="auth-senha" type="password" placeholder="••••••">
-    <input class="input hidden" id="auth-nome" placeholder="Seu nome (só no cadastro)">
-
-    <button class="btn" id="btn-login">Entrar</button>
-    <button class="btn-sec" id="btn-toggle-cadastro">Não tenho conta — criar uma</button>
-    <p class="msg" id="auth-msg"></p>
-  </div>
-
   <!-- ABAS (só aparecem logado) -->
   <div class="tabs hidden" id="tabs">
     <div class="tab ativa" id="tab-engajar">Engajar perfil</div>
     <div class="tab" id="tab-pedidos">Meus pedidos</div>
   </div>
-
   <!-- WIDGET DE ENGAJAMENTO -->
   <div id="painel-engajar" class="hidden">
     <div class="card">
       <p class="eyebrow">Disponível agora</p>
       <h2 class="title">Chegou a hora de engajar o seu perfil</h2>
       <p class="sub">Escolha a rede, o serviço e cole o link — em poucos segundos você vê o valor.</p>
-
       <label class="label">Rede social</label>
       <select class="select" id="eng-rede"><option value="">Carregando...</option></select>
-
       <label class="label">Tipo de serviço</label>
       <select class="select" id="eng-tipo" disabled><option value="">Selecione a rede social primeiro</option></select>
-
       <label class="label">Opção</label>
       <select class="select" id="eng-opcao" disabled><option value="">Selecione o tipo de serviço</option></select>
-
       <label class="label">Link do perfil ou post</label>
       <input class="input" id="eng-link" type="url" placeholder="https://instagram.com/seuperfil" disabled>
-
       <label class="label">Quantidade</label>
       <input class="input" id="eng-qtd" type="number" placeholder="Ex: 500" disabled>
-
       <div id="eng-resultado" class="hidden">
         <div class="preco-row">
           <span class="preco-label">Valor total</span>
@@ -125,11 +241,9 @@
         </div>
         <button class="btn" id="eng-pagar">Efetuar pagamento</button>
       </div>
-
       <p class="msg" id="eng-msg"></p>
     </div>
   </div>
-
   <!-- MEUS PEDIDOS -->
   <div id="painel-pedidos" class="hidden card">
     <p class="eyebrow">Histórico</p>
@@ -137,7 +251,6 @@
     <div id="lista-pedidos"></div>
     <p class="msg" id="pedidos-msg"></p>
   </div>
-
   <!-- ABRIR TICKET -->
   <div class="card">
     <p class="eyebrow">Precisa de ajuda?</p>
@@ -146,62 +259,46 @@
     <button class="btn-sec" id="ticket-enviar">Enviar mensagem de suporte</button>
     <p class="msg" id="ticket-msg"></p>
   </div>
-
-</div>
-
+</div><!-- /container -->
+</div><!-- /area-logada -->
 <a class="float-whats hidden" id="float-whats" target="_blank">💬</a>
-
 <script>
 (function(){
   const API_BASE = '';
   const $ = (id) => document.getElementById(id);
-
   let clienteId = localStorage.getItem('eng_clienteId') || null;
   let clienteNome = localStorage.getItem('eng_clienteNome') || '';
   let modoCadastro = false;
   let whatsappSuporte = '';
-
   function atualizarTopBar(){
     if(clienteId){
+      $('auth-hero').classList.add('hidden');
+      $('area-logada').classList.remove('hidden');
       $('saudacao').textContent = clienteNome ? `Olá, ${clienteNome}` : 'Logado';
-      $('btn-login-logout').textContent = 'Sair';
-      $('auth-card').classList.add('hidden');
-      $('tabs').classList.remove('hidden');
       $('painel-engajar').classList.remove('hidden');
     } else {
-      $('saudacao').textContent = 'Visitante';
-      $('btn-login-logout').textContent = 'Entrar';
-      $('auth-card').classList.remove('hidden');
-      $('tabs').classList.add('hidden');
-      $('painel-engajar').classList.add('hidden');
+      $('auth-hero').classList.remove('hidden');
+      $('area-logada').classList.add('hidden');
       $('painel-pedidos').classList.add('hidden');
     }
   }
-
   $('btn-login-logout').addEventListener('click', () => {
-    if(clienteId){
-      localStorage.removeItem('eng_clienteId');
-      localStorage.removeItem('eng_clienteNome');
-      clienteId = null; clienteNome = '';
-      atualizarTopBar();
-    } else {
-      $('auth-card').scrollIntoView({behavior:'smooth'});
-    }
+    localStorage.removeItem('eng_clienteId');
+    localStorage.removeItem('eng_clienteNome');
+    clienteId = null; clienteNome = '';
+    atualizarTopBar();
   });
-
   $('btn-toggle-cadastro').addEventListener('click', () => {
     modoCadastro = !modoCadastro;
     $('auth-nome').classList.toggle('hidden', !modoCadastro);
     $('btn-login').textContent = modoCadastro ? 'Criar conta' : 'Entrar';
     $('btn-toggle-cadastro').textContent = modoCadastro ? 'Já tenho conta — entrar' : 'Não tenho conta — criar uma';
   });
-
   $('btn-login').addEventListener('click', async () => {
     const whatsapp = $('auth-whats').value;
     const senha = $('auth-senha').value;
     const nome = $('auth-nome').value;
     if(!whatsapp || !senha){ msgAuth('Preenche WhatsApp e senha', 'erro'); return; }
-
     try{
       const r = await fetch(`${API_BASE}/api/auth-cliente`, {
         method:'POST', headers:{'Content-Type':'application/json'},
@@ -218,12 +315,10 @@
       msgAuth('Erro de conexão', 'erro');
     }
   });
-
   function msgAuth(texto, tipo){
     $('auth-msg').textContent = texto;
     $('auth-msg').className = 'msg' + (tipo ? ' ' + tipo : '');
   }
-
   // ===== Abas =====
   $('tab-engajar').addEventListener('click', () => {
     $('tab-engajar').classList.add('ativa');
@@ -238,7 +333,6 @@
     $('painel-engajar').classList.add('hidden');
     carregarMeusPedidos();
   });
-
   async function carregarMeusPedidos(){
     if(!clienteId) return;
     $('pedidos-msg').textContent = 'Carregando...';
@@ -268,7 +362,6 @@
       $('pedidos-msg').textContent = 'Erro ao carregar pedidos.';
     }
   }
-
   function formatarStatus(s){
     const mapa = {
       aguardando_pagamento: 'Aguardando pagamento',
@@ -279,7 +372,6 @@
     };
     return mapa[s] || s;
   }
-
   // ===== Widget de engajamento =====
   const elRede = $('eng-rede');
   const elTipo = $('eng-tipo');
@@ -289,17 +381,13 @@
   const elResultado = $('eng-resultado');
   const elPreco = $('eng-preco');
   const elPagar = $('eng-pagar');
-
   let servicosDoTipo = [];
   let servicoSelecionado = null;
-
   function msgEng(texto, tipo){
     $('eng-msg').textContent = texto || '';
     $('eng-msg').className = 'msg' + (tipo ? ' ' + tipo : '');
   }
-
   function capitalizar(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
-
   async function carregarFiltrosIniciais(){
     try{
       const r = await fetch(`${API_BASE}/api/services`);
@@ -308,7 +396,6 @@
         (data.redesSociais || []).map(r => `<option value="${r}">${capitalizar(r)}</option>`).join('');
     }catch(e){ msgEng('Não foi possível carregar as redes sociais.', 'erro'); }
   }
-
   elRede.addEventListener('change', async () => {
     resetDe('tipo');
     if(!elRede.value) return;
@@ -319,7 +406,6 @@
       tipos.map(t => `<option value="${t}">${capitalizar(t)}</option>`).join('');
     elTipo.disabled = false;
   });
-
   elTipo.addEventListener('change', async () => {
     resetDe('opcao');
     if(!elTipo.value) return;
@@ -330,7 +416,6 @@
       servicosDoTipo.map(s => `<option value="${s.id}">${s.icone ? s.icone + ' ' : ''}${s.nome} (R$ ${s.precoPorMil.toFixed(2)}/1000)</option>`).join('');
     elOpcao.disabled = false;
   });
-
   elOpcao.addEventListener('change', () => {
     servicoSelecionado = servicosDoTipo.find(s => String(s.id) === elOpcao.value) || null;
     elLink.disabled = !servicoSelecionado;
@@ -338,10 +423,8 @@
     if(servicoSelecionado) elQtd.placeholder = `Entre ${servicoSelecionado.min} e ${servicoSelecionado.max}`;
     elResultado.classList.add('hidden');
   });
-
   elQtd.addEventListener('input', atualizarPreco);
   elLink.addEventListener('input', atualizarPreco);
-
   function atualizarPreco(){
     if(!servicoSelecionado || !elLink.value || !elQtd.value){ elResultado.classList.add('hidden'); return; }
     const qtd = Number(elQtd.value);
@@ -350,7 +433,6 @@
     elPreco.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
     elResultado.classList.remove('hidden');
   }
-
   function resetDe(nivel){
     if(nivel === 'tipo'){
       elTipo.innerHTML = '<option value="">Selecione a rede social primeiro</option>';
@@ -363,7 +445,6 @@
     elResultado.classList.add('hidden');
     servicoSelecionado = null;
   }
-
   elPagar.addEventListener('click', async () => {
     if(!servicoSelecionado) return;
     if(!clienteId){ msgEng('Faça login pra continuar.', 'erro'); return; }
@@ -381,15 +462,12 @@
       });
       const data = await r.json();
       if(!r.ok){ msgEng(data.erro || 'Erro ao criar pedido', 'erro'); elPagar.disabled = false; return; }
-      // TODO: integrar Mercado Pago aqui — gerar PIX com data.valorTotal
-      // e, quando confirmado, chamar /api/confirm-payment com { pedidoId: data.pedidoId }.
       msgEng(`Pedido #${data.pedidoId.slice(-6)} criado. Valor: R$ ${data.valorTotal.toFixed(2)}. Prossiga para o pagamento.`, 'ok');
     }catch(e){
       msgEng('Erro de conexão. Tente novamente.', 'erro');
     }
     elPagar.disabled = false;
   });
-
   // ===== Ticket de suporte =====
   $('ticket-enviar').addEventListener('click', async () => {
     const mensagem = $('ticket-mensagem').value;
@@ -412,11 +490,10 @@
       $('ticket-msg').className = 'msg erro';
     }
   });
-
   // ===== WhatsApp flutuante =====
   async function carregarSuporte(){
     try{
-      const r = await fetch(`${API_BASE}/api/public-config`);
+      const r = await fetch(`${API_BASE}/api/config`);
       const data = await r.json();
       if(data.whatsappSuporte){
         whatsappSuporte = data.whatsappSuporte;
@@ -426,12 +503,27 @@
       }
     }catch(e){}
   }
-
+  // ===== Ícones flutuantes no fundo do login =====
+  function gerarIconesFlutuantes(){
+    const container = $('floating-icons');
+    if(!container) return;
+    const icones = ['📸','❤️','👥','💬','▶️','⭐','🔥','📊','🚀','✨','🎯','📱','🎵','𝕏','📘'];
+    for(let i = 0; i < 30; i++){
+      const el = document.createElement('div');
+      el.className = 'fi';
+      el.textContent = icones[Math.floor(Math.random() * icones.length)];
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.animationDuration = (12 + Math.random() * 20) + 's';
+      el.style.animationDelay = (Math.random() * 20) + 's';
+      el.style.fontSize = (20 + Math.random() * 28) + 'px';
+      container.appendChild(el);
+    }
+  }
   atualizarTopBar();
   carregarFiltrosIniciais();
   carregarSuporte();
+  gerarIconesFlutuantes();
 })();
 </script>
-
 </body>
 </html>
