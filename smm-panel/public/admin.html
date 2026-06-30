@@ -1,0 +1,274 @@
+<!-- public/admin.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · Painel de Engajamento</title>
+<style>
+  :root{
+    --bg:#0b0d10; --card:#15181c; --line:#23272d;
+    --text:#eef1f4; --muted:#8b929b; --accent:#7CFFB2;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;padding:32px 16px;}
+  .wrap{max-width:1000px;margin:0 auto;}
+  h1{font-size:22px;margin:0 0 24px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:20px;}
+  .card h2{font-size:15px;margin:0 0 16px;color:var(--accent);}
+  label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;}
+  input, select{
+    width:100%;background:#0e1013;border:1px solid var(--line);color:var(--text);
+    padding:10px 12px;border-radius:8px;font-size:14px;margin-bottom:14px;outline:none;
+  }
+  input:focus, select:focus{border-color:var(--accent);}
+  .row{display:flex;gap:14px;}
+  .row > *{flex:1;}
+  button{
+    background:var(--accent);color:#08110c;border:none;padding:10px 18px;
+    border-radius:8px;font-weight:700;font-size:13.5px;cursor:pointer;
+  }
+  button.secundario{background:transparent;border:1px solid var(--line);color:var(--text);}
+  button:disabled{opacity:.5;cursor:not-allowed;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th, td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
+  th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;}
+  .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+  .tag.ativo{background:#1f3a2c;color:var(--accent);}
+  .tag.inativo{background:#3a1f1f;color:#ff8b8b;}
+  .msg{font-size:12.5px;color:var(--muted);margin-top:8px;}
+  .msg.erro{color:#ff8b8b;}
+  .msg.ok{color:var(--accent);}
+  #login-gate{max-width:320px;margin:80px auto;text-align:center;}
+  .small-input{width:90px !important;}
+  td input, td select{margin-bottom:0;padding:6px 8px;font-size:12.5px;}
+</style>
+</head>
+<body>
+
+<div id="login-gate">
+  <h1>Acesso admin</h1>
+  <label>PIN</label>
+  <input type="password" id="login-pin" placeholder="••••••">
+  <button id="login-btn" style="width:100%">Entrar</button>
+  <p class="msg erro" id="login-msg"></p>
+</div>
+
+<div class="wrap" id="painel" style="display:none">
+  <h1>Painel de Engajamento — Admin</h1>
+
+  <div class="card">
+    <h2>Configuração do fornecedor</h2>
+    <div class="row">
+      <div>
+        <label>URL da API</label>
+        <input id="cfg-url" placeholder="https://measmm.com/api/v2">
+      </div>
+      <div>
+        <label>API Key</label>
+        <input id="cfg-key" type="password" placeholder="sua chave">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Lucro percentual global (%)</label>
+        <input id="cfg-lucro" type="number" placeholder="30">
+      </div>
+      <div>
+        <label>Saldo no fornecedor</label>
+        <input id="cfg-saldo" disabled placeholder="clique em atualizar">
+      </div>
+    </div>
+    <button id="cfg-salvar">Salvar configuração</button>
+    <button class="secundario" id="cfg-saldo-btn">Atualizar saldo</button>
+    <p class="msg" id="cfg-msg"></p>
+  </div>
+
+  <div class="card">
+    <h2>Catálogo de serviços</h2>
+    <button id="sync-btn">Sincronizar com o fornecedor</button>
+    <p class="msg" id="sync-msg"></p>
+    <div style="margin-top:14px;">
+      <label>Buscar por nome, categoria, rede ou ID (a lista completa é grande demais pra mostrar tudo de uma vez)</label>
+      <input id="busca-servico" placeholder="Ex: instagram, seguidores, curtidas...">
+    </div>
+    <p class="msg" id="servicos-msg"></p>
+    <div style="overflow-x:auto;margin-top:14px;">
+      <table id="tabela-servicos">
+        <thead>
+          <tr>
+            <th>Ativo</th><th>Nome</th><th>Categoria orig.</th><th>Rede social</th>
+            <th>Tipo</th><th>Custo /1000</th><th>Lucro % (vazio=global)</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="tabela-servicos-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Pedidos</h2>
+    <button class="secundario" id="pedidos-btn">Atualizar lista</button>
+    <div style="overflow-x:auto;margin-top:14px;">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Serviço</th><th>Qtd</th><th>Valor</th><th>Status</th><th>Criado em</th></tr>
+        </thead>
+        <tbody id="tabela-pedidos-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const API_BASE = '';
+  let PIN = '';
+
+  const $ = (id) => document.getElementById(id);
+
+  $('login-btn').addEventListener('click', async () => {
+    PIN = $('login-pin').value;
+    if(!PIN){ $('login-msg').textContent = 'Digite o PIN'; return; }
+    // valida tentando carregar a config
+    const r = await fetch(`${API_BASE}/api/config?pin=${encodeURIComponent(PIN)}`);
+    if(r.ok){
+      $('login-gate').style.display = 'none';
+      $('painel').style.display = 'block';
+      carregarConfig();
+      carregarServicos();
+      carregarPedidos();
+    } else {
+      $('login-msg').textContent = 'Erro ao validar PIN';
+    }
+  });
+
+  async function carregarConfig(){
+    const r = await fetch(`${API_BASE}/api/config?pin=${encodeURIComponent(PIN)}`);
+    const data = await r.json();
+    $('cfg-url').value = data.url || '';
+    $('cfg-lucro').value = data.lucroPercentualGlobal ?? 30;
+  }
+
+  $('cfg-salvar').addEventListener('click', async () => {
+    const body = {
+      pin: PIN,
+      lucroPercentualGlobal: $('cfg-lucro').value,
+    };
+    if($('cfg-url').value && $('cfg-key').value){
+      body.url = $('cfg-url').value;
+      body.key = $('cfg-key').value;
+    }
+    const r = await fetch(`${API_BASE}/api/config`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    $('cfg-msg').textContent = r.ok ? 'Configuração salva.' : (data.erro || 'Erro');
+    $('cfg-msg').className = 'msg ' + (r.ok ? 'ok' : 'erro');
+  });
+
+  $('cfg-saldo-btn').addEventListener('click', async () => {
+    const r = await fetch(`${API_BASE}/api/balance?pin=${encodeURIComponent(PIN)}`);
+    const data = await r.json();
+    $('cfg-saldo').value = r.ok ? `${data.saldo} ${data.moeda}` : (data.erro || 'erro');
+  });
+
+  $('sync-btn').addEventListener('click', async () => {
+    $('sync-msg').textContent = 'Sincronizando...';
+    const r = await fetch(`${API_BASE}/api/sync-services`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pin: PIN })
+    });
+    const data = await r.json();
+    if(r.ok){
+      $('sync-msg').textContent = `${data.totalServicos} serviços sincronizados.`;
+      $('sync-msg').className = 'msg ok';
+      carregarServicos();
+    } else {
+      $('sync-msg').textContent = data.erro || 'Erro ao sincronizar';
+      $('sync-msg').className = 'msg erro';
+    }
+  });
+
+  async function carregarServicos(termo){
+    const q = termo ? `&busca=${encodeURIComponent(termo)}` : '';
+    const r = await fetch(`${API_BASE}/api/admin-services?pin=${encodeURIComponent(PIN)}${q}`);
+    const data = await r.json();
+    const tbody = $('tabela-servicos-body');
+    tbody.innerHTML = '';
+
+    if(!termo){
+      $('servicos-msg').textContent = `${data.total} serviços no catálogo. Digite algo na busca acima pra encontrar o que você quer ativar (mostrando os primeiros ${(data.servicos||[]).length}).`;
+      $('servicos-msg').className = 'msg';
+    } else {
+      $('servicos-msg').textContent = data.limitado
+        ? `${data.total} resultados — mostrando os primeiros 200. Refine a busca pra ver os demais.`
+        : `${data.total} resultado(s).`;
+      $('servicos-msg').className = 'msg';
+    }
+
+    (data.servicos || []).forEach((s) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="checkbox" ${s.ativo ? 'checked' : ''} data-campo="ativo" data-id="${s.idFornecedor}"></td>
+        <td><input value="${s.nomeCustomizado || ''}" data-campo="nomeCustomizado" data-id="${s.idFornecedor}"></td>
+        <td>${s.categoriaOriginal || ''}</td>
+        <td><input value="${s.redeSocial || ''}" placeholder="instagram" data-campo="redeSocial" data-id="${s.idFornecedor}"></td>
+        <td><input value="${s.servicoTipo || ''}" placeholder="seguidores" data-campo="servicoTipo" data-id="${s.idFornecedor}"></td>
+        <td>${s.taxaCusto}</td>
+        <td><input class="small-input" type="number" value="${s.lucroPercentual ?? ''}" data-campo="lucroPercentual" data-id="${s.idFornecedor}"></td>
+        <td><button class="secundario btn-salvar-servico" data-id="${s.idFornecedor}">Salvar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.btn-salvar-servico').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const linha = btn.closest('tr');
+        const campos = {};
+        linha.querySelectorAll('[data-campo]').forEach((el) => {
+          const campo = el.dataset.campo;
+          campos[campo] = el.type === 'checkbox' ? el.checked : el.value;
+        });
+        const r2 = await fetch(`${API_BASE}/api/admin-services`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ pin: PIN, idFornecedor: id, ...campos })
+        });
+        btn.textContent = r2.ok ? 'Salvo ✓' : 'Erro';
+        setTimeout(() => btn.textContent = 'Salvar', 1500);
+      });
+    });
+  }
+
+  async function carregarPedidos(){
+    const r = await fetch(`${API_BASE}/api/admin-orders?pin=${encodeURIComponent(PIN)}`);
+    const data = await r.json();
+    const tbody = $('tabela-pedidos-body');
+    tbody.innerHTML = '';
+    (data.pedidos || []).forEach((p) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${p.id.slice(-6)}</td>
+        <td>${p.nomeServico}</td>
+        <td>${p.quantidade}</td>
+        <td>R$ ${Number(p.valorTotal).toFixed(2)}</td>
+        <td><span class="tag ${p.status === 'concluido' ? 'ativo' : 'inativo'}">${p.status}</span></td>
+        <td>${new Date(p.criadoEm).toLocaleString('pt-BR')}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  $('pedidos-btn').addEventListener('click', carregarPedidos);
+
+  let buscaTimeout;
+  $('busca-servico').addEventListener('input', (e) => {
+    clearTimeout(buscaTimeout);
+    buscaTimeout = setTimeout(() => carregarServicos(e.target.value), 400);
+  });
+})();
+</script>
+
+</body>
+</html>
