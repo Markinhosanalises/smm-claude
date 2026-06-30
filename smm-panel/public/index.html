@@ -243,7 +243,7 @@
     if(!clienteId) return;
     $('pedidos-msg').textContent = 'Carregando...';
     try{
-      const r = await fetch(`${API_BASE}/api/meus-pedidos?clienteId=${encodeURIComponent(clienteId)}`);
+      const r = await fetch(`${API_BASE}/api/pedidos?clienteId=${encodeURIComponent(clienteId)}`);
       const data = await r.json();
       const lista = $('lista-pedidos');
       lista.innerHTML = '';
