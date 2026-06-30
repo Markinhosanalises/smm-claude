@@ -192,8 +192,21 @@
 
   async function carregarServicos(termo){
     const q = termo ? `&busca=${encodeURIComponent(termo)}` : '';
-    const r = await fetch(`${API_BASE}/api/admin-services?pin=${encodeURIComponent(PIN)}${q}`);
-    const data = await r.json();
+    let data;
+    try {
+      const r = await fetch(`${API_BASE}/api/admin-services?pin=${encodeURIComponent(PIN)}${q}`);
+      data = await r.json();
+      if(!r.ok){
+        $('servicos-msg').textContent = data.erro || `Erro ${r.status} ao buscar serviços. Tente novamente em alguns segundos.`;
+        $('servicos-msg').className = 'msg erro';
+        return;
+      }
+    } catch(e) {
+      $('servicos-msg').textContent = 'A busca demorou demais ou falhou. Tente um termo mais específico ou tente de novo.';
+      $('servicos-msg').className = 'msg erro';
+      return;
+    }
+
     const tbody = $('tabela-servicos-body');
     tbody.innerHTML = '';
 
@@ -265,7 +278,9 @@
   let buscaTimeout;
   $('busca-servico').addEventListener('input', (e) => {
     clearTimeout(buscaTimeout);
-    buscaTimeout = setTimeout(() => carregarServicos(e.target.value), 400);
+    const valor = e.target.value;
+    if(valor.length > 0 && valor.length < 3) return; // espera pelo menos 3 letras
+    buscaTimeout = setTimeout(() => carregarServicos(valor), 500);
   });
 })();
 </script>
