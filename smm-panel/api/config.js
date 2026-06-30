@@ -1,7 +1,4 @@
 // api/config.js
-// Endpoint admin: salva URL/KEY do fornecedor e o percentual de lucro global.
-// Protegido por PIN simples (mesmo padrão dos outros painéis admin do Marcos).
-
 const { fbPatch, fbGet } = require('../lib/firebase');
 
 const ADMIN_PIN = process.env.ADMIN_PIN || '891322';
@@ -13,16 +10,16 @@ module.exports = async (req, res) => {
       return res.status(401).json({ erro: 'PIN inválido' });
     }
     const config = await fbGet('config').catch(() => null);
-    // nunca devolve a key crua pro frontend, só indica se está configurada
     return res.status(200).json({
       fornecedorConfigurado: !!(config && config.fornecedor && config.fornecedor.key),
       url: config?.fornecedor?.url || '',
       lucroPercentualGlobal: config?.lucroPercentualGlobal ?? 30,
+      cotacaoUSDBRL: config?.cotacaoUSDBRL || '',
     });
   }
 
   if (req.method === 'POST') {
-    const { pin, url, key, lucroPercentualGlobal } = req.body || {};
+    const { pin, url, key, lucroPercentualGlobal, cotacaoUSDBRL } = req.body || {};
 
     if (pin !== ADMIN_PIN) {
       return res.status(401).json({ erro: 'PIN inválido' });
@@ -34,6 +31,9 @@ module.exports = async (req, res) => {
     }
     if (lucroPercentualGlobal !== undefined) {
       update.lucroPercentualGlobal = Number(lucroPercentualGlobal);
+    }
+    if (cotacaoUSDBRL !== undefined) {
+      update.cotacaoUSDBRL = cotacaoUSDBRL === '' ? null : Number(cotacaoUSDBRL);
     }
 
     await fbPatch('config', update);
