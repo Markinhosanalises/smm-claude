@@ -327,7 +327,7 @@
   }
 
   async function carregarPedidos(){
-    const r = await fetch(`${API_BASE}/api/admin-orders?pin=${encodeURIComponent(PIN)}`);
+    const r = await fetch(`${API_BASE}/api/pedidos?pin=${encodeURIComponent(PIN)}`);
     const data = await r.json();
     const tbody = $('tabela-pedidos-body');
     tbody.innerHTML = '';
