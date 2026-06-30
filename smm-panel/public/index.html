@@ -1,0 +1,332 @@
+<!-- public/index.html -->
+<!-- Página de demonstração do widget "Engajar seu perfil".
+     Em produção, o conteúdo de dentro de #engajar-widget pode ser
+     colado direto na área de cliente do seu site existente — é
+     autocontido (HTML + CSS + JS na mesma página). -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Engajar seu perfil</title>
+<style>
+  :root{
+    --bg:#0b0d10;
+    --card:#15181c;
+    --line:#23272d;
+    --text:#eef1f4;
+    --muted:#8b929b;
+    --accent:#7CFFB2;
+    --accent-dim:#1f3a2c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:48px 16px;
+  }
+  #engajar-widget{
+    width:100%;
+    max-width:420px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:28px;
+  }
+  .eng-eyebrow{
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 6px;
+    font-weight:600;
+  }
+  .eng-title{
+    font-size:22px;
+    font-weight:700;
+    margin:0 0 4px;
+    line-height:1.25;
+  }
+  .eng-sub{
+    font-size:13.5px;
+    color:var(--muted);
+    margin:0 0 24px;
+  }
+  .eng-step{
+    margin-bottom:16px;
+  }
+  .eng-label{
+    display:block;
+    font-size:12.5px;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  .eng-select, .eng-input{
+    width:100%;
+    background:#0e1013;
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:12px 14px;
+    border-radius:10px;
+    font-size:14.5px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  .eng-select:focus, .eng-input:focus{
+    border-color:var(--accent);
+  }
+  .eng-select:disabled, .eng-input:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+  }
+  #eng-resultado{
+    display:none;
+    border-top:1px solid var(--line);
+    margin-top:8px;
+    padding-top:18px;
+  }
+  .eng-preco-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:18px;
+  }
+  .eng-preco-label{
+    font-size:13px;
+    color:var(--muted);
+  }
+  .eng-preco{
+    font-size:28px;
+    font-weight:700;
+    color:var(--accent);
+  }
+  .eng-btn{
+    width:100%;
+    background:var(--accent);
+    color:#08110c;
+    border:none;
+    padding:14px;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    transition:filter .15s ease;
+  }
+  .eng-btn:hover{ filter:brightness(1.08); }
+  .eng-btn:disabled{
+    background:var(--line);
+    color:var(--muted);
+    cursor:not-allowed;
+  }
+  .eng-msg{
+    font-size:12.5px;
+    color:var(--muted);
+    margin-top:10px;
+    min-height:16px;
+  }
+  .eng-msg.erro{ color:#ff8b8b; }
+  .eng-msg.ok{ color:var(--accent); }
+</style>
+</head>
+<body>
+
+<div id="engajar-widget">
+  <p class="eng-eyebrow">Disponível agora</p>
+  <h2 class="eng-title">Chegou a hora de engajar o seu perfil</h2>
+  <p class="eng-sub">Escolha a rede, o serviço e cole o link — em poucos segundos você vê o valor.</p>
+
+  <div class="eng-step">
+    <label class="eng-label">Rede social</label>
+    <select class="eng-select" id="eng-rede">
+      <option value="">Carregando...</option>
+    </select>
+  </div>
+
+  <div class="eng-step">
+    <label class="eng-label">Tipo de serviço</label>
+    <select class="eng-select" id="eng-tipo" disabled>
+      <option value="">Selecione a rede social primeiro</option>
+    </select>
+  </div>
+
+  <div class="eng-step">
+    <label class="eng-label">Opção</label>
+    <select class="eng-select" id="eng-opcao" disabled>
+      <option value="">Selecione o tipo de serviço</option>
+    </select>
+  </div>
+
+  <div class="eng-step">
+    <label class="eng-label">Link do perfil ou post</label>
+    <input class="eng-input" id="eng-link" type="url" placeholder="https://instagram.com/seuperfil" disabled>
+  </div>
+
+  <div class="eng-step">
+    <label class="eng-label">Quantidade</label>
+    <input class="eng-input" id="eng-qtd" type="number" placeholder="Ex: 500" disabled>
+  </div>
+
+  <div id="eng-resultado">
+    <div class="eng-preco-row">
+      <span class="eng-preco-label">Valor total</span>
+      <span class="eng-preco" id="eng-preco">R$ 0,00</span>
+    </div>
+    <button class="eng-btn" id="eng-pagar">Efetuar pagamento</button>
+  </div>
+
+  <p class="eng-msg" id="eng-msg"></p>
+</div>
+
+<script>
+(function(){
+  // Ajuste para o domínio onde as funções da Vercel estiverem publicadas
+  const API_BASE = ''; // vazio = mesmo domínio (ex: seusite.vercel.app/api/...)
+
+  const elRede = document.getElementById('eng-rede');
+  const elTipo = document.getElementById('eng-tipo');
+  const elOpcao = document.getElementById('eng-opcao');
+  const elLink = document.getElementById('eng-link');
+  const elQtd = document.getElementById('eng-qtd');
+  const elResultado = document.getElementById('eng-resultado');
+  const elPreco = document.getElementById('eng-preco');
+  const elPagar = document.getElementById('eng-pagar');
+  const elMsg = document.getElementById('eng-msg');
+
+  let servicosDoTipo = [];
+  let servicoSelecionado = null;
+  let pedidoAtual = null;
+
+  function msg(texto, tipo){
+    elMsg.textContent = texto || '';
+    elMsg.className = 'eng-msg' + (tipo ? ' ' + tipo : '');
+  }
+
+  async function carregarFiltrosIniciais(){
+    try{
+      const r = await fetch(`${API_BASE}/api/services`);
+      const data = await r.json();
+      elRede.innerHTML = '<option value="">Selecione</option>' +
+        (data.redesSociais || []).map(r => `<option value="${r}">${capitalizar(r)}</option>`).join('');
+    }catch(e){
+      msg('Não foi possível carregar as redes sociais. Tente novamente.', 'erro');
+    }
+  }
+
+  function capitalizar(s){
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  elRede.addEventListener('change', async () => {
+    resetDe('tipo');
+    if(!elRede.value) return;
+    try{
+      const r = await fetch(`${API_BASE}/api/services?redeSocial=${encodeURIComponent(elRede.value)}`);
+      const data = await r.json();
+      const tipos = [...new Set((data.servicos || []).map(s => s.servicoTipo))].filter(Boolean);
+      elTipo.innerHTML = '<option value="">Selecione</option>' +
+        tipos.map(t => `<option value="${t}">${capitalizar(t)}</option>`).join('');
+      elTipo.disabled = false;
+    }catch(e){
+      msg('Erro ao carregar os tipos de serviço.', 'erro');
+    }
+  });
+
+  elTipo.addEventListener('change', async () => {
+    resetDe('opcao');
+    if(!elTipo.value) return;
+    try{
+      const r = await fetch(`${API_BASE}/api/services?redeSocial=${encodeURIComponent(elRede.value)}&servicoTipo=${encodeURIComponent(elTipo.value)}`);
+      const data = await r.json();
+      servicosDoTipo = data.servicos || [];
+      elOpcao.innerHTML = '<option value="">Selecione</option>' +
+        servicosDoTipo.map(s => `<option value="${s.id}">${s.nome} (R$ ${s.precoPorMil.toFixed(2)} / 1000)</option>`).join('');
+      elOpcao.disabled = false;
+    }catch(e){
+      msg('Erro ao carregar as opções.', 'erro');
+    }
+  });
+
+  elOpcao.addEventListener('change', () => {
+    servicoSelecionado = servicosDoTipo.find(s => String(s.id) === elOpcao.value) || null;
+    elLink.disabled = !servicoSelecionado;
+    elQtd.disabled = !servicoSelecionado;
+    if(servicoSelecionado){
+      elQtd.placeholder = `Entre ${servicoSelecionado.min} e ${servicoSelecionado.max}`;
+    }
+    elResultado.style.display = 'none';
+  });
+
+  elQtd.addEventListener('input', atualizarPreco);
+  elLink.addEventListener('input', atualizarPreco);
+
+  function atualizarPreco(){
+    if(!servicoSelecionado || !elLink.value || !elQtd.value){
+      elResultado.style.display = 'none';
+      return;
+    }
+    const qtd = Number(elQtd.value);
+    if(qtd < servicoSelecionado.min || qtd > servicoSelecionado.max){
+      elResultado.style.display = 'none';
+      return;
+    }
+    const total = (servicoSelecionado.precoPorMil * qtd) / 1000;
+    elPreco.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
+    elResultado.style.display = 'block';
+  }
+
+  function resetDe(nivel){
+    if(nivel === 'tipo'){
+      elTipo.innerHTML = '<option value="">Selecione a rede social primeiro</option>';
+      elTipo.disabled = true;
+    }
+    elOpcao.innerHTML = '<option value="">Selecione o tipo de serviço</option>';
+    elOpcao.disabled = true;
+    elLink.value = ''; elLink.disabled = true;
+    elQtd.value = ''; elQtd.disabled = true;
+    elResultado.style.display = 'none';
+    servicoSelecionado = null;
+  }
+
+  elPagar.addEventListener('click', async () => {
+    if(!servicoSelecionado) return;
+    elPagar.disabled = true;
+    msg('Criando seu pedido...');
+    try{
+      const r = await fetch(`${API_BASE}/api/order`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          idFornecedor: servicoSelecionado.id,
+          link: elLink.value,
+          quantidade: Number(elQtd.value),
+          // clienteId: pegue do seu sistema de autenticação aqui
+        }),
+      });
+      const data = await r.json();
+      if(!r.ok){ msg(data.erro || 'Erro ao criar pedido', 'erro'); elPagar.disabled = false; return; }
+
+      pedidoAtual = data.pedidoId;
+
+      // TODO: aqui entra a integração real com o Mercado Pago.
+      // Você vai gerar a cobrança PIX com o valor `data.valorTotal`
+      // e, quando o pagamento for confirmado (via webhook do MP),
+      // chamar POST /api/confirm-payment com { pedidoId }.
+      msg(`Pedido #${pedidoAtual} criado. Valor: R$ ${data.valorTotal.toFixed(2)}. Prossiga para o pagamento.`, 'ok');
+
+    }catch(e){
+      msg('Erro de conexão. Tente novamente.', 'erro');
+    }
+    elPagar.disabled = false;
+  });
+
+  carregarFiltrosIniciais();
+})();
+</script>
+
+</body>
+</html>
