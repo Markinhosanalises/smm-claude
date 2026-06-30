@@ -90,7 +90,14 @@
     <p class="msg" id="sync-msg"></p>
     <div style="margin-top:14px;">
       <label>Buscar por nome, categoria, rede ou ID (a lista completa é grande demais pra mostrar tudo de uma vez)</label>
-      <input id="busca-servico" placeholder="Ex: instagram, seguidores, curtidas...">
+      <div class="row">
+        <input id="busca-servico" placeholder="Ex: instagram, seguidores, curtidas...">
+        <select id="ordenar-servico" style="flex:0 0 220px;">
+          <option value="">Ordenar: padrão</option>
+          <option value="preco_asc">Preço: mais barato primeiro</option>
+          <option value="preco_desc">Preço: mais caro primeiro</option>
+        </select>
+      </div>
     </div>
     <p class="msg" id="servicos-msg"></p>
     <div style="overflow-x:auto;margin-top:14px;">
@@ -98,7 +105,7 @@
         <thead>
           <tr>
             <th>Ativo</th><th>Nome</th><th>Categoria orig.</th><th>Rede social</th>
-            <th>Tipo</th><th>Custo /1000</th><th>Lucro % (vazio=global)</th><th></th>
+            <th>Tipo</th><th>Custo /1000</th><th>Lucro % (vazio=global)</th><th>Preço final /1000</th><th></th>
           </tr>
         </thead>
         <tbody id="tabela-servicos-body"></tbody>
@@ -127,6 +134,7 @@
   let PIN = '';
 
   const $ = (id) => document.getElementById(id);
+  let lucroGlobalAtual = 30;
 
   $('login-btn').addEventListener('click', async () => {
     PIN = $('login-pin').value;
@@ -149,6 +157,7 @@
     const data = await r.json();
     $('cfg-url').value = data.url || '';
     $('cfg-lucro').value = data.lucroPercentualGlobal ?? 30;
+    lucroGlobalAtual = Number(data.lucroPercentualGlobal ?? 30);
   }
 
   $('cfg-salvar').addEventListener('click', async () => {
@@ -166,6 +175,7 @@
     const data = await r.json();
     $('cfg-msg').textContent = r.ok ? 'Configuração salva.' : (data.erro || 'Erro');
     $('cfg-msg').className = 'msg ' + (r.ok ? 'ok' : 'erro');
+    if(r.ok) lucroGlobalAtual = Number($('cfg-lucro').value || 30);
   });
 
   $('cfg-saldo-btn').addEventListener('click', async () => {
@@ -192,9 +202,11 @@
 
   async function carregarServicos(termo){
     const q = termo ? `&busca=${encodeURIComponent(termo)}` : '';
+    const ordem = $('ordenar-servico').value;
+    const qOrdem = ordem ? `&ordenar=${ordem}` : '';
     let data;
     try {
-      const r = await fetch(`${API_BASE}/api/admin-services?pin=${encodeURIComponent(PIN)}${q}`);
+      const r = await fetch(`${API_BASE}/api/admin-services?pin=${encodeURIComponent(PIN)}${q}${qOrdem}`);
       data = await r.json();
       if(!r.ok){
         $('servicos-msg').textContent = data.erro || `Erro ${r.status} ao buscar serviços. Tente novamente em alguns segundos.`;
@@ -222,6 +234,7 @@
 
     (data.servicos || []).forEach((s) => {
       const tr = document.createElement('tr');
+      const precoFinalInicial = calcularPrecoFinal(s.taxaCusto, s.lucroPercentual);
       tr.innerHTML = `
         <td><input type="checkbox" ${s.ativo ? 'checked' : ''} data-campo="ativo" data-id="${s.idFornecedor}"></td>
         <td><input value="${s.nomeCustomizado || ''}" data-campo="nomeCustomizado" data-id="${s.idFornecedor}"></td>
@@ -229,10 +242,20 @@
         <td><input value="${s.redeSocial || ''}" placeholder="instagram" data-campo="redeSocial" data-id="${s.idFornecedor}"></td>
         <td><input value="${s.servicoTipo || ''}" placeholder="seguidores" data-campo="servicoTipo" data-id="${s.idFornecedor}"></td>
         <td>${s.taxaCusto}</td>
-        <td><input class="small-input" type="number" value="${s.lucroPercentual ?? ''}" data-campo="lucroPercentual" data-id="${s.idFornecedor}"></td>
+        <td><input class="small-input" type="number" value="${s.lucroPercentual ?? ''}" data-campo="lucroPercentual" data-id="${s.idFornecedor}" data-custo="${s.taxaCusto}"></td>
+        <td class="preco-final" data-id="${s.idFornecedor}">R$ ${precoFinalInicial}</td>
         <td><button class="secundario btn-salvar-servico" data-id="${s.idFornecedor}">Salvar</button></td>
       `;
       tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('input[data-campo="lucroPercentual"]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const custo = Number(input.dataset.custo);
+        const id = input.dataset.id;
+        const celula = document.querySelector(`.preco-final[data-id="${id}"]`);
+        if(celula) celula.textContent = `R$ ${calcularPrecoFinal(custo, input.value)}`;
+      });
     });
 
     document.querySelectorAll('.btn-salvar-servico').forEach((btn) => {
@@ -275,12 +298,24 @@
 
   $('pedidos-btn').addEventListener('click', carregarPedidos);
 
+  function calcularPrecoFinal(custo, lucroPercentual){
+    const lucro = (lucroPercentual === '' || lucroPercentual === null || lucroPercentual === undefined)
+      ? lucroGlobalAtual
+      : Number(lucroPercentual);
+    const valor = Number(custo) * (1 + lucro / 100);
+    return valor.toFixed(4);
+  }
+
   let buscaTimeout;
   $('busca-servico').addEventListener('input', (e) => {
     clearTimeout(buscaTimeout);
     const valor = e.target.value;
     if(valor.length > 0 && valor.length < 3) return; // espera pelo menos 3 letras
     buscaTimeout = setTimeout(() => carregarServicos(valor), 500);
+  });
+
+  $('ordenar-servico').addEventListener('change', () => {
+    carregarServicos($('busca-servico').value);
   });
 })();
 </script>
