@@ -1,4 +1,7 @@
 // api/admin-services.js
+// Endpoint admin: lista o catálogo completo (todos os serviços puxados do
+// fornecedor, ativos ou não) e permite editar um serviço específico.
+
 const { fbGet, fbPatch } = require('../lib/firebase');
 
 const ADMIN_PIN = process.env.ADMIN_PIN || '891322';
@@ -46,7 +49,8 @@ module.exports = async (req, res) => {
   }
 
   if (req.method === 'POST') {
-    const { pin, idFornecedor, ativo, nomeCustomizado, redeSocial, servicoTipo, lucroPercentual } = req.body || {};
+    // edita um serviço específico
+    const { pin, idFornecedor, ativo, nomeCustomizado, redeSocial, servicoTipo, lucroPercentual, icone } = req.body || {};
 
     if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
     if (!idFornecedor) return res.status(400).json({ erro: 'idFornecedor é obrigatório' });
@@ -56,6 +60,7 @@ module.exports = async (req, res) => {
     if (nomeCustomizado !== undefined) update.nomeCustomizado = nomeCustomizado;
     if (redeSocial !== undefined) update.redeSocial = redeSocial;
     if (servicoTipo !== undefined) update.servicoTipo = servicoTipo;
+    if (icone !== undefined) update.icone = icone;
     if (lucroPercentual !== undefined) {
       update.lucroPercentual = lucroPercentual === '' || lucroPercentual === null ? null : Number(lucroPercentual);
     }

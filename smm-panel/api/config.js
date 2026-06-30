@@ -1,4 +1,7 @@
 // api/config.js
+// Endpoint admin: salva URL/KEY do fornecedor e o percentual de lucro global.
+// Protegido por PIN simples (mesmo padrão dos outros painéis admin do Marcos).
+
 const { fbPatch, fbGet } = require('../lib/firebase');
 
 const ADMIN_PIN = process.env.ADMIN_PIN || '891322';
@@ -15,11 +18,12 @@ module.exports = async (req, res) => {
       url: config?.fornecedor?.url || '',
       lucroPercentualGlobal: config?.lucroPercentualGlobal ?? 30,
       cotacaoUSDBRL: config?.cotacaoUSDBRL || '',
+      whatsappSuporte: config?.whatsappSuporte || '',
     });
   }
 
   if (req.method === 'POST') {
-    const { pin, url, key, lucroPercentualGlobal, cotacaoUSDBRL } = req.body || {};
+    const { pin, url, key, lucroPercentualGlobal, cotacaoUSDBRL, whatsappSuporte } = req.body || {};
 
     if (pin !== ADMIN_PIN) {
       return res.status(401).json({ erro: 'PIN inválido' });
@@ -34,6 +38,9 @@ module.exports = async (req, res) => {
     }
     if (cotacaoUSDBRL !== undefined) {
       update.cotacaoUSDBRL = cotacaoUSDBRL === '' ? null : Number(cotacaoUSDBRL);
+    }
+    if (whatsappSuporte !== undefined) {
+      update.whatsappSuporte = whatsappSuporte;
     }
 
     await fbPatch('config', update);

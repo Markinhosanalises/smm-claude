@@ -51,6 +51,7 @@ module.exports = async (req, res) => {
         redeSocial: existente.redeSocial ?? '',
         servicoTipo: existente.servicoTipo ?? '', // ex: seguidores, curtidas, comentários
         lucroPercentual: existente.lucroPercentual ?? null, // null = usa o global
+        icone: existente.icone || '',
         atualizadoEm: Date.now(),
       };
     }

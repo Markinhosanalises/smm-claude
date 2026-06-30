@@ -50,6 +50,7 @@ module.exports = async (req, res) => {
       id: s.idFornecedor,
       nome: s.nomeCustomizado || s.nomeOriginal,
       servicoTipo: s.servicoTipo,
+      icone: s.icone || '',
       min: s.min,
       max: s.max,
       refill: s.refill,
