@@ -28,6 +28,14 @@ module.exports = async (req, res) => {
       }
 
       const total = lista.length;
+
+      const { ordenar } = req.query;
+      if (ordenar === 'preco_asc') {
+        lista = lista.sort((a, b) => a.taxaCusto - b.taxaCusto);
+      } else if (ordenar === 'preco_desc') {
+        lista = lista.sort((a, b) => b.taxaCusto - a.taxaCusto);
+      }
+
       const LIMITE = 200;
       lista = lista.slice(0, LIMITE);
 
