@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
 
     try {
       const catalogo = (await fbGet('catalogo')) || {};
-      let lista = Object.values(catalogo);
+      let lista = Object.values(catalogo).filter(Boolean);
 
       if (somenteAtivos === '1') {
         lista = lista.filter((s) => s.ativo);
