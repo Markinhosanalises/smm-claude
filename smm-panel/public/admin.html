@@ -79,6 +79,13 @@
         <input id="cfg-saldo" disabled placeholder="clique em atualizar">
       </div>
     </div>
+    <div class="row">
+      <div>
+        <label>Cotação USD → BRL (a taxa do fornecedor vem em dólar)</label>
+        <input id="cfg-cotacao" type="number" step="0.01" placeholder="Ex: 5.40">
+      </div>
+      <div></div>
+    </div>
     <button id="cfg-salvar">Salvar configuração</button>
     <button class="secundario" id="cfg-saldo-btn">Atualizar saldo</button>
     <p class="msg" id="cfg-msg"></p>
@@ -135,6 +142,7 @@
 
   const $ = (id) => document.getElementById(id);
   let lucroGlobalAtual = 30;
+  let cotacaoAtual = 0; // 0 = sem conversão (assume que custo já está na moeda de venda)
 
   $('login-btn').addEventListener('click', async () => {
     PIN = $('login-pin').value;
@@ -157,13 +165,16 @@
     const data = await r.json();
     $('cfg-url').value = data.url || '';
     $('cfg-lucro').value = data.lucroPercentualGlobal ?? 30;
+    $('cfg-cotacao').value = data.cotacaoUSDBRL || '';
     lucroGlobalAtual = Number(data.lucroPercentualGlobal ?? 30);
+    cotacaoAtual = Number(data.cotacaoUSDBRL || 0);
   }
 
   $('cfg-salvar').addEventListener('click', async () => {
     const body = {
       pin: PIN,
       lucroPercentualGlobal: $('cfg-lucro').value,
+      cotacaoUSDBRL: $('cfg-cotacao').value,
     };
     if($('cfg-url').value && $('cfg-key').value){
       body.url = $('cfg-url').value;
@@ -175,7 +186,10 @@
     const data = await r.json();
     $('cfg-msg').textContent = r.ok ? 'Configuração salva.' : (data.erro || 'Erro');
     $('cfg-msg').className = 'msg ' + (r.ok ? 'ok' : 'erro');
-    if(r.ok) lucroGlobalAtual = Number($('cfg-lucro').value || 30);
+    if(r.ok){
+      lucroGlobalAtual = Number($('cfg-lucro').value || 30);
+      cotacaoAtual = Number($('cfg-cotacao').value || 0);
+    }
   });
 
   $('cfg-saldo-btn').addEventListener('click', async () => {
@@ -302,7 +316,8 @@
     const lucro = (lucroPercentual === '' || lucroPercentual === null || lucroPercentual === undefined)
       ? lucroGlobalAtual
       : Number(lucroPercentual);
-    const valor = Number(custo) * (1 + lucro / 100);
+    const custoConvertido = Number(custo) * (cotacaoAtual || 1);
+    const valor = custoConvertido * (1 + lucro / 100);
     return valor.toFixed(4);
   }
 
