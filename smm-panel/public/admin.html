@@ -105,6 +105,13 @@
         <input id="cfg-whats" placeholder="Ex: 5521999999999">
       </div>
     </div>
+    <div class="row">
+      <div>
+        <label>Valor mínimo de recarga de saldo (R$)</label>
+        <input id="cfg-min-recarga" type="number" min="1" step="0.01" placeholder="Ex: 10.00">
+      </div>
+      <div></div>
+    </div>
     <button id="cfg-salvar">Salvar configuração</button>
     <button class="secundario" id="cfg-saldo-btn">Atualizar saldo</button>
     <p class="msg" id="cfg-msg"></p>
@@ -265,6 +272,7 @@
     $('cfg-lucro').value = data.lucroPercentualGlobal ?? 30;
     $('cfg-cotacao').value = data.cotacaoUSDBRL || '';
     $('cfg-whats').value = data.whatsappSuporte || '';
+    $('cfg-min-recarga').value = data.minRecarga || '';
     lucroGlobalAtual = Number(data.lucroPercentualGlobal ?? 30);
     cotacaoAtual = Number(data.cotacaoUSDBRL || 0);
   }
@@ -275,6 +283,7 @@
       lucroPercentualGlobal: $('cfg-lucro').value,
       cotacaoUSDBRL: $('cfg-cotacao').value,
       whatsappSuporte: $('cfg-whats').value,
+      minRecarga: $('cfg-min-recarga').value ? Number($('cfg-min-recarga').value) : null,
     };
     if($('cfg-url').value && $('cfg-key').value){
       body.url = $('cfg-url').value;
@@ -491,14 +500,35 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${t.nome || ''}</td>
-        <td>${t.whatsapp || ''}</td>
-        <td style="max-width:220px;">${t.mensagem || ''}</td>
+        <td>${t.whatsapp || t.clienteId || ''}</td>
+        <td style="max-width:200px;">${t.mensagem || ''}</td>
         <td>${t.pedidoId ? t.pedidoId.slice(-6) : '-'}</td>
         <td><span class="tag ${t.status === 'resolvido' ? 'ativo' : 'inativo'}">${t.status}</span></td>
-        <td><input value="${t.resposta || ''}" data-resposta="${t.id}" placeholder="Responder..."></td>
-        <td><button class="secundario btn-resolver-ticket" data-id="${t.id}">${t.status === 'resolvido' ? 'Reabrir' : 'Marcar resolvido'}</button></td>
+        <td style="min-width:180px;">
+          <input value="${t.resposta || ''}" data-resposta="${t.id}" placeholder="Digite a resposta..." style="margin-bottom:6px;">
+          <div style="display:flex;gap:6px;">
+            <button class="secundario btn-responder-ticket" data-id="${t.id}" style="flex:1;font-size:12px;padding:6px;">💬 Responder</button>
+            <button class="secundario btn-resolver-ticket" data-id="${t.id}" style="flex:1;font-size:12px;padding:6px;">${t.status === 'resolvido' ? '🔄 Reabrir' : '✅ Resolver'}</button>
+          </div>
+        </td>
       `;
       tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.btn-responder-ticket').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const respostaInput = document.querySelector(`[data-resposta="${id}"]`);
+        if(!respostaInput.value.trim()){ btn.textContent = 'Digite algo!'; setTimeout(()=>btn.textContent='💬 Responder',1500); return; }
+        btn.disabled = true;
+        const r2 = await fetch(`${API_BASE}/api/tickets`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ pin: PIN, ticketId: id, resposta: respostaInput.value })
+        });
+        btn.textContent = r2.ok ? 'Enviado ✓' : 'Erro';
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = '💬 Responder'; }, 1500);
+      });
     });
 
     document.querySelectorAll('.btn-resolver-ticket').forEach((btn) => {
