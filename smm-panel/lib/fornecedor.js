@@ -37,10 +37,11 @@ async function listarServicos() {
   return chamarFornecedor({ action: 'services' });
 }
 
-async function criarPedido({ service, link, quantity, runs, interval }) {
+async function criarPedido({ service, link, quantity, runs, interval, comments }) {
   const params = { action: 'add', service, link, quantity };
   if (runs) params.runs = runs;
   if (interval) params.interval = interval;
+  if (comments) params.comments = comments;
   return chamarFornecedor(params);
 }
 
