@@ -9,6 +9,15 @@ const ADMIN_PIN = process.env.ADMIN_PIN || '891322';
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
     const { pin } = req.query;
+
+    // sem PIN: devolve só o que é seguro pro cliente ver (nunca a key do fornecedor)
+    if (!pin) {
+      const configPublica = await fbGet('config').catch(() => null);
+      return res.status(200).json({
+        whatsappSuporte: configPublica?.whatsappSuporte || '',
+      });
+    }
+
     if (pin !== ADMIN_PIN) {
       return res.status(401).json({ erro: 'PIN inválido' });
     }
@@ -19,29 +28,25 @@ module.exports = async (req, res) => {
       lucroPercentualGlobal: config?.lucroPercentualGlobal ?? 30,
       cotacaoUSDBRL: config?.cotacaoUSDBRL || '',
       whatsappSuporte: config?.whatsappSuporte || '',
+      mpConfigurado: !!(config?.mercadopago?.accessToken),
+      appUrl: config?.appUrl || '',
     });
   }
 
   if (req.method === 'POST') {
-    const { pin, url, key, lucroPercentualGlobal, cotacaoUSDBRL, whatsappSuporte } = req.body || {};
+    const { pin, url, key, lucroPercentualGlobal, cotacaoUSDBRL, whatsappSuporte, mpAccessToken, appUrl } = req.body || {};
 
     if (pin !== ADMIN_PIN) {
       return res.status(401).json({ erro: 'PIN inválido' });
     }
 
     const update = {};
-    if (url && key) {
-      update.fornecedor = { url, key };
-    }
-    if (lucroPercentualGlobal !== undefined) {
-      update.lucroPercentualGlobal = Number(lucroPercentualGlobal);
-    }
-    if (cotacaoUSDBRL !== undefined) {
-      update.cotacaoUSDBRL = cotacaoUSDBRL === '' ? null : Number(cotacaoUSDBRL);
-    }
-    if (whatsappSuporte !== undefined) {
-      update.whatsappSuporte = whatsappSuporte;
-    }
+    if (url && key) update.fornecedor = { url, key };
+    if (lucroPercentualGlobal !== undefined) update.lucroPercentualGlobal = Number(lucroPercentualGlobal);
+    if (cotacaoUSDBRL !== undefined) update.cotacaoUSDBRL = cotacaoUSDBRL === '' ? null : Number(cotacaoUSDBRL);
+    if (whatsappSuporte !== undefined) update.whatsappSuporte = whatsappSuporte;
+    if (mpAccessToken !== undefined) update.mercadopago = { accessToken: mpAccessToken };
+    if (appUrl !== undefined) update.appUrl = appUrl;
 
     await fbPatch('config', update);
     return res.status(200).json({ ok: true });
