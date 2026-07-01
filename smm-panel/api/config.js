@@ -30,11 +30,12 @@ module.exports = async (req, res) => {
       whatsappSuporte: config?.whatsappSuporte || '',
       mpConfigurado: !!(config?.mercadopago?.accessToken),
       appUrl: config?.appUrl || '',
+      minRecarga: config?.minRecarga || 5,
     });
   }
 
   if (req.method === 'POST') {
-    const { pin, url, key, lucroPercentualGlobal, cotacaoUSDBRL, whatsappSuporte, mpAccessToken, appUrl } = req.body || {};
+    const { pin, url, key, lucroPercentualGlobal, cotacaoUSDBRL, whatsappSuporte, mpAccessToken, appUrl, minRecarga } = req.body || {};
 
     if (pin !== ADMIN_PIN) {
       return res.status(401).json({ erro: 'PIN inválido' });
@@ -47,6 +48,7 @@ module.exports = async (req, res) => {
     if (whatsappSuporte !== undefined) update.whatsappSuporte = whatsappSuporte;
     if (mpAccessToken !== undefined) update.mercadopago = { accessToken: mpAccessToken };
     if (appUrl !== undefined) update.appUrl = appUrl;
+    if (minRecarga !== undefined) update.minRecarga = minRecarga === null ? 5 : Number(minRecarga);
 
     await fbPatch('config', update);
     return res.status(200).json({ ok: true });
