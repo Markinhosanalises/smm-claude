@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { idFornecedor, link, quantidade, clienteId, clienteContato, pagarComSaldo } = req.body || {};
+    const { idFornecedor, link, quantidade, clienteId, clienteContato, pagarComSaldo, comments } = req.body || {};
 
     if (!idFornecedor || !link || !quantidade) {
       return res.status(400).json({ erro: 'idFornecedor, link e quantidade são obrigatórios' });
@@ -78,6 +78,7 @@ module.exports = async (req, res) => {
           service: idFornecedor,
           link,
           quantity: qtd,
+          ...(comments ? { comments } : {}),
         });
         orderIdFornecedor = resposta.pedido || resposta.order;
         if (!orderIdFornecedor) erroFornecedor = resposta;
@@ -114,6 +115,7 @@ module.exports = async (req, res) => {
       clienteId: clienteId || null,
       clienteContato: clienteContato || null,
       pagamento: 'pix',
+      comments: comments || null,
       criadoEm: Date.now(),
     };
 
