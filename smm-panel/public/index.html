@@ -63,6 +63,18 @@
   .top-bar button{background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;}
   .hidden{display:none !important;}
 
+  /* ===== FUNDO ANIMADO (login e área logada) ===== */
+  .area-logada-bg{
+    position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+    background:linear-gradient(135deg,#0b0d10 0%,#0d1a12 50%,#0b0d10 100%);
+  }
+  .area-logada-bg::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(ellipse at 20% 50%,rgba(124,255,178,.05) 0%,transparent 60%),
+               radial-gradient(ellipse at 80% 20%,rgba(124,255,178,.04) 0%,transparent 50%);
+  }
+  #area-logada{position:relative;z-index:1;}
+
   /* ===== HERO DE LOGIN ===== */
   .auth-hero{
     position:relative;
@@ -220,6 +232,7 @@
 
 <!-- ÁREA LOGADO -->
 <div class="hidden" id="area-logada">
+<div class="area-logada-bg"><div class="floating-icons" id="floating-icons-logado"></div></div>
 <div class="container">
   <div class="top-bar" id="top-bar">
     <span id="saudacao">Visitante</span>
@@ -234,6 +247,7 @@
     <div class="tab ativa" id="tab-engajar">🚀 Engajar</div>
     <div class="tab" id="tab-pedidos">📦 Pedidos</div>
     <div class="tab" id="tab-carteira">💰 Carteira</div>
+    <div class="tab" id="tab-suporte">🎧 Suporte</div>
   </div>
 
   <!-- WIDGET DE ENGAJAMENTO -->
@@ -312,13 +326,22 @@
     </div>
   </div>
 
-  <!-- ABRIR TICKET -->
-  <div class="card">
-    <p class="eyebrow">Precisa de ajuda?</p>
-    <h2 class="title" style="font-size:16px;">Fale com o suporte</h2>
-    <input class="input" id="ticket-mensagem" placeholder="Descreva sua dúvida ou problema...">
-    <button class="btn-sec" id="ticket-enviar">Enviar mensagem de suporte</button>
-    <p class="msg" id="ticket-msg"></p>
+  <!-- SUPORTE -->
+  <div id="painel-suporte" class="hidden">
+    <div class="card">
+      <p class="eyebrow">Fale conosco</p>
+      <h2 class="title">Suporte</h2>
+      <textarea class="input" id="ticket-mensagem" rows="3" placeholder="Descreva sua dúvida ou problema..." style="resize:vertical;height:80px;"></textarea>
+      <button class="btn" id="ticket-enviar">📩 Enviar mensagem</button>
+      <p class="msg" id="ticket-msg"></p>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">Histórico</p>
+      <h2 class="title" style="font-size:16px;">Meus tickets</h2>
+      <div id="lista-tickets"></div>
+      <p class="msg" id="tickets-cliente-msg"></p>
+    </div>
   </div>
 
 </div><!-- /container -->
@@ -344,11 +367,13 @@
       $('tabs').classList.remove('hidden');
       $('painel-engajar').classList.remove('hidden');
       carregarSaldo();
+      gerarIconesFlutuantesLogado();
     } else {
       $('auth-hero').classList.remove('hidden');
       $('area-logada').classList.add('hidden');
       $('painel-pedidos').classList.add('hidden');
       $('painel-carteira').classList.add('hidden');
+      $('painel-suporte').classList.add('hidden');
     }
   }
 
@@ -412,13 +437,18 @@
   });
 
   function ativarAba(aba){
-    ['engajar','pedidos','carteira'].forEach(a => {
+    ['engajar','pedidos','carteira','suporte'].forEach(a => {
       $(`tab-${a}`)?.classList.remove('ativa');
       $(`painel-${a}`)?.classList.add('hidden');
     });
     $(`tab-${aba}`)?.classList.add('ativa');
     $(`painel-${aba}`)?.classList.remove('hidden');
   }
+
+  $('tab-suporte').addEventListener('click', () => {
+    ativarAba('suporte');
+    carregarTicketsCliente();
+  });
 
   let intervaloPedidos = null;
 
@@ -756,6 +786,74 @@
     }catch(e){}
   }
 
+  // ===== Tickets do cliente =====
+  async function carregarTicketsCliente(){
+    if(!clienteId) return;
+    $('tickets-cliente-msg').textContent = 'Carregando...';
+    try{
+      const r = await fetch(`${API_BASE}/api/tickets?clienteId=${encodeURIComponent(clienteId)}`);
+      const data = await r.json();
+      const lista = $('lista-tickets');
+      lista.innerHTML = '';
+      if(!data.tickets || data.tickets.length === 0){
+        $('tickets-cliente-msg').textContent = 'Nenhum ticket enviado ainda.';
+        return;
+      }
+      $('tickets-cliente-msg').textContent = '';
+      data.tickets.forEach((t) => {
+        const div = document.createElement('div');
+        div.className = 'pedido-item';
+        div.innerHTML = `
+          <div class="pedido-top">
+            <span style="font-size:12.5px;">${t.mensagem}</span>
+            <span class="status-pill ${t.status === 'resolvido' ? 'concluido' : 'executando'}">${t.status === 'resolvido' ? 'Resolvido' : 'Aberto'}</span>
+          </div>
+          <div class="pedido-sub">${new Date(t.criadoEm).toLocaleDateString('pt-BR')}</div>
+          ${t.resposta ? `
+          <div style="margin-top:10px;background:#0e1013;border-left:3px solid var(--accent);padding:10px 12px;border-radius:0 8px 8px 0;">
+            <div style="font-size:11px;color:var(--accent);margin-bottom:4px;">💬 Resposta do suporte</div>
+            <div style="font-size:13px;">${t.resposta}</div>
+          </div>` : '<div style="font-size:11px;color:var(--muted);margin-top:6px;">⏳ Aguardando resposta</div>'}
+        `;
+        lista.appendChild(div);
+      });
+    }catch(e){
+      $('tickets-cliente-msg').textContent = 'Erro ao carregar tickets.';
+    }
+  }
+
+  // ===== Ícones flutuantes na área logada =====
+  function gerarIconesFlutuantesLogado(){
+    const container = $('floating-icons-logado');
+    if(!container || container.children.length > 0) return;
+    const icones = ['📸','❤️','👥','💬','▶️','⭐','🔥','📊','🚀','✨','🎯','📱','🎵','📈'];
+    for(let i = 0; i < 15; i++){
+      const el = document.createElement('div');
+      el.className = 'fi';
+      el.textContent = icones[Math.floor(Math.random() * icones.length)];
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.animationDuration = (15 + Math.random() * 25) + 's';
+      el.style.animationDelay = (Math.random() * 25) + 's';
+      el.style.fontSize = (14 + Math.random() * 18) + 'px';
+      container.appendChild(el);
+    }
+  }
+
+  // ===== Valor mínimo de recarga =====
+  let minRecarga = 5;
+  async function carregarMinRecarga(){
+    try{
+      const r = await fetch(`${API_BASE}/api/config`);
+      const data = await r.json();
+      minRecarga = Number(data.minRecarga || 5);
+      const inputDeposito = $('deposito-valor');
+      if(inputDeposito){
+        inputDeposito.min = minRecarga;
+        inputDeposito.placeholder = `Mínimo R$ ${minRecarga.toFixed(2)}`;
+      }
+    }catch(e){}
+  }
+
   // ===== Ícones flutuantes no fundo do login =====
   function gerarIconesFlutuantes(){
     const container = $('floating-icons');
@@ -778,6 +876,7 @@
   carregarSuporte();
   gerarIconesFlutuantes();
   iniciarAtualizacaoPedidos();
+  carregarMinRecarga();
 })();
 </script>
 
