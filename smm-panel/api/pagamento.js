@@ -74,6 +74,19 @@ module.exports = async (req, res) => {
       const pedidoId = payment.external_reference;
       if (!pedidoId) return res.status(200).json({ ok: true });
 
+      // verifica se é recarga de saldo
+      if (pedidoId.startsWith('dep_')) {
+        const deposito = await fbGet(`depositos/${pedidoId}`).catch(() => null);
+        if (!deposito || deposito.status === 'confirmado') {
+          return res.status(200).json({ ok: true });
+        }
+        const { creditarSaldo } = require('./carteira');
+        const novoSaldo = await creditarSaldo(deposito.clienteId, deposito.valor);
+        await fbPatch(`depositos/${pedidoId}`, { status: 'confirmado', confirmedEm: Date.now() });
+        return res.status(200).json({ ok: true, novoSaldo });
+      }
+
+      // pedido normal
       const pedido = await fbGet(`pedidos/${pedidoId}`);
       if (!pedido || pedido.status !== 'aguardando_pagamento') {
         return res.status(200).json({ ok: true }); // já processado
