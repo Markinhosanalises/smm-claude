@@ -68,6 +68,7 @@
     <button class="admin-tab" data-tab="catalogo">📦 Catálogo</button>
     <button class="admin-tab" data-tab="pedidos">🛒 Pedidos</button>
     <button class="admin-tab" data-tab="tickets">💬 Suporte</button>
+    <button class="admin-tab" data-tab="clientes">👥 Clientes</button>
     <button class="admin-tab" data-tab="integracoes">🔌 Integrações</button>
   </div>
 
@@ -175,6 +176,22 @@
   </div>
   </div><!-- /tab-tickets -->
 
+  <div class="admin-section" id="tab-clientes">
+  <div class="card">
+    <h2>Clientes e saldos</h2>
+    <button class="secundario" id="clientes-btn">Atualizar lista</button>
+    <p class="msg" id="clientes-msg"></p>
+    <div style="overflow-x:auto;margin-top:14px;">
+      <table>
+        <thead>
+          <tr><th>WhatsApp / ID</th><th>Nome</th><th>Saldo</th><th>Creditar valor (R$)</th><th></th></tr>
+        </thead>
+        <tbody id="tabela-clientes-body"></tbody>
+      </table>
+    </div>
+  </div>
+  </div><!-- /tab-clientes -->
+
   <div class="admin-section" id="tab-integracoes">
   <div class="card">
     <h2>Mercado Pago</h2>
@@ -215,6 +232,7 @@
       carregarServicos();
       carregarPedidos();
       carregarTickets();
+      carregarClientes();
       carregarIntegracoes();
     } else {
       $('login-msg').textContent = 'Erro ao validar PIN';
@@ -480,6 +498,56 @@
   }
 
   $('tickets-btn').addEventListener('click', carregarTickets);
+
+  // ===== Clientes e saldos =====
+  async function carregarClientes(){
+    const r = await fetch(`${API_BASE}/api/carteira?pin=${encodeURIComponent(PIN)}&todos=1`);
+    const data = await r.json();
+    const tbody = $('tabela-clientes-body');
+    tbody.innerHTML = '';
+    if(!data.clientes || data.clientes.length === 0){
+      $('clientes-msg').textContent = 'Nenhum cliente com saldo cadastrado ainda.';
+      return;
+    }
+    $('clientes-msg').textContent = '';
+    data.clientes.forEach((c) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${c.clienteId}</td>
+        <td>${c.nome || '-'}</td>
+        <td style="color:var(--accent);font-weight:700;">R$ ${Number(c.saldo||0).toFixed(2)}</td>
+        <td><input type="number" min="0.01" step="0.01" placeholder="Ex: 10.00" style="width:120px;margin-bottom:0;padding:6px 8px;font-size:12.5px;" data-creditar="${c.clienteId}"></td>
+        <td><button class="secundario btn-creditar" data-id="${c.clienteId}">Creditar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.btn-creditar').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const input = document.querySelector(`[data-creditar="${id}"]`);
+        const valor = Number(input.value);
+        if(!valor || valor <= 0){ btn.textContent = 'Informe o valor'; return; }
+        btn.disabled = true;
+        btn.textContent = 'Creditando...';
+        const r = await fetch(`${API_BASE}/api/carteira`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ pin: PIN, clienteId: id, valor, creditar: true })
+        });
+        const data = await r.json();
+        if(r.ok){
+          btn.textContent = `✓ R$ ${Number(data.novoSaldo).toFixed(2)}`;
+          input.value = '';
+          setTimeout(() => { btn.textContent = 'Creditar'; btn.disabled = false; carregarClientes(); }, 2000);
+        } else {
+          btn.textContent = 'Erro';
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
+  $('clientes-btn').addEventListener('click', carregarClientes);
 
   function calcularPrecoFinal(custo, lucroPercentual){
     const lucro = (lucroPercentual === '' || lucroPercentual === null || lucroPercentual === undefined)
