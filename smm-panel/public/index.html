@@ -279,7 +279,10 @@
     <div class="card">
       <p class="eyebrow">Histórico</p>
       <h2 class="title">Meus pedidos</h2>
-      <p style="font-size:12px;color:var(--muted);margin:0 0 16px;">Atualiza automaticamente a cada 30 segundos</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <p style="font-size:12px;color:var(--muted);margin:0;">Atualiza automaticamente a cada 30 segundos</p>
+        <button class="btn-sec" id="btn-atualizar-pedidos" style="width:auto;padding:8px 14px;font-size:12.5px;">🔄 Atualizar agora</button>
+      </div>
       <div id="lista-pedidos"></div>
       <p class="msg" id="pedidos-msg"></p>
     </div>
@@ -424,7 +427,19 @@
         return;
       }
       $('pedidos-msg').textContent = '';
-      data.pedidos.forEach((p) => {
+
+      // sincroniza status dos pedidos em andamento com o fornecedor
+      const emAndamento = (data.pedidos || []).filter(p => p.status === 'executando' && p.orderIdFornecedor);
+      await Promise.all(emAndamento.map(p =>
+        fetch(`${API_BASE}/api/pedidos?pedidoId=${encodeURIComponent(p.id)}`).catch(() => {})
+      ));
+
+      // recarrega após sincronizar
+      const r2 = await fetch(`${API_BASE}/api/pedidos?clienteId=${encodeURIComponent(clienteId)}`);
+      const data2 = await r2.json();
+      const pedidos = data2.pedidos || data.pedidos;
+
+      pedidos.forEach((p) => {
         const progresso = p.startCount && p.quantidade
           ? Math.min(100, Math.round(((p.quantidade - (p.restam || p.quantidade)) / p.quantidade) * 100))
           : (p.status === 'concluido' ? 100 : p.status === 'executando' ? 50 : 0);
@@ -447,7 +462,7 @@
           </div>
           <div class="pedido-sub">
             Qtd: ${p.quantidade} · R$ ${Number(p.valorTotal).toFixed(2)} · ${new Date(p.criadoEm).toLocaleDateString('pt-BR')}
-            ${p.pagamento === 'saldo' ? ' · 💰 Pago com saldo' : ''}
+            ${p.pagamento === 'saldo' ? ' · 💰 Saldo' : ''}
           </div>
           ${p.status === 'executando' || p.status === 'concluido' ? `
           <div style="margin-top:8px;">
@@ -473,6 +488,15 @@
       }
     }, 30000);
   }
+
+  $('btn-atualizar-pedidos').addEventListener('click', () => {
+    $('btn-atualizar-pedidos').textContent = '⏳ Atualizando...';
+    $('btn-atualizar-pedidos').disabled = true;
+    carregarMeusPedidos().then(() => {
+      $('btn-atualizar-pedidos').textContent = '🔄 Atualizar agora';
+      $('btn-atualizar-pedidos').disabled = false;
+    });
+  });
 
   function formatarStatus(s){
     const mapa = {
