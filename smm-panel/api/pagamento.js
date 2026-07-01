@@ -97,6 +97,7 @@ module.exports = async (req, res) => {
         service: pedido.idFornecedor,
         link: pedido.link,
         quantity: pedido.quantidade,
+        ...(pedido.comments ? { comments: pedido.comments } : {}),
       });
 
       const orderIdFornecedor = resposta.pedido || resposta.order;
