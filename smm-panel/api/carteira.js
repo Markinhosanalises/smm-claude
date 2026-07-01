@@ -83,8 +83,11 @@ module.exports = async (req, res) => {
     }
 
     const valorNum = Number(valor);
-    if (valorNum < 5) {
-      return res.status(400).json({ erro: 'Valor mínimo de depósito é R$ 5,00' });
+    const config = await fbGet('config');
+    const minRecarga = Number(config?.minRecarga || 5);
+
+    if (valorNum < minRecarga) {
+      return res.status(400).json({ erro: `Valor mínimo de depósito é R$ ${minRecarga.toFixed(2)}` });
     }
 
     try {
