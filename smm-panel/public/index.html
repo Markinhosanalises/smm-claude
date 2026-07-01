@@ -258,6 +258,13 @@
       <label class="label">Quantidade</label>
       <input class="input" id="eng-qtd" type="number" placeholder="Ex: 500" disabled>
 
+      <!-- Campo de comentários — só aparece pra serviços de comentário personalizado -->
+      <div id="eng-comments-wrap" class="hidden">
+        <label class="label">Seus comentários (um por linha)</label>
+        <textarea class="input" id="eng-comments" rows="4" placeholder="Que foto incrível!&#10;Adorei demais!&#10;Simplesmente perfeito!" style="resize:vertical;height:100px;"></textarea>
+        <p style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:14px;">Digite um comentário por linha. O sistema vai distribuir entre as publicações.</p>
+      </div>
+
       <div id="eng-resultado" class="hidden">
         <div class="preco-row">
           <span class="preco-label">Valor total</span>
@@ -565,6 +572,15 @@
     elQtd.disabled = !servicoSelecionado;
     if(servicoSelecionado) elQtd.placeholder = `Entre ${servicoSelecionado.min} e ${servicoSelecionado.max}`;
     elResultado.classList.add('hidden');
+
+    // mostra o campo de comentários só pra serviços do tipo Custom Comments
+    const isCustom = servicoSelecionado && (
+      servicoSelecionado.tipo?.toLowerCase().includes('custom') ||
+      servicoSelecionado.nome?.toLowerCase().includes('personaliz') ||
+      servicoSelecionado.nome?.toLowerCase().includes('custom')
+    );
+    $('eng-comments-wrap').classList.toggle('hidden', !isCustom);
+    if(!isCustom) $('eng-comments').value = '';
   });
 
   elQtd.addEventListener('input', atualizarPreco);
@@ -659,7 +675,7 @@
     try{
       const r = await fetch(`${API_BASE}/api/order`, {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ idFornecedor: servicoSelecionado.id, link: elLink.value, quantidade: qtd, clienteId, pagarComSaldo: true }),
+        body: JSON.stringify({ idFornecedor: servicoSelecionado.id, link: elLink.value, quantidade: qtd, clienteId, pagarComSaldo: true, comments: $('eng-comments').value || null }),
       });
       const data = await r.json();
       if(!r.ok){ msgEng(data.erro || 'Erro', 'erro'); $('eng-pagar-saldo').disabled = false; return; }
@@ -677,7 +693,7 @@
     try{
       const r = await fetch(`${API_BASE}/api/order`, {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ idFornecedor: servicoSelecionado.id, link: elLink.value, quantidade: Number($('eng-qtd').value), clienteId, pagarComSaldo: false }),
+        body: JSON.stringify({ idFornecedor: servicoSelecionado.id, link: elLink.value, quantidade: Number($('eng-qtd').value), clienteId, pagarComSaldo: false, comments: $('eng-comments').value || null }),
       });
       const data = await r.json();
       if(!r.ok){ msgEng(data.erro || 'Erro ao criar pedido', 'erro'); $('eng-pagar-pix').disabled = false; return; }
