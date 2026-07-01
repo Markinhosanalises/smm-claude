@@ -186,7 +186,7 @@
   <div class="admin-section" id="tab-clientes">
   <div class="card">
     <h2>Creditar saldo manualmente</h2>
-    <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;">Use para adicionar saldo a qualquer cliente, mesmo que ele ainda não apareça na lista abaixo.</p>
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;">Use para adicionar saldo a qualquer cliente pelo WhatsApp ou ID.</p>
     <div class="row">
       <div>
         <label>WhatsApp / ID do cliente (só números)</label>
@@ -200,18 +200,44 @@
     <button id="creditar-manual-btn">💰 Creditar saldo</button>
     <p class="msg" id="creditar-msg"></p>
   </div>
+
   <div class="card">
-    <h2>Clientes com saldo</h2>
-    <button class="secundario" id="clientes-btn">Atualizar lista</button>
+    <h2>Todos os clientes</h2>
+    <div class="row" style="margin-bottom:14px;align-items:flex-end;">
+      <div>
+        <label>Buscar por nome, usuário ou WhatsApp</label>
+        <input id="busca-cliente" placeholder="Ex: marcos, @marcos123, 21999...">
+      </div>
+      <div style="flex:0 0 200px;">
+        <label>Filtrar por saldo</label>
+        <select id="filtro-saldo">
+          <option value="">Todos</option>
+          <option value="com">Com saldo</option>
+          <option value="sem">Sem saldo</option>
+        </select>
+      </div>
+      <div style="flex:0 0 120px;">
+        <button class="secundario" id="clientes-btn" style="width:100%;margin-top:0;">🔄 Atualizar</button>
+      </div>
+    </div>
     <p class="msg" id="clientes-msg"></p>
-    <div style="overflow-x:auto;margin-top:14px;">
+    <div style="overflow-x:auto;">
       <table>
         <thead>
-          <tr><th>WhatsApp / ID</th><th>Nome</th><th>Saldo</th><th>Creditar valor (R$)</th><th></th></tr>
+          <tr>
+            <th>Nome</th>
+            <th>Usuário</th>
+            <th>WhatsApp</th>
+            <th>Saldo</th>
+            <th>Último crédito</th>
+            <th>Cadastro</th>
+            <th>Creditar</th>
+          </tr>
         </thead>
         <tbody id="tabela-clientes-body"></tbody>
       </table>
     </div>
+    <p class="msg" id="clientes-total-msg" style="margin-top:10px;"></p>
   </div>
   </div><!-- /tab-clientes -->
 
@@ -598,10 +624,83 @@
 
   $('clientes-btn').addEventListener('click', carregarClientes);
 
+  let todosClientes = [];
+
+  async function carregarClientes(){
+    $('clientes-msg').textContent = 'Carregando...';
+    const r = await fetch(`${API_BASE}/api/carteira?pin=${encodeURIComponent(PIN)}&todos=1`);
+    const data = await r.json();
+    todosClientes = data.clientes || [];
+    $('clientes-msg').textContent = '';
+    renderizarClientes();
+  }
+
+  function renderizarClientes(){
+    const busca = ($('busca-cliente').value || '').toLowerCase();
+    const filtroSaldo = $('filtro-saldo').value;
+
+    let lista = todosClientes.filter(c => {
+      if(busca){
+        const match = (c.nome||'').toLowerCase().includes(busca) ||
+          (c.usuario||'').toLowerCase().includes(busca) ||
+          (c.whatsapp||'').includes(busca);
+        if(!match) return false;
+      }
+      if(filtroSaldo === 'com' && Number(c.saldo||0) <= 0) return false;
+      if(filtroSaldo === 'sem' && Number(c.saldo||0) > 0) return false;
+      return true;
+    });
+
+    $('clientes-total-msg').textContent = `${lista.length} cliente(s) encontrado(s) de ${todosClientes.length} total.`;
+
+    const tbody = $('tabela-clientes-body');
+    tbody.innerHTML = '';
+    lista.forEach((c) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${c.nome || '-'}</td>
+        <td style="color:var(--accent);">${c.usuario ? '@'+c.usuario : '-'}</td>
+        <td>${c.whatsapp}</td>
+        <td style="color:${Number(c.saldo||0) > 0 ? 'var(--accent)' : 'var(--muted)'}; font-weight:700;">
+          R$ ${Number(c.saldo||0).toFixed(2)}
+        </td>
+        <td style="font-size:12px;color:var(--muted);">${c.ultimoCredito ? new Date(c.ultimoCredito).toLocaleDateString('pt-BR') : '-'}</td>
+        <td style="font-size:12px;color:var(--muted);">${c.criadoEm ? new Date(c.criadoEm).toLocaleDateString('pt-BR') : '-'}</td>
+        <td style="display:flex;gap:6px;align-items:center;">
+          <input type="number" min="0.01" step="0.01" placeholder="R$" style="width:80px;margin-bottom:0;padding:6px 8px;font-size:12px;" data-creditar="${c.whatsapp}">
+          <button class="secundario btn-creditar" data-id="${c.whatsapp}" style="font-size:12px;padding:6px 10px;">💰</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.btn-creditar').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const input = document.querySelector(`[data-creditar="${id}"]`);
+        const valor = Number(input.value);
+        if(!valor || valor <= 0){ btn.textContent = '!'; setTimeout(()=>btn.textContent='💰',1500); return; }
+        btn.disabled = true;
+        const r = await fetch(`${API_BASE}/api/carteira`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ pin: PIN, clienteId: id, valor, creditar: true })
+        });
+        const data = await r.json();
+        btn.textContent = r.ok ? '✓' : '✗';
+        btn.disabled = false;
+        input.value = '';
+        setTimeout(() => { btn.textContent = '💰'; carregarClientes(); }, 1500);
+      });
+    });
+  }
+
+  $('busca-cliente').addEventListener('input', renderizarClientes);
+  $('filtro-saldo').addEventListener('change', renderizarClientes);
+
   $('creditar-manual-btn').addEventListener('click', async () => {
     const clienteId = $('creditar-id').value.replace(/\D/g, '');
     const valor = Number($('creditar-valor').value);
-    if(!clienteId){ $('creditar-msg').textContent = 'Informe o ID/WhatsApp do cliente'; $('creditar-msg').className = 'msg erro'; return; }
+    if(!clienteId){ $('creditar-msg').textContent = 'Informe o WhatsApp do cliente'; $('creditar-msg').className = 'msg erro'; return; }
     if(!valor || valor <= 0){ $('creditar-msg').textContent = 'Informe um valor válido'; $('creditar-msg').className = 'msg erro'; return; }
     $('creditar-manual-btn').disabled = true;
     $('creditar-msg').textContent = 'Creditando...';
