@@ -292,6 +292,7 @@
       <select class="select" id="eng-opcao" disabled><option value="">Selecione o tipo de serviço</option></select>
 
       <label class="label">Link do perfil ou post</label>
+      <div id="eng-instrucao" class="hidden" style="background:#1a2a1a;border:1px solid rgba(124,255,178,.2);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12.5px;color:#a8e6c0;line-height:1.6;"></div>
       <input class="input" id="eng-link" type="url" placeholder="https://instagram.com/seuperfil" disabled>
 
       <label class="label">Quantidade</label>
@@ -666,6 +667,46 @@
     elQtd.disabled = !servicoSelecionado;
     if(servicoSelecionado) elQtd.placeholder = `Entre ${servicoSelecionado.min} e ${servicoSelecionado.max}`;
     elResultado.classList.add('hidden');
+
+    // instrução dinâmica baseada no tipo de serviço
+    const instrucaoEl = $('eng-instrucao');
+    if(servicoSelecionado){
+      const tipo = (servicoSelecionado.servicoTipo || '').toLowerCase();
+      const nome = (servicoSelecionado.nome || '').toLowerCase();
+      let instrucao = '';
+
+      if(tipo.includes('seguidor') || nome.includes('seguidor') || tipo.includes('subscriber') || nome.includes('subscriber')){
+        instrucao = `👤 <strong>Cole o link do seu perfil</strong> (ex: instagram.com/seuperfil)<br>
+        ⚠️ <strong>Seu perfil deve estar PÚBLICO.</strong> Perfis privados não aceitam o serviço e não há reembolso.<br>
+        ✅ Verifique nas configurações da rede social se seu perfil está aberto ao público antes de finalizar o pedido.`;
+        elLink.placeholder = 'https://instagram.com/seuperfil';
+      } else if(tipo.includes('curtida') || nome.includes('curtida') || nome.includes('like')){
+        instrucao = `❤️ <strong>Cole o link da postagem</strong> que deseja receber curtidas.<br>
+        ⚠️ A postagem deve estar <strong>pública e visível</strong> para que o serviço seja executado.<br>
+        ✅ Ex: instagram.com/p/ABC123xyz`;
+        elLink.placeholder = 'https://instagram.com/p/seu-post';
+      } else if(tipo.includes('visuali') || nome.includes('view') || nome.includes('visuali')){
+        instrucao = `▶️ <strong>Cole o link do vídeo ou reels</strong> que deseja receber visualizações.<br>
+        ⚠️ O conteúdo deve estar <strong>público</strong> para funcionar.<br>
+        ✅ Ex: instagram.com/reel/ABC123xyz`;
+        elLink.placeholder = 'https://instagram.com/reel/seu-video';
+      } else if(tipo.includes('comentário') || tipo.includes('comentario') || nome.includes('comment')){
+        instrucao = `💬 <strong>Cole o link da postagem</strong> onde deseja receber comentários.<br>
+        ⚠️ A postagem deve estar <strong>pública</strong>.<br>
+        ✅ Ex: instagram.com/p/ABC123xyz`;
+        elLink.placeholder = 'https://instagram.com/p/seu-post';
+      } else {
+        instrucao = `🔗 <strong>Cole o link correto</strong> para o serviço selecionado.<br>
+        ⚠️ O perfil ou postagem deve estar <strong>público</strong> para que o serviço seja executado.<br>
+        ✅ Verifique as configurações de privacidade antes de finalizar.`;
+        elLink.placeholder = 'https://...';
+      }
+
+      instrucaoEl.innerHTML = instrucao;
+      instrucaoEl.classList.remove('hidden');
+    } else {
+      instrucaoEl.classList.add('hidden');
+    }
 
     // mostra o campo de comentários só pra serviços do tipo Custom Comments
     const isCustom = servicoSelecionado && (
