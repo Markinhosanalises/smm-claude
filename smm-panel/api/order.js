@@ -1,11 +1,6 @@
 // api/order.js
-// Cliente cria um pedido. Nesse momento o pedido SÓ é salvo no Firebase
-// com status "aguardando_pagamento" — ainda não é enviado pro fornecedor.
-// O envio real pro fornecedor só acontece em /api/confirm-payment, depois
-// que o pagamento for confirmado (evita pagar o fornecedor por algo que
-// o cliente não pagou pra você).
-
-const { fbGet, fbPost } = require('../lib/firebase');
+const { fbGet, fbPost, fbPatch } = require('../lib/firebase');
+const { criarPedido } = require('../lib/fornecedor');
 
 function calcularPreco(servico, lucroGlobal, cotacao) {
   const lucroPct = servico.lucroPercentual ?? lucroGlobal ?? 30;
@@ -20,7 +15,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { idFornecedor, link, quantidade, clienteId, clienteContato } = req.body || {};
+    const { idFornecedor, link, quantidade, clienteId, clienteContato, pagarComSaldo } = req.body || {};
 
     if (!idFornecedor || !link || !quantidade) {
       return res.status(400).json({ erro: 'idFornecedor, link e quantidade são obrigatórios' });
@@ -43,6 +38,72 @@ module.exports = async (req, res) => {
     const precoPorMil = calcularPreco(servico, lucroGlobal, cotacao);
     const valorTotal = Math.round((precoPorMil * qtd / 1000) * 100) / 100;
 
+    // pagar com saldo da carteira
+    if (pagarComSaldo && clienteId) {
+      const carteira = (await fbGet(`carteiras/${clienteId}`)) || { saldo: 0 };
+      const saldoAtual = Number(carteira.saldo || 0);
+
+      if (saldoAtual < valorTotal) {
+        return res.status(400).json({
+          erro: `Saldo insuficiente. Seu saldo: R$ ${saldoAtual.toFixed(2)}. Necessário: R$ ${valorTotal.toFixed(2)}`,
+          saldoAtual,
+          valorTotal,
+        });
+      }
+
+      // 1. Cria o pedido primeiro com status executando
+      const pedido = {
+        idFornecedor,
+        nomeServico: servico.nomeCustomizado || servico.nomeOriginal,
+        link,
+        quantidade: qtd,
+        valorTotal,
+        status: 'processando_saldo',
+        clienteId: clienteId || null,
+        pagamento: 'saldo',
+        criadoEm: Date.now(),
+      };
+      const novo = await fbPost('pedidos', pedido);
+      const pedidoId = novo.name;
+
+      // 2. Debita o saldo no Firebase
+      const novoSaldo = Math.round((saldoAtual - valorTotal) * 100) / 100;
+      await fbPatch(`carteiras/${clienteId}`, { saldo: novoSaldo });
+
+      // 3. Envia pro fornecedor
+      let orderIdFornecedor = null;
+      let erroFornecedor = null;
+      try {
+        const resposta = await criarPedido({
+          service: idFornecedor,
+          link,
+          quantity: qtd,
+        });
+        orderIdFornecedor = resposta.pedido || resposta.order;
+        if (!orderIdFornecedor) erroFornecedor = resposta;
+      } catch (errFornecedor) {
+        erroFornecedor = { message: errFornecedor.message };
+      }
+
+      // 4. Atualiza o status do pedido
+      await fbPatch(`pedidos/${pedidoId}`, {
+        status: orderIdFornecedor ? 'executando' : 'erro_fornecedor',
+        orderIdFornecedor: orderIdFornecedor || null,
+        erroFornecedor: erroFornecedor || null,
+        pagoEm: Date.now(),
+      });
+
+      return res.status(200).json({
+        pedidoId,
+        ...pedido,
+        status: orderIdFornecedor ? 'executando' : 'erro_fornecedor',
+        orderIdFornecedor,
+        novoSaldo,
+        pagamento: 'saldo',
+      });
+    }
+
+    // pagamento via PIX (fluxo normal)
     const pedido = {
       idFornecedor,
       nomeServico: servico.nomeCustomizado || servico.nomeOriginal,
@@ -52,6 +113,7 @@ module.exports = async (req, res) => {
       status: 'aguardando_pagamento',
       clienteId: clienteId || null,
       clienteContato: clienteContato || null,
+      pagamento: 'pix',
       criadoEm: Date.now(),
     };
 
