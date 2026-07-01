@@ -1,117 +1,513 @@
-// api/order.js
-const { fbGet, fbPost, fbPatch } = require('../lib/firebase');
-const { criarPedido } = require('../lib/fornecedor');
+<!-- public/admin.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · Painel de Engajamento</title>
+<style>
+  :root{
+    --bg:#0b0d10; --card:#15181c; --line:#23272d;
+    --text:#eef1f4; --muted:#8b929b; --accent:#7CFFB2;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;padding:32px 16px;}
+  .wrap{max-width:1000px;margin:0 auto;}
+  h1{font-size:22px;margin:0 0 24px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:20px;}
+  .card h2{font-size:15px;margin:0 0 16px;color:var(--accent);}
+  label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;}
+  input, select{
+    width:100%;background:#0e1013;border:1px solid var(--line);color:var(--text);
+    padding:10px 12px;border-radius:8px;font-size:14px;margin-bottom:14px;outline:none;
+  }
+  input:focus, select:focus{border-color:var(--accent);}
+  .row{display:flex;gap:14px;}
+  .row > *{flex:1;}
+  button{
+    background:var(--accent);color:#08110c;border:none;padding:10px 18px;
+    border-radius:8px;font-weight:700;font-size:13.5px;cursor:pointer;
+  }
+  button.secundario{background:transparent;border:1px solid var(--line);color:var(--text);}
+  button:disabled{opacity:.5;cursor:not-allowed;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th, td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
+  th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;}
+  .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+  .tag.ativo{background:#1f3a2c;color:var(--accent);}
+  .tag.inativo{background:#3a1f1f;color:#ff8b8b;}
+  .msg{font-size:12.5px;color:var(--muted);margin-top:8px;}
+  .msg.erro{color:#ff8b8b;}
+  .msg.ok{color:var(--accent);}
+  #login-gate{max-width:320px;margin:80px auto;text-align:center;}
+  .admin-tab{background:transparent;border:1px solid var(--line);color:var(--muted);padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;}
+  .admin-tab.ativa{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);font-weight:700;}
+  .admin-section{display:none;}
+  .admin-section.visivel{display:block;}
+  .status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+  .status-badge.ok{background:#1f3a2c;color:var(--accent);}
+  .status-badge.nao{background:#3a1f1f;color:#ff8b8b;}
+</style>
+</head>
+<body>
 
-function calcularPreco(servico, lucroGlobal, cotacao) {
-  const lucroPct = servico.lucroPercentual ?? lucroGlobal ?? 30;
-  const custoPorMil = servico.taxaCusto * (cotacao || 1);
-  const precoPorMil = custoPorMil * (1 + lucroPct / 100);
-  return Math.round(precoPorMil * 100) / 100;
-}
+<div id="login-gate">
+  <h1>Acesso admin</h1>
+  <label>PIN</label>
+  <input type="password" id="login-pin" placeholder="••••••">
+  <button id="login-btn" style="width:100%">Entrar</button>
+  <p class="msg erro" id="login-msg"></p>
+</div>
 
-module.exports = async (req, res) => {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ erro: 'Método não permitido' });
+<div class="wrap" id="painel" style="display:none">
+  <h1>Painel de Engajamento — Admin</h1>
+
+  <!-- ABAS DO ADMIN -->
+  <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+    <button class="admin-tab ativa" data-tab="config">⚙️ Configurações</button>
+    <button class="admin-tab" data-tab="catalogo">📦 Catálogo</button>
+    <button class="admin-tab" data-tab="pedidos">🛒 Pedidos</button>
+    <button class="admin-tab" data-tab="tickets">💬 Suporte</button>
+    <button class="admin-tab" data-tab="integracoes">🔌 Integrações</button>
+  </div>
+
+  <div class="admin-section visivel" id="tab-config">
+  <div class="card">
+    <h2>Configuração do fornecedor</h2>
+    <div class="row">
+      <div>
+        <label>URL da API</label>
+        <input id="cfg-url" placeholder="https://measmm.com/api/v2">
+      </div>
+      <div>
+        <label>API Key</label>
+        <input id="cfg-key" type="password" placeholder="sua chave">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Lucro percentual global (%)</label>
+        <input id="cfg-lucro" type="number" placeholder="30">
+      </div>
+      <div>
+        <label>Saldo no fornecedor</label>
+        <input id="cfg-saldo" disabled placeholder="clique em atualizar">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Cotação USD → BRL (a taxa do fornecedor vem em dólar)</label>
+        <input id="cfg-cotacao" type="number" step="0.01" placeholder="Ex: 5.40">
+      </div>
+      <div>
+        <label>WhatsApp de suporte (com DDI, só números)</label>
+        <input id="cfg-whats" placeholder="Ex: 5521999999999">
+      </div>
+    </div>
+    <button id="cfg-salvar">Salvar configuração</button>
+    <button class="secundario" id="cfg-saldo-btn">Atualizar saldo</button>
+    <p class="msg" id="cfg-msg"></p>
+  </div>
+
+  </div><!-- /tab-config -->
+
+  <div class="admin-section" id="tab-catalogo">
+  <div class="card">
+    <h2>Catálogo de serviços</h2>
+    <button id="sync-btn">Sincronizar com o fornecedor</button>
+    <button class="secundario" id="ver-ativos-btn">Ver somente ativos</button>
+    <p class="msg" id="sync-msg"></p>
+    <div style="margin-top:14px;">
+      <label>Buscar por nome, categoria, rede ou ID (a lista completa é grande demais pra mostrar tudo de uma vez)</label>
+      <div class="row">
+        <input id="busca-servico" placeholder="Ex: instagram, seguidores, curtidas...">
+        <select id="ordenar-servico" style="flex:0 0 220px;">
+          <option value="">Ordenar: padrão</option>
+          <option value="preco_asc">Preço: mais barato primeiro</option>
+          <option value="preco_desc">Preço: mais caro primeiro</option>
+        </select>
+      </div>
+    </div>
+    <p class="msg" id="servicos-msg"></p>
+    <div style="overflow-x:auto;margin-top:14px;">
+      <table id="tabela-servicos">
+        <thead>
+          <tr>
+            <th>Ativo</th><th>Ícone</th><th>Nome</th><th>Categoria orig.</th><th>Rede social</th>
+            <th>Tipo</th><th>Custo /1000</th><th>Lucro % (vazio=global)</th><th>Preço final /1000</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="tabela-servicos-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  </div>
+  </div><!-- /tab-catalogo -->
+
+  <div class="admin-section" id="tab-pedidos">
+  <div class="card">
+    <h2>Pedidos</h2>
+    <button class="secundario" id="pedidos-btn">Atualizar lista</button>
+    <div style="overflow-x:auto;margin-top:14px;">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Serviço</th><th>Qtd</th><th>Valor</th><th>Status</th><th>Criado em</th><th></th></tr>
+        </thead>
+        <tbody id="tabela-pedidos-body"></tbody>
+      </table>
+    </div>
+  </div>
+  </div><!-- /tab-pedidos -->
+
+  <div class="admin-section" id="tab-tickets">
+  <div class="card">
+    <h2>Tickets de suporte</h2>
+    <button class="secundario" id="tickets-btn">Atualizar lista</button>
+    <div style="overflow-x:auto;margin-top:14px;">
+      <table>
+        <thead>
+          <tr><th>Nome</th><th>WhatsApp</th><th>Mensagem</th><th>Pedido</th><th>Status</th><th>Resposta</th><th></th></tr>
+        </thead>
+        <tbody id="tabela-tickets-body"></tbody>
+      </table>
+    </div>
+  </div>
+  </div><!-- /tab-tickets -->
+
+  <div class="admin-section" id="tab-integracoes">
+  <div class="card">
+    <h2>Mercado Pago</h2>
+    <p class="msg" id="mp-status-msg"></p>
+    <label>Access Token (começa com APP_USR- ou TEST-)</label>
+    <input id="mp-token" type="password" placeholder="APP_USR-...">
+    <label>URL do seu site (usada no webhook do MP)</label>
+    <input id="mp-appurl" placeholder="https://smm-claude.vercel.app">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      O webhook que você deve cadastrar no painel do Mercado Pago é:<br>
+      <strong id="mp-webhook-url" style="color:var(--accent);">https://smm-claude.vercel.app/api/pagamento?action=webhook</strong>
+    </p>
+    <button id="mp-salvar">Salvar configuração do MP</button>
+    <p class="msg" id="mp-msg"></p>
+  </div>
+  </div><!-- /tab-integracoes -->
+
+</div>
+
+<script>
+(function(){
+  const API_BASE = '';
+  let PIN = '';
+
+  const $ = (id) => document.getElementById(id);
+  let lucroGlobalAtual = 30;
+  let cotacaoAtual = 0; // 0 = sem conversão (assume que custo já está na moeda de venda)
+
+  $('login-btn').addEventListener('click', async () => {
+    PIN = $('login-pin').value;
+    if(!PIN){ $('login-msg').textContent = 'Digite o PIN'; return; }
+    // valida tentando carregar a config
+    const r = await fetch(`${API_BASE}/api/config?pin=${encodeURIComponent(PIN)}`);
+    if(r.ok){
+      $('login-gate').style.display = 'none';
+      $('painel').style.display = 'block';
+      carregarConfig();
+      carregarServicos();
+      carregarPedidos();
+      carregarTickets();
+      carregarIntegracoes();
+    } else {
+      $('login-msg').textContent = 'Erro ao validar PIN';
+    }
+  });
+
+  async function carregarConfig(){
+    const r = await fetch(`${API_BASE}/api/config?pin=${encodeURIComponent(PIN)}`);
+    const data = await r.json();
+    $('cfg-url').value = data.url || '';
+    $('cfg-lucro').value = data.lucroPercentualGlobal ?? 30;
+    $('cfg-cotacao').value = data.cotacaoUSDBRL || '';
+    $('cfg-whats').value = data.whatsappSuporte || '';
+    lucroGlobalAtual = Number(data.lucroPercentualGlobal ?? 30);
+    cotacaoAtual = Number(data.cotacaoUSDBRL || 0);
   }
 
-  try {
-    const { idFornecedor, link, quantidade, clienteId, clienteContato, pagarComSaldo } = req.body || {};
-
-    if (!idFornecedor || !link || !quantidade) {
-      return res.status(400).json({ erro: 'idFornecedor, link e quantidade são obrigatórios' });
-    }
-
-    const [catalogo, config] = await Promise.all([fbGet('catalogo'), fbGet('config')]);
-    const servico = catalogo?.[idFornecedor];
-
-    if (!servico || !servico.ativo) {
-      return res.status(404).json({ erro: 'Serviço indisponível' });
-    }
-
-    const qtd = Number(quantidade);
-    if (qtd < servico.min || qtd > servico.max) {
-      return res.status(400).json({ erro: `Quantidade deve estar entre ${servico.min} e ${servico.max}` });
-    }
-
-    const lucroGlobal = config?.lucroPercentualGlobal ?? 30;
-    const cotacao = config?.cotacaoUSDBRL || null;
-    const precoPorMil = calcularPreco(servico, lucroGlobal, cotacao);
-    const valorTotal = Math.round((precoPorMil * qtd / 1000) * 100) / 100;
-
-    // pagar com saldo da carteira
-    if (pagarComSaldo && clienteId) {
-      const carteira = (await fbGet(`carteiras/${clienteId}`)) || { saldo: 0 };
-      const saldoAtual = Number(carteira.saldo || 0);
-
-      if (saldoAtual < valorTotal) {
-        return res.status(400).json({
-          erro: `Saldo insuficiente. Seu saldo: R$ ${saldoAtual.toFixed(2)}. Necessário: R$ ${valorTotal.toFixed(2)}`,
-          saldoAtual,
-          valorTotal,
-        });
-      }
-
-      // debita o saldo
-      const novoSaldo = Math.round((saldoAtual - valorTotal) * 100) / 100;
-      await fbPatch(`carteiras/${clienteId}`, { saldo: novoSaldo });
-
-      // cria e já dispara o pedido pro fornecedor
-      const pedido = {
-        idFornecedor,
-        nomeServico: servico.nomeCustomizado || servico.nomeOriginal,
-        link,
-        quantidade: qtd,
-        valorTotal,
-        status: 'executando',
-        clienteId: clienteId || null,
-        clienteContato: clienteContato || null,
-        pagamento: 'saldo',
-        criadoEm: Date.now(),
-      };
-
-      const novo = await fbPost('pedidos', pedido);
-
-      const resposta = await criarPedido({
-        service: idFornecedor,
-        link,
-        quantity: qtd,
-      });
-
-      const orderIdFornecedor = resposta.pedido || resposta.order;
-      await fbPatch(`pedidos/${novo.name}`, {
-        orderIdFornecedor: orderIdFornecedor || null,
-        status: orderIdFornecedor ? 'executando' : 'erro_fornecedor',
-        erroFornecedor: orderIdFornecedor ? null : resposta,
-        pagoEm: Date.now(),
-      });
-
-      return res.status(200).json({
-        pedidoId: novo.name,
-        ...pedido,
-        orderIdFornecedor,
-        novoSaldo,
-        pagamento: 'saldo',
-      });
-    }
-
-    // pagamento via PIX (fluxo normal)
-    const pedido = {
-      idFornecedor,
-      nomeServico: servico.nomeCustomizado || servico.nomeOriginal,
-      link,
-      quantidade: qtd,
-      valorTotal,
-      status: 'aguardando_pagamento',
-      clienteId: clienteId || null,
-      clienteContato: clienteContato || null,
-      pagamento: 'pix',
-      criadoEm: Date.now(),
+  $('cfg-salvar').addEventListener('click', async () => {
+    const body = {
+      pin: PIN,
+      lucroPercentualGlobal: $('cfg-lucro').value,
+      cotacaoUSDBRL: $('cfg-cotacao').value,
+      whatsappSuporte: $('cfg-whats').value,
     };
+    if($('cfg-url').value && $('cfg-key').value){
+      body.url = $('cfg-url').value;
+      body.key = $('cfg-key').value;
+    }
+    const r = await fetch(`${API_BASE}/api/config`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    $('cfg-msg').textContent = r.ok ? 'Configuração salva.' : (data.erro || 'Erro');
+    $('cfg-msg').className = 'msg ' + (r.ok ? 'ok' : 'erro');
+    if(r.ok){
+      lucroGlobalAtual = Number($('cfg-lucro').value || 30);
+      cotacaoAtual = Number($('cfg-cotacao').value || 0);
+    }
+  });
 
-    const novo = await fbPost('pedidos', pedido);
+  $('cfg-saldo-btn').addEventListener('click', async () => {
+    const r = await fetch(`${API_BASE}/api/balance?pin=${encodeURIComponent(PIN)}`);
+    const data = await r.json();
+    $('cfg-saldo').value = r.ok ? `${data.saldo} ${data.moeda}` : (data.erro || 'erro');
+  });
 
-    return res.status(200).json({ pedidoId: novo.name, ...pedido });
-  } catch (err) {
-    return res.status(500).json({ erro: err.message });
+  $('sync-btn').addEventListener('click', async () => {
+    $('sync-msg').textContent = 'Sincronizando...';
+    const r = await fetch(`${API_BASE}/api/sync-services`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pin: PIN })
+    });
+    const data = await r.json();
+    if(r.ok){
+      $('sync-msg').textContent = `${data.totalServicos} serviços sincronizados.`;
+      $('sync-msg').className = 'msg ok';
+      carregarServicos();
+    } else {
+      $('sync-msg').textContent = data.erro || 'Erro ao sincronizar';
+      $('sync-msg').className = 'msg erro';
+    }
+  });
+
+  async function carregarServicos(termo, somenteAtivos){
+    const q = termo ? `&busca=${encodeURIComponent(termo)}` : '';
+    const qAtivos = somenteAtivos ? `&somenteAtivos=1` : '';
+    const ordem = $('ordenar-servico').value;
+    const qOrdem = ordem ? `&ordenar=${ordem}` : '';
+    let data;
+    try {
+      const r = await fetch(`${API_BASE}/api/admin-services?pin=${encodeURIComponent(PIN)}${q}${qAtivos}${qOrdem}`);
+      data = await r.json();
+      if(!r.ok){
+        $('servicos-msg').textContent = data.erro || `Erro ${r.status} ao buscar serviços. Tente novamente em alguns segundos.`;
+        $('servicos-msg').className = 'msg erro';
+        return;
+      }
+    } catch(e) {
+      $('servicos-msg').textContent = 'A busca demorou demais ou falhou. Tente um termo mais específico ou tente de novo.';
+      $('servicos-msg').className = 'msg erro';
+      return;
+    }
+
+    const tbody = $('tabela-servicos-body');
+    tbody.innerHTML = '';
+
+    if(!termo){
+      $('servicos-msg').textContent = `${data.total} serviços no catálogo. Digite algo na busca acima pra encontrar o que você quer ativar (mostrando os primeiros ${(data.servicos||[]).length}).`;
+      $('servicos-msg').className = 'msg';
+    } else {
+      $('servicos-msg').textContent = data.limitado
+        ? `${data.total} resultados — mostrando os primeiros 200. Refine a busca pra ver os demais.`
+        : `${data.total} resultado(s).`;
+      $('servicos-msg').className = 'msg';
+    }
+
+    (data.servicos || []).forEach((s) => {
+      const tr = document.createElement('tr');
+      const precoFinalInicial = calcularPrecoFinal(s.taxaCusto, s.lucroPercentual);
+      tr.innerHTML = `
+        <td><input type="checkbox" ${s.ativo ? 'checked' : ''} data-campo="ativo" data-id="${s.idFornecedor}"></td>
+        <td>
+          <select data-campo="icone" data-id="${s.idFornecedor}">
+            <option value="" ${!s.icone ? 'selected':''}>Sem ícone</option>
+            <option value="🇧🇷" ${s.icone==='🇧🇷'?'selected':''}>🇧🇷 Brasil</option>
+            <option value="🌍" ${s.icone==='🌍'?'selected':''}>🌍 Mundial</option>
+            <option value="⭐" ${s.icone==='⭐'?'selected':''}>⭐ Premium</option>
+            <option value="⚡" ${s.icone==='⚡'?'selected':''}>⚡ Entrega rápida</option>
+            <option value="🔒" ${s.icone==='🔒'?'selected':''}>🔒 Garantido/Refill</option>
+            <option value="👥" ${s.icone==='👥'?'selected':''}>👥 Seguidores</option>
+            <option value="❤️" ${s.icone==='❤️'?'selected':''}>❤️ Curtidas</option>
+            <option value="💬" ${s.icone==='💬'?'selected':''}>💬 Comentários</option>
+            <option value="▶️" ${s.icone==='▶️'?'selected':''}>▶️ Visualizações</option>
+          </select>
+        </td>
+        <td><input value="${s.nomeCustomizado || ''}" data-campo="nomeCustomizado" data-id="${s.idFornecedor}"></td>
+        <td>${s.categoriaOriginal || ''}</td>
+        <td><input value="${s.redeSocial || ''}" placeholder="instagram" data-campo="redeSocial" data-id="${s.idFornecedor}"></td>
+        <td><input value="${s.servicoTipo || ''}" placeholder="seguidores" data-campo="servicoTipo" data-id="${s.idFornecedor}"></td>
+        <td>${s.taxaCusto}</td>
+        <td><input class="small-input" type="number" value="${s.lucroPercentual ?? ''}" data-campo="lucroPercentual" data-id="${s.idFornecedor}" data-custo="${s.taxaCusto}"></td>
+        <td class="preco-final" data-id="${s.idFornecedor}">R$ ${precoFinalInicial}</td>
+        <td><button class="secundario btn-salvar-servico" data-id="${s.idFornecedor}">Salvar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('input[data-campo="lucroPercentual"]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const custo = Number(input.dataset.custo);
+        const id = input.dataset.id;
+        const celula = document.querySelector(`.preco-final[data-id="${id}"]`);
+        if(celula) celula.textContent = `R$ ${calcularPrecoFinal(custo, input.value)}`;
+      });
+    });
+
+    document.querySelectorAll('.btn-salvar-servico').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const linha = btn.closest('tr');
+        const campos = {};
+        linha.querySelectorAll('[data-campo]').forEach((el) => {
+          const campo = el.dataset.campo;
+          campos[campo] = el.type === 'checkbox' ? el.checked : el.value;
+        });
+        const r2 = await fetch(`${API_BASE}/api/admin-services`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ pin: PIN, idFornecedor: id, ...campos })
+        });
+        btn.textContent = r2.ok ? 'Salvo ✓' : 'Erro';
+        setTimeout(() => btn.textContent = 'Salvar', 1500);
+      });
+    });
   }
-};
+
+  async function carregarPedidos(){
+    const r = await fetch(`${API_BASE}/api/pedidos?pin=${encodeURIComponent(PIN)}`);
+    const data = await r.json();
+    const tbody = $('tabela-pedidos-body');
+    tbody.innerHTML = '';
+    (data.pedidos || []).forEach((p) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${p.id.slice(-6)}</td>
+        <td>${p.nomeServico}</td>
+        <td>${p.quantidade}</td>
+        <td>R$ ${Number(p.valorTotal).toFixed(2)}</td>
+        <td><span class="tag ${p.status === 'concluido' ? 'ativo' : 'inativo'}">${p.status}</span></td>
+        <td>${new Date(p.criadoEm).toLocaleString('pt-BR')}</td>
+        <td>${p.status === 'aguardando_pagamento' ? `<button class="secundario btn-confirmar-pgto" data-id="${p.id}">✅ Confirmar pgto</button>` : ''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.btn-confirmar-pgto').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        btn.textContent = 'Confirmando...';
+        const r = await fetch(`${API_BASE}/api/pagamento?pin=${encodeURIComponent(PIN)}&pedidoId=${btn.dataset.id}`);
+        const data = await r.json();
+        btn.textContent = r.ok ? 'Enviado ✓' : 'Erro';
+        if(r.ok) setTimeout(carregarPedidos, 1500);
+      });
+    });
+  }
+
+  $('pedidos-btn').addEventListener('click', carregarPedidos);
+
+  // ===== Abas do admin =====
+  document.querySelectorAll('.admin-tab').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('ativa'));
+      document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('visivel'));
+      btn.classList.add('ativa');
+      $('tab-' + btn.dataset.tab).classList.add('visivel');
+    });
+  });
+
+  // ===== Integrações MP =====
+  async function carregarIntegracoes(){
+    const r = await fetch(`${API_BASE}/api/config?pin=${encodeURIComponent(PIN)}`);
+    const data = await r.json();
+    $('mp-appurl').value = data.appUrl || '';
+    const mpOk = data.mpConfigurado;
+    $('mp-status-msg').textContent = mpOk ? '✅ Mercado Pago configurado' : '⚠️ Mercado Pago não configurado ainda';
+    $('mp-status-msg').className = 'msg ' + (mpOk ? 'ok' : 'erro');
+    if(data.appUrl) {
+      $('mp-webhook-url').textContent = `${data.appUrl}/api/pagamento?action=webhook`;
+    }
+  }
+
+  $('mp-salvar').addEventListener('click', async () => {
+    const body = {
+      pin: PIN,
+      mpAccessToken: $('mp-token').value,
+      appUrl: $('mp-appurl').value,
+    };
+    const r = await fetch(`${API_BASE}/api/config`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    $('mp-msg').textContent = r.ok ? 'Configuração do MP salva.' : (data.erro || 'Erro');
+    $('mp-msg').className = 'msg ' + (r.ok ? 'ok' : 'erro');
+    if(r.ok) carregarIntegracoes();
+  });
+
+  $('mp-appurl').addEventListener('input', () => {
+    const url = $('mp-appurl').value.replace(/\/$/, '');
+    if(url) $('mp-webhook-url').textContent = `${url}/api/pagamento?action=webhook`;
+  });
+
+  async function carregarTickets(){
+    const r = await fetch(`${API_BASE}/api/tickets?pin=${encodeURIComponent(PIN)}`);
+    const data = await r.json();
+    const tbody = $('tabela-tickets-body');
+    tbody.innerHTML = '';
+    (data.tickets || []).forEach((t) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${t.nome || ''}</td>
+        <td>${t.whatsapp || ''}</td>
+        <td style="max-width:220px;">${t.mensagem || ''}</td>
+        <td>${t.pedidoId ? t.pedidoId.slice(-6) : '-'}</td>
+        <td><span class="tag ${t.status === 'resolvido' ? 'ativo' : 'inativo'}">${t.status}</span></td>
+        <td><input value="${t.resposta || ''}" data-resposta="${t.id}" placeholder="Responder..."></td>
+        <td><button class="secundario btn-resolver-ticket" data-id="${t.id}">${t.status === 'resolvido' ? 'Reabrir' : 'Marcar resolvido'}</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.btn-resolver-ticket').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const respostaInput = document.querySelector(`[data-resposta="${id}"]`);
+        const ticketAtual = (data.tickets || []).find((t) => t.id === id);
+        const novoStatus = ticketAtual.status === 'resolvido' ? 'aberto' : 'resolvido';
+        await fetch(`${API_BASE}/api/tickets`, {
+          method: 'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ pin: PIN, ticketId: id, status: novoStatus, resposta: respostaInput.value })
+        });
+        carregarTickets();
+      });
+    });
+  }
+
+  $('tickets-btn').addEventListener('click', carregarTickets);
+
+  function calcularPrecoFinal(custo, lucroPercentual){
+    const lucro = (lucroPercentual === '' || lucroPercentual === null || lucroPercentual === undefined)
+      ? lucroGlobalAtual
+      : Number(lucroPercentual);
+    const custoConvertido = Number(custo) * (cotacaoAtual || 1);
+    const valor = custoConvertido * (1 + lucro / 100);
+    return valor.toFixed(4);
+  }
+
+  let buscaTimeout;
+  $('busca-servico').addEventListener('input', (e) => {
+    clearTimeout(buscaTimeout);
+    const valor = e.target.value;
+    if(valor.length > 0 && valor.length < 3) return; // espera pelo menos 3 letras
+    buscaTimeout = setTimeout(() => carregarServicos(valor), 500);
+  });
+
+  $('ver-ativos-btn').addEventListener('click', () => {
+    $('busca-servico').value = '';
+    carregarServicos('', true);
+  });
+
+  $('ordenar-servico').addEventListener('change', () => {
+    carregarServicos($('busca-servico').value);
+  });
+})();
+</script>
+
+</body>
+</html>
