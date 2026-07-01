@@ -63,6 +63,7 @@
     position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;
     background:#25D366;display:flex;align-items:center;justify-content:center;
     font-size:26px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.4);text-decoration:none;
+    z-index:1000;
   }
   #btn-instalar-app{
     position:fixed;bottom:84px;right:14px;display:none;
@@ -374,7 +375,7 @@
 </div><!-- /area-logada -->
 
 <button id="btn-instalar-app">📲 Instalar app</button>
-<a class="float-whats hidden" id="float-whats" target="_blank">💬</a>
+<a class="float-whats" id="float-whats" target="_blank" style="display:none;">💬</a>
 
 <script>
 (function(){
