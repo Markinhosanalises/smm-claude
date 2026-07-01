@@ -217,8 +217,11 @@
     <label>URL do seu site (usada no webhook do MP)</label>
     <input id="mp-appurl" placeholder="https://smm-claude.vercel.app">
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
-      O webhook que você deve cadastrar no painel do Mercado Pago é:<br>
-      <strong id="mp-webhook-url" style="color:var(--accent);">https://smm-claude.vercel.app/api/pagamento?action=webhook</strong>
+      Cadastre os dois webhooks abaixo no painel do Mercado Pago (Webhooks → Modo de produção):<br><br>
+      <strong style="color:var(--accent);">Webhook 1 — Pagamentos avulsos:</strong><br>
+      <span id="mp-webhook-url" style="color:var(--accent);word-break:break-all;">https://smm-claude.vercel.app/api/pagamento?action=webhook</span><br><br>
+      <strong style="color:var(--accent);">Webhook 2 — Recargas de saldo:</strong><br>
+      <span id="mp-webhook-carteira" style="color:var(--accent);word-break:break-all;">https://smm-claude.vercel.app/api/carteira?action=webhook</span>
     </p>
     <button id="mp-salvar">Salvar configuração do MP</button>
     <p class="msg" id="mp-msg"></p>
