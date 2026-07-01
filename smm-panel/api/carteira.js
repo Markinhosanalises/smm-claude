@@ -44,18 +44,37 @@ module.exports = async (req, res) => {
   if (req.method === 'GET') {
     const { clienteId, pin, todos } = req.query;
 
-    // admin: lista todos os clientes com saldo
+    // admin: lista todos os clientes cadastrados com dados de saldo
     if (pin === ADMIN_PIN && todos === '1') {
       const [carteiras, clientes] = await Promise.all([
         fbGet('carteiras').catch(() => ({})),
         fbGet('clientes').catch(() => ({})),
       ]);
-      const lista = Object.entries(carteiras || {}).map(([id, c]) => ({
-        clienteId: id,
-        nome: clientes?.[id]?.nome || id,
-        saldo: c.saldo || 0,
-        ultimoCredito: c.ultimoCredito || null,
-      }));
+
+      // Firebase pode retornar array quando chaves são numéricas — converte pra objeto
+      const clientesObj = Array.isArray(clientes)
+        ? Object.fromEntries(clientes.map((c, i) => [i, c]).filter(([, c]) => c))
+        : (clientes || {});
+
+      const carteirasObj = Array.isArray(carteiras)
+        ? Object.fromEntries(carteiras.map((c, i) => [i, c]).filter(([, c]) => c))
+        : (carteiras || {});
+
+      // parte de todos os clientes cadastrados
+      const lista = Object.entries(clientesObj).map(([whatsapp, c]) => {
+        if (!c) return null;
+        const carteira = carteirasObj[whatsapp] || {};
+        return {
+          clienteId: whatsapp,
+          nome: c.nome || '',
+          usuario: c.usuario || '',
+          whatsapp: c.whatsapp || whatsapp,
+          saldo: Number(carteira.saldo || 0),
+          ultimoCredito: carteira.ultimoCredito || null,
+          criadoEm: c.criadoEm || null,
+        };
+      }).filter(Boolean).sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+
       return res.status(200).json({ clientes: lista });
     }
 
