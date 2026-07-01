@@ -10,7 +10,19 @@ const ADMIN_PIN = process.env.ADMIN_PIN || '891322';
 
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
-    const { pin } = req.query;
+    const { pin, clienteId } = req.query;
+
+    // cliente: vê só os próprios tickets
+    if (!pin && clienteId) {
+      const tickets = (await fbGet('tickets')) || {};
+      const lista = Object.entries(tickets)
+        .filter(([, t]) => t && t.clienteId === clienteId)
+        .map(([id, t]) => ({ id, ...t }))
+        .sort((a, b) => b.criadoEm - a.criadoEm);
+      return res.status(200).json({ tickets: lista });
+    }
+
+    // admin: vê todos
     if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
 
     const tickets = (await fbGet('tickets')) || {};
