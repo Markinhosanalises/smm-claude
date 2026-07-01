@@ -275,21 +275,35 @@
   $('login-btn').addEventListener('click', async () => {
     PIN = $('login-pin').value;
     if(!PIN){ $('login-msg').textContent = 'Digite o PIN'; return; }
-    // valida tentando carregar a config
     const r = await fetch(`${API_BASE}/api/config?pin=${encodeURIComponent(PIN)}`);
     if(r.ok){
-      $('login-gate').style.display = 'none';
-      $('painel').style.display = 'block';
-      carregarConfig();
-      carregarServicos();
-      carregarPedidos();
-      carregarTickets();
-      carregarClientes();
-      carregarIntegracoes();
+      localStorage.setItem('admin_pin', PIN);
+      entrarNoAdmin();
     } else {
-      $('login-msg').textContent = 'Erro ao validar PIN';
+      $('login-msg').textContent = 'PIN incorreto';
     }
   });
+
+  function entrarNoAdmin(){
+    $('login-gate').style.display = 'none';
+    $('painel').style.display = 'block';
+    carregarConfig();
+    carregarServicos();
+    carregarPedidos();
+    carregarTickets();
+    carregarClientes();
+    carregarIntegracoes();
+  }
+
+  // login automático se PIN salvo
+  const pinSalvo = localStorage.getItem('admin_pin');
+  if(pinSalvo){
+    PIN = pinSalvo;
+    fetch(`${API_BASE}/api/config?pin=${encodeURIComponent(PIN)}`).then(r => {
+      if(r.ok){ entrarNoAdmin(); }
+      else { localStorage.removeItem('admin_pin'); }
+    }).catch(() => {});
+  }
 
   async function carregarConfig(){
     const r = await fetch(`${API_BASE}/api/config?pin=${encodeURIComponent(PIN)}`);
