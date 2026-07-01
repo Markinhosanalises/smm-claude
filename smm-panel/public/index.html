@@ -223,13 +223,17 @@
 <div class="container">
   <div class="top-bar" id="top-bar">
     <span id="saudacao">Visitante</span>
-    <button id="btn-login-logout">Sair</button>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span id="saldo-display" style="font-size:13px;color:var(--accent);font-weight:700;cursor:pointer;" title="Ver carteira">💰 R$ 0,00</span>
+      <button id="btn-login-logout">Sair</button>
+    </div>
   </div>
 
-  <!-- ABAS (só aparecem logado) -->
+  <!-- ABAS -->
   <div class="tabs hidden" id="tabs">
-    <div class="tab ativa" id="tab-engajar">Engajar perfil</div>
-    <div class="tab" id="tab-pedidos">Meus pedidos</div>
+    <div class="tab ativa" id="tab-engajar">🚀 Engajar</div>
+    <div class="tab" id="tab-pedidos">📦 Pedidos</div>
+    <div class="tab" id="tab-carteira">💰 Carteira</div>
   </div>
 
   <!-- WIDGET DE ENGAJAMENTO -->
@@ -259,7 +263,11 @@
           <span class="preco-label">Valor total</span>
           <span class="preco" id="eng-preco">R$ 0,00</span>
         </div>
-        <button class="btn" id="eng-pagar">Efetuar pagamento</button>
+        <!-- Opções de pagamento -->
+        <div id="opcoes-pagamento" style="display:flex;gap:8px;margin-bottom:14px;">
+          <button class="btn" id="eng-pagar-saldo" style="flex:1;background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);">💰 Pagar com saldo</button>
+          <button class="btn" id="eng-pagar-pix" style="flex:1;">📱 Gerar PIX</button>
+        </div>
       </div>
 
       <p class="msg" id="eng-msg"></p>
@@ -267,11 +275,31 @@
   </div>
 
   <!-- MEUS PEDIDOS -->
-  <div id="painel-pedidos" class="hidden card">
-    <p class="eyebrow">Histórico</p>
-    <h2 class="title">Meus pedidos</h2>
-    <div id="lista-pedidos"></div>
-    <p class="msg" id="pedidos-msg"></p>
+  <div id="painel-pedidos" class="hidden">
+    <div class="card">
+      <p class="eyebrow">Histórico</p>
+      <h2 class="title">Meus pedidos</h2>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 16px;">Atualiza automaticamente a cada 30 segundos</p>
+      <div id="lista-pedidos"></div>
+      <p class="msg" id="pedidos-msg"></p>
+    </div>
+  </div>
+
+  <!-- CARTEIRA -->
+  <div id="painel-carteira" class="hidden">
+    <div class="card">
+      <p class="eyebrow">Minha carteira</p>
+      <h2 class="title">Saldo disponível</h2>
+      <div style="text-align:center;padding:20px 0;">
+        <div style="font-size:42px;font-weight:800;color:var(--accent);" id="saldo-carteira">R$ 0,00</div>
+        <p style="font-size:12.5px;color:var(--muted);margin-top:8px;">Use seu saldo pra pagar pedidos instantaneamente</p>
+      </div>
+      <label class="label">Valor do depósito (mínimo R$ 5,00)</label>
+      <input class="input" id="deposito-valor" type="number" min="5" placeholder="Ex: 50.00">
+      <button class="btn" id="deposito-btn">Gerar PIX pra recarregar</button>
+      <div id="deposito-qr" style="display:none;margin-top:16px;text-align:center;"></div>
+      <p class="msg" id="deposito-msg"></p>
+    </div>
   </div>
 
   <!-- ABRIR TICKET -->
@@ -303,11 +331,14 @@
       $('auth-hero').classList.add('hidden');
       $('area-logada').classList.remove('hidden');
       $('saudacao').textContent = clienteNome ? `Olá, ${clienteNome}` : 'Logado';
+      $('tabs').classList.remove('hidden');
       $('painel-engajar').classList.remove('hidden');
+      carregarSaldo();
     } else {
       $('auth-hero').classList.remove('hidden');
       $('area-logada').classList.add('hidden');
       $('painel-pedidos').classList.add('hidden');
+      $('painel-carteira').classList.add('hidden');
     }
   }
 
@@ -355,22 +386,34 @@
 
   // ===== Abas =====
   $('tab-engajar').addEventListener('click', () => {
-    $('tab-engajar').classList.add('ativa');
-    $('tab-pedidos').classList.remove('ativa');
-    $('painel-engajar').classList.remove('hidden');
-    $('painel-pedidos').classList.add('hidden');
+    ativarAba('engajar');
   });
   $('tab-pedidos').addEventListener('click', () => {
-    $('tab-pedidos').classList.add('ativa');
-    $('tab-engajar').classList.remove('ativa');
-    $('painel-pedidos').classList.remove('hidden');
-    $('painel-engajar').classList.add('hidden');
+    ativarAba('pedidos');
     carregarMeusPedidos();
   });
+  $('tab-carteira').addEventListener('click', () => {
+    ativarAba('carteira');
+    carregarSaldo();
+  });
+  $('saldo-display').addEventListener('click', () => {
+    ativarAba('carteira');
+    carregarSaldo();
+  });
+
+  function ativarAba(aba){
+    ['engajar','pedidos','carteira'].forEach(a => {
+      $(`tab-${a}`)?.classList.remove('ativa');
+      $(`painel-${a}`)?.classList.add('hidden');
+    });
+    $(`tab-${aba}`)?.classList.add('ativa');
+    $(`painel-${aba}`)?.classList.remove('hidden');
+  }
+
+  let intervaloPedidos = null;
 
   async function carregarMeusPedidos(){
     if(!clienteId) return;
-    $('pedidos-msg').textContent = 'Carregando...';
     try{
       const r = await fetch(`${API_BASE}/api/pedidos?clienteId=${encodeURIComponent(clienteId)}`);
       const data = await r.json();
@@ -382,20 +425,53 @@
       }
       $('pedidos-msg').textContent = '';
       data.pedidos.forEach((p) => {
+        const progresso = p.startCount && p.quantidade
+          ? Math.min(100, Math.round(((p.quantidade - (p.restam || p.quantidade)) / p.quantidade) * 100))
+          : (p.status === 'concluido' ? 100 : p.status === 'executando' ? 50 : 0);
+
+        const corStatus = {
+          aguardando_pagamento: '#8b929b',
+          executando: '#ffc97c',
+          concluido: '#7CFFB2',
+          cancelado: '#ff8b8b',
+          erro_fornecedor: '#ff8b8b',
+        };
+        const cor = corStatus[p.status] || '#8b929b';
+
         const div = document.createElement('div');
         div.className = 'pedido-item';
         div.innerHTML = `
           <div class="pedido-top">
-            <span>${p.nomeServico}</span>
+            <span>${p.nomeServico || 'Serviço'}</span>
             <span class="status-pill ${p.status}">${formatarStatus(p.status)}</span>
           </div>
-          <div class="pedido-sub">Qtd: ${p.quantidade} · R$ ${Number(p.valorTotal).toFixed(2)} · ${new Date(p.criadoEm).toLocaleDateString('pt-BR')}</div>
+          <div class="pedido-sub">
+            Qtd: ${p.quantidade} · R$ ${Number(p.valorTotal).toFixed(2)} · ${new Date(p.criadoEm).toLocaleDateString('pt-BR')}
+            ${p.pagamento === 'saldo' ? ' · 💰 Pago com saldo' : ''}
+          </div>
+          ${p.status === 'executando' || p.status === 'concluido' ? `
+          <div style="margin-top:8px;">
+            <div style="height:4px;background:var(--line);border-radius:4px;overflow:hidden;">
+              <div style="height:100%;width:${progresso}%;background:${cor};border-radius:4px;transition:width .5s;"></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">${progresso}% concluído${p.restam ? ` · ${p.restam} restando` : ''}</div>
+          </div>` : ''}
         `;
         lista.appendChild(div);
       });
     }catch(e){
       $('pedidos-msg').textContent = 'Erro ao carregar pedidos.';
     }
+  }
+
+  // atualização automática a cada 30s quando estiver na aba de pedidos
+  function iniciarAtualizacaoPedidos(){
+    if(intervaloPedidos) clearInterval(intervaloPedidos);
+    intervaloPedidos = setInterval(() => {
+      if(!$('painel-pedidos').classList.contains('hidden')){
+        carregarMeusPedidos();
+      }
+    }, 30000);
   }
 
   function formatarStatus(s){
@@ -417,7 +493,6 @@
   const elQtd = $('eng-qtd');
   const elResultado = $('eng-resultado');
   const elPreco = $('eng-preco');
-  const elPagar = $('eng-pagar');
 
   let servicosDoTipo = [];
   let servicoSelecionado = null;
@@ -493,65 +568,103 @@
     servicoSelecionado = null;
   }
 
-  elPagar.addEventListener('click', async () => {
-    if(!servicoSelecionado) return;
-    if(!clienteId){ msgEng('Faça login pra continuar.', 'erro'); return; }
-    elPagar.disabled = true;
-    msgEng('Criando seu pedido...');
+  // ===== Saldo / Carteira =====
+  let saldoAtual = 0;
+
+  async function carregarSaldo(){
+    if(!clienteId) return;
+    try{
+      const r = await fetch(`${API_BASE}/api/carteira?clienteId=${encodeURIComponent(clienteId)}`);
+      const data = await r.json();
+      saldoAtual = Number(data.saldo || 0);
+      $('saldo-display').textContent = `💰 R$ ${saldoAtual.toFixed(2)}`;
+      if($('saldo-carteira')) $('saldo-carteira').textContent = `R$ ${saldoAtual.toFixed(2)}`;
+    }catch(e){}
+  }
+
+  $('deposito-btn').addEventListener('click', async () => {
+    const valor = Number($('deposito-valor').value);
+    if(!valor || valor < 5){ $('deposito-msg').textContent = 'Valor mínimo é R$ 5,00'; $('deposito-msg').className = 'msg erro'; return; }
+    $('deposito-btn').disabled = true;
+    $('deposito-msg').textContent = 'Gerando PIX...';
+    try{
+      const r = await fetch(`${API_BASE}/api/carteira`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ clienteId, valor }),
+      });
+      const data = await r.json();
+      if(!r.ok){ $('deposito-msg').textContent = data.erro || 'Erro'; $('deposito-msg').className = 'msg erro'; $('deposito-btn').disabled = false; return; }
+      const qrDiv = $('deposito-qr');
+      qrDiv.innerHTML = `
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">Escaneie ou copie o código PIX</p>
+        ${data.qrCodeBase64 ? `<img src="data:image/png;base64,${data.qrCodeBase64}" style="width:180px;height:180px;border-radius:12px;margin-bottom:12px;display:block;margin:0 auto 12px;">` : ''}
+        ${data.qrCode ? `<textarea style="width:100%;background:#0e1013;border:1px solid var(--line);color:var(--accent);padding:10px;border-radius:8px;font-size:11px;resize:none;height:60px;" readonly>${data.qrCode}</textarea>
+        <button class="btn" style="margin-top:8px;" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado ✓'" data-code="${data.qrCode}">📋 Copiar código PIX</button>` : ''}
+        <p style="font-size:12px;color:var(--muted);margin-top:12px;">Valor: <strong style="color:var(--accent)">R$ ${Number(data.valor).toFixed(2)}</strong></p>
+        <p style="font-size:11px;color:var(--muted);">Após o pagamento, seu saldo será atualizado automaticamente.</p>
+      `;
+      qrDiv.style.display = 'block';
+      $('deposito-msg').textContent = 'PIX gerado!';
+      $('deposito-msg').className = 'msg ok';
+    }catch(e){
+      $('deposito-msg').textContent = 'Erro de conexão.';
+      $('deposito-msg').className = 'msg erro';
+    }
+    $('deposito-btn').disabled = false;
+  });
+
+  $('eng-pagar-saldo').addEventListener('click', async () => {
+    if(!servicoSelecionado || !clienteId) return;
+    const qtd = Number($('eng-qtd').value);
+    const valorTotal = (servicoSelecionado.precoPorMil * qtd) / 1000;
+    if(saldoAtual < valorTotal){ msgEng(`Saldo insuficiente (R$ ${saldoAtual.toFixed(2)}). Recarregue na aba Carteira.`, 'erro'); return; }
+    $('eng-pagar-saldo').disabled = true;
+    msgEng('Processando com saldo...');
     try{
       const r = await fetch(`${API_BASE}/api/order`, {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
-          idFornecedor: servicoSelecionado.id,
-          link: elLink.value,
-          quantidade: Number(elQtd.value),
-          clienteId,
-        }),
+        body: JSON.stringify({ idFornecedor: servicoSelecionado.id, link: elLink.value, quantidade: qtd, clienteId, pagarComSaldo: true }),
       });
       const data = await r.json();
-      if(!r.ok){ msgEng(data.erro || 'Erro ao criar pedido', 'erro'); elPagar.disabled = false; return; }
+      if(!r.ok){ msgEng(data.erro || 'Erro', 'erro'); $('eng-pagar-saldo').disabled = false; return; }
+      saldoAtual = data.novoSaldo || 0;
+      $('saldo-display').textContent = `💰 R$ ${saldoAtual.toFixed(2)}`;
+      msgEng(`✅ Pedido enviado! Novo saldo: R$ ${saldoAtual.toFixed(2)}`, 'ok');
+    }catch(e){ msgEng('Erro de conexão.', 'erro'); }
+    $('eng-pagar-saldo').disabled = false;
+  });
 
-      // Gera o PIX
+  $('eng-pagar-pix').addEventListener('click', async () => {
+    if(!servicoSelecionado || !clienteId){ msgEng('Faça login pra continuar.', 'erro'); return; }
+    $('eng-pagar-pix').disabled = true;
+    msgEng('Criando pedido...');
+    try{
+      const r = await fetch(`${API_BASE}/api/order`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ idFornecedor: servicoSelecionado.id, link: elLink.value, quantidade: Number($('eng-qtd').value), clienteId, pagarComSaldo: false }),
+      });
+      const data = await r.json();
+      if(!r.ok){ msgEng(data.erro || 'Erro ao criar pedido', 'erro'); $('eng-pagar-pix').disabled = false; return; }
       msgEng('Gerando PIX...');
       const rPix = await fetch(`${API_BASE}/api/pagamento`, {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ pedidoId: data.pedidoId }),
       });
       const pix = await rPix.json();
-
-      if(!rPix.ok){
-        msgEng(pix.erro || 'Erro ao gerar PIX. Tente novamente.', 'erro');
-        elPagar.disabled = false;
-        return;
-      }
-
-      // Mostra QR Code
+      if(!rPix.ok){ msgEng(pix.erro || 'Erro ao gerar PIX.', 'erro'); $('eng-pagar-pix').disabled = false; return; }
       let qrHtml = `<div style="text-align:center;padding:20px 0;border-top:1px solid var(--line);margin-top:16px;">
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">📱 Escaneie o QR Code ou copie o código PIX</p>`;
-      if(pix.qrCodeBase64){
-        qrHtml += `<img src="data:image/png;base64,${pix.qrCodeBase64}" style="width:180px;height:180px;border-radius:12px;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;">`;
-      }
-      if(pix.qrCode){
-        qrHtml += `<textarea style="width:100%;background:#0e1013;border:1px solid var(--line);color:var(--accent);padding:10px;border-radius:8px;font-size:11px;resize:none;height:60px;" readonly>${pix.qrCode}</textarea>
+      if(pix.qrCodeBase64) qrHtml += `<img src="data:image/png;base64,${pix.qrCodeBase64}" style="width:180px;height:180px;border-radius:12px;margin-bottom:12px;display:block;margin:0 auto 12px;">`;
+      if(pix.qrCode) qrHtml += `<textarea style="width:100%;background:#0e1013;border:1px solid var(--line);color:var(--accent);padding:10px;border-radius:8px;font-size:11px;resize:none;height:60px;" readonly>${pix.qrCode}</textarea>
         <button class="btn" style="margin-top:8px;" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado ✓'" data-code="${pix.qrCode}">📋 Copiar código PIX</button>`;
-      }
       qrHtml += `<p style="font-size:12px;color:var(--muted);margin-top:12px;">Valor: <strong style="color:var(--accent)">R$ ${Number(data.valorTotal).toFixed(2)}</strong></p>
-        <p style="font-size:11px;color:var(--muted);">Após o pagamento, seu pedido é processado automaticamente.</p>
-      </div>`;
-
-      const engCard = elPagar.closest('.card');
+        <p style="font-size:11px;color:var(--muted);">Após o pagamento, seu pedido é processado automaticamente.</p></div>`;
       let qrContainer = document.getElementById('pix-qr-container');
-      if(!qrContainer){
-        qrContainer = document.createElement('div');
-        qrContainer.id = 'pix-qr-container';
-        engCard.appendChild(qrContainer);
-      }
+      if(!qrContainer){ qrContainer = document.createElement('div'); qrContainer.id = 'pix-qr-container'; $('eng-pagar-pix').closest('.card').appendChild(qrContainer); }
       qrContainer.innerHTML = qrHtml;
       msgEng('PIX gerado! Escaneie o QR Code abaixo.', 'ok');
-    }catch(e){
-      msgEng('Erro de conexão. Tente novamente.', 'erro');
-    }
-    elPagar.disabled = false;
+    }catch(e){ msgEng('Erro de conexão.', 'erro'); }
+    $('eng-pagar-pix').disabled = false;
   });
 
   // ===== Ticket de suporte =====
@@ -612,6 +725,7 @@
   carregarFiltrosIniciais();
   carregarSuporte();
   gerarIconesFlutuantes();
+  iniciarAtualizacaoPedidos();
 })();
 </script>
 
