@@ -885,8 +885,12 @@
       if(data.whatsappSuporte){
         whatsappSuporte = data.whatsappSuporte;
         const el = $('float-whats');
-        el.href = `https://wa.me/${whatsappSuporte}`;
-        el.classList.remove('hidden');
+        if(el){
+          el.href = `https://wa.me/${whatsappSuporte}`;
+          el.style.display = 'flex';
+          el.style.visibility = 'visible';
+          el.style.opacity = '1';
+        }
       }
     }catch(e){}
   }
