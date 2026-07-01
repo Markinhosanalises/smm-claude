@@ -17,6 +17,10 @@ async function getAccessToken() {
 // Gera cobrança PIX no Mercado Pago
 async function gerarPIX({ pedidoId, valor, descricao, clienteWhatsapp }) {
   const accessToken = await getAccessToken();
+  const config = await fbGet('config');
+  const appUrl = (config?.appUrl || '').replace(/\/$/, '');
+
+  if (!appUrl) throw new Error('URL do site não configurada. Vá em Integrações no admin e preencha a URL.');
 
   const body = {
     transaction_amount: Number(valor),
@@ -26,7 +30,7 @@ async function gerarPIX({ pedidoId, valor, descricao, clienteWhatsapp }) {
       email: `cliente_${clienteWhatsapp || pedidoId}@engaja.app`,
     },
     external_reference: pedidoId,
-    notification_url: `${process.env.APP_URL}/api/pagamento?action=webhook`,
+    notification_url: `${appUrl}/api/pagamento?action=webhook`,
   };
 
   const resp = await fetch('https://api.mercadopago.com/v1/payments', {
