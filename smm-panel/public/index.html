@@ -215,16 +215,28 @@
       <div class="rede-badge">📘 Facebook</div>
     </div>
 
-    <div class="auth-divider"><span>Acesse sua conta</span></div>
+    <!-- LOGIN -->
+    <div id="bloco-login">
+      <div class="auth-divider"><span>Acesse sua conta</span></div>
+      <input class="auth-input" id="auth-login-id" placeholder="👤 Usuário ou 📱 WhatsApp" autocomplete="username">
+      <input class="auth-input" id="auth-senha" placeholder="🔒 Senha" type="password">
+      <button class="auth-btn" id="btn-login">Entrar</button>
+      <div class="auth-toggle">
+        <button id="btn-toggle-cadastro">Não tenho conta — criar uma</button>
+      </div>
+    </div>
 
-    <input class="auth-input" id="auth-whats" placeholder="📱 WhatsApp (com DDD)" type="tel">
-    <input class="auth-input" id="auth-senha" placeholder="🔒 Senha" type="password">
-    <input class="auth-input hidden" id="auth-nome" placeholder="👤 Seu nome">
-
-    <button class="auth-btn" id="btn-login">Entrar</button>
-
-    <div class="auth-toggle">
-      <button id="btn-toggle-cadastro">Não tenho conta — criar uma</button>
+    <!-- CADASTRO -->
+    <div id="bloco-cadastro" class="hidden">
+      <div class="auth-divider"><span>Criar conta</span></div>
+      <input class="auth-input" id="auth-nome" placeholder="👤 Seu nome completo">
+      <input class="auth-input" id="auth-usuario" placeholder="🆔 Escolha um usuário (ex: marcos123)" autocomplete="username" style="text-transform:lowercase;">
+      <input class="auth-input" id="auth-whats" placeholder="📱 WhatsApp com DDD (ex: 21999999999)" type="tel">
+      <input class="auth-input" id="auth-senha-cad" placeholder="🔒 Crie uma senha" type="password">
+      <button class="auth-btn" id="btn-cadastrar">Criar conta</button>
+      <div class="auth-toggle">
+        <button id="btn-toggle-login">Já tenho conta — entrar</button>
+      </div>
     </div>
 
     <p class="auth-msg" id="auth-msg"></p>
@@ -357,7 +369,6 @@
 
   let clienteId = localStorage.getItem('eng_clienteId') || null;
   let clienteNome = localStorage.getItem('eng_clienteNome') || '';
-  let modoCadastro = false;
   let whatsappSuporte = '';
 
   function atualizarTopBar(){
@@ -386,25 +397,64 @@
   });
 
   $('btn-toggle-cadastro').addEventListener('click', () => {
-    modoCadastro = !modoCadastro;
-    $('auth-nome').classList.toggle('hidden', !modoCadastro);
-    $('btn-login').textContent = modoCadastro ? 'Criar conta' : 'Entrar';
-    $('btn-toggle-cadastro').textContent = modoCadastro ? 'Já tenho conta — entrar' : 'Não tenho conta — criar uma';
+    $('bloco-login').classList.add('hidden');
+    $('bloco-cadastro').classList.remove('hidden');
+    $('auth-msg').textContent = '';
+  });
+
+  $('btn-toggle-login').addEventListener('click', () => {
+    $('bloco-cadastro').classList.add('hidden');
+    $('bloco-login').classList.remove('hidden');
+    $('auth-msg').textContent = '';
   });
 
   $('btn-login').addEventListener('click', async () => {
-    const whatsapp = $('auth-whats').value;
+    const loginId = $('auth-login-id').value.trim();
     const senha = $('auth-senha').value;
-    const nome = $('auth-nome').value;
-    if(!whatsapp || !senha){ msgAuth('Preenche WhatsApp e senha', 'erro'); return; }
+    if(!loginId || !senha){ msgAuth('Preenche usuário/WhatsApp e senha', 'erro'); return; }
+
+    // detecta se é WhatsApp (só números) ou usuário (tem letras)
+    const isWhats = /^\d+$/.test(loginId.replace(/[\s\-\(\)]/g, ''));
+    const acao = 'login';
+    const payload = isWhats
+      ? { acao, whatsapp: loginId, senha }
+      : { acao, usuario: loginId.toLowerCase(), senha };
 
     try{
       const r = await fetch(`${API_BASE}/api/auth-cliente`, {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ acao: modoCadastro ? 'cadastro' : 'login', whatsapp, senha, nome })
+        body: JSON.stringify(payload)
       });
       const data = await r.json();
-      if(!r.ok){ msgAuth(data.erro || 'Erro', 'erro'); return; }
+      if(!r.ok){ msgAuth(data.erro || 'Usuário/WhatsApp ou senha incorretos', 'erro'); return; }
+      clienteId = data.clienteId;
+      clienteNome = data.nome || '';
+      localStorage.setItem('eng_clienteId', clienteId);
+      localStorage.setItem('eng_clienteNome', clienteNome);
+      atualizarTopBar();
+    }catch(e){
+      msgAuth('Erro de conexão', 'erro');
+    }
+  });
+
+  $('btn-cadastrar').addEventListener('click', async () => {
+    const nome = $('auth-nome').value.trim();
+    const usuario = $('auth-usuario').value.trim().toLowerCase().replace(/[^a-z0-9_\.]/g, '');
+    const whatsapp = $('auth-whats').value.trim();
+    const senha = $('auth-senha-cad').value;
+
+    if(!nome){ msgAuth('Informe seu nome', 'erro'); return; }
+    if(!usuario || usuario.length < 3){ msgAuth('Usuário deve ter pelo menos 3 caracteres (letras, números, _ ou .)', 'erro'); return; }
+    if(!whatsapp){ msgAuth('Informe seu WhatsApp', 'erro'); return; }
+    if(!senha || senha.length < 6){ msgAuth('Senha deve ter pelo menos 6 caracteres', 'erro'); return; }
+
+    try{
+      const r = await fetch(`${API_BASE}/api/auth-cliente`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ acao: 'cadastro', nome, usuario, whatsapp, senha })
+      });
+      const data = await r.json();
+      if(!r.ok){ msgAuth(data.erro || 'Erro ao criar conta', 'erro'); return; }
       clienteId = data.clienteId;
       clienteNome = data.nome || '';
       localStorage.setItem('eng_clienteId', clienteId);
