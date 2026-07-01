@@ -102,7 +102,7 @@ module.exports = async (req, res) => {
           email: `cliente_${clienteId}@engaja.app`,
         },
         external_reference: depositoId,
-        notification_url: appUrl ? `${appUrl}/api/carteira?action=webhook&clienteId=${clienteId}&valor=${valorNum}` : undefined,
+        notification_url: appUrl ? `${appUrl}/api/pagamento?action=webhook` : undefined,
       };
 
       if (!appUrl) delete body.notification_url;
