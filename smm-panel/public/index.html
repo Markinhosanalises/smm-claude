@@ -62,6 +62,7 @@
   .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px;color:var(--muted);padding-top:16px;}
   .top-bar button{background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;}
   .hidden{display:none !important;}
+
   /* ===== HERO DE LOGIN ===== */
   .auth-hero{
     position:relative;
@@ -177,17 +178,22 @@
 </style>
 </head>
 <body>
+
 <!-- HERO DE LOGIN -->
 <div class="auth-hero" id="auth-hero">
+
   <!-- ícones flutuando no fundo -->
   <div class="floating-icons" id="floating-icons"></div>
+
   <!-- card central -->
   <div class="auth-card" id="auth-card">
+
     <div class="auth-logo">
       <div class="logo-circle">🚀</div>
       <h1>Engaja aí</h1>
       <p>Impulsione seu perfil nas redes sociais</p>
     </div>
+
     <div class="redes-badges">
       <div class="rede-badge">📸 Instagram</div>
       <div class="rede-badge">🎵 TikTok</div>
@@ -195,17 +201,23 @@
       <div class="rede-badge">𝕏 Twitter</div>
       <div class="rede-badge">📘 Facebook</div>
     </div>
+
     <div class="auth-divider"><span>Acesse sua conta</span></div>
+
     <input class="auth-input" id="auth-whats" placeholder="📱 WhatsApp (com DDD)" type="tel">
     <input class="auth-input" id="auth-senha" placeholder="🔒 Senha" type="password">
     <input class="auth-input hidden" id="auth-nome" placeholder="👤 Seu nome">
+
     <button class="auth-btn" id="btn-login">Entrar</button>
+
     <div class="auth-toggle">
       <button id="btn-toggle-cadastro">Não tenho conta — criar uma</button>
     </div>
+
     <p class="auth-msg" id="auth-msg"></p>
   </div>
 </div>
+
 <!-- ÁREA LOGADO -->
 <div class="hidden" id="area-logada">
 <div class="container">
@@ -213,27 +225,35 @@
     <span id="saudacao">Visitante</span>
     <button id="btn-login-logout">Sair</button>
   </div>
+
   <!-- ABAS (só aparecem logado) -->
   <div class="tabs hidden" id="tabs">
     <div class="tab ativa" id="tab-engajar">Engajar perfil</div>
     <div class="tab" id="tab-pedidos">Meus pedidos</div>
   </div>
+
   <!-- WIDGET DE ENGAJAMENTO -->
   <div id="painel-engajar" class="hidden">
     <div class="card">
       <p class="eyebrow">Disponível agora</p>
       <h2 class="title">Chegou a hora de engajar o seu perfil</h2>
       <p class="sub">Escolha a rede, o serviço e cole o link — em poucos segundos você vê o valor.</p>
+
       <label class="label">Rede social</label>
       <select class="select" id="eng-rede"><option value="">Carregando...</option></select>
+
       <label class="label">Tipo de serviço</label>
       <select class="select" id="eng-tipo" disabled><option value="">Selecione a rede social primeiro</option></select>
+
       <label class="label">Opção</label>
       <select class="select" id="eng-opcao" disabled><option value="">Selecione o tipo de serviço</option></select>
+
       <label class="label">Link do perfil ou post</label>
       <input class="input" id="eng-link" type="url" placeholder="https://instagram.com/seuperfil" disabled>
+
       <label class="label">Quantidade</label>
       <input class="input" id="eng-qtd" type="number" placeholder="Ex: 500" disabled>
+
       <div id="eng-resultado" class="hidden">
         <div class="preco-row">
           <span class="preco-label">Valor total</span>
@@ -241,9 +261,11 @@
         </div>
         <button class="btn" id="eng-pagar">Efetuar pagamento</button>
       </div>
+
       <p class="msg" id="eng-msg"></p>
     </div>
   </div>
+
   <!-- MEUS PEDIDOS -->
   <div id="painel-pedidos" class="hidden card">
     <p class="eyebrow">Histórico</p>
@@ -251,6 +273,7 @@
     <div id="lista-pedidos"></div>
     <p class="msg" id="pedidos-msg"></p>
   </div>
+
   <!-- ABRIR TICKET -->
   <div class="card">
     <p class="eyebrow">Precisa de ajuda?</p>
@@ -259,17 +282,22 @@
     <button class="btn-sec" id="ticket-enviar">Enviar mensagem de suporte</button>
     <p class="msg" id="ticket-msg"></p>
   </div>
+
 </div><!-- /container -->
 </div><!-- /area-logada -->
+
 <a class="float-whats hidden" id="float-whats" target="_blank">💬</a>
+
 <script>
 (function(){
   const API_BASE = '';
   const $ = (id) => document.getElementById(id);
+
   let clienteId = localStorage.getItem('eng_clienteId') || null;
   let clienteNome = localStorage.getItem('eng_clienteNome') || '';
   let modoCadastro = false;
   let whatsappSuporte = '';
+
   function atualizarTopBar(){
     if(clienteId){
       $('auth-hero').classList.add('hidden');
@@ -282,23 +310,27 @@
       $('painel-pedidos').classList.add('hidden');
     }
   }
+
   $('btn-login-logout').addEventListener('click', () => {
     localStorage.removeItem('eng_clienteId');
     localStorage.removeItem('eng_clienteNome');
     clienteId = null; clienteNome = '';
     atualizarTopBar();
   });
+
   $('btn-toggle-cadastro').addEventListener('click', () => {
     modoCadastro = !modoCadastro;
     $('auth-nome').classList.toggle('hidden', !modoCadastro);
     $('btn-login').textContent = modoCadastro ? 'Criar conta' : 'Entrar';
     $('btn-toggle-cadastro').textContent = modoCadastro ? 'Já tenho conta — entrar' : 'Não tenho conta — criar uma';
   });
+
   $('btn-login').addEventListener('click', async () => {
     const whatsapp = $('auth-whats').value;
     const senha = $('auth-senha').value;
     const nome = $('auth-nome').value;
     if(!whatsapp || !senha){ msgAuth('Preenche WhatsApp e senha', 'erro'); return; }
+
     try{
       const r = await fetch(`${API_BASE}/api/auth-cliente`, {
         method:'POST', headers:{'Content-Type':'application/json'},
@@ -315,10 +347,12 @@
       msgAuth('Erro de conexão', 'erro');
     }
   });
+
   function msgAuth(texto, tipo){
     $('auth-msg').textContent = texto;
     $('auth-msg').className = 'msg' + (tipo ? ' ' + tipo : '');
   }
+
   // ===== Abas =====
   $('tab-engajar').addEventListener('click', () => {
     $('tab-engajar').classList.add('ativa');
@@ -333,6 +367,7 @@
     $('painel-engajar').classList.add('hidden');
     carregarMeusPedidos();
   });
+
   async function carregarMeusPedidos(){
     if(!clienteId) return;
     $('pedidos-msg').textContent = 'Carregando...';
@@ -362,6 +397,7 @@
       $('pedidos-msg').textContent = 'Erro ao carregar pedidos.';
     }
   }
+
   function formatarStatus(s){
     const mapa = {
       aguardando_pagamento: 'Aguardando pagamento',
@@ -372,6 +408,7 @@
     };
     return mapa[s] || s;
   }
+
   // ===== Widget de engajamento =====
   const elRede = $('eng-rede');
   const elTipo = $('eng-tipo');
@@ -381,13 +418,17 @@
   const elResultado = $('eng-resultado');
   const elPreco = $('eng-preco');
   const elPagar = $('eng-pagar');
+
   let servicosDoTipo = [];
   let servicoSelecionado = null;
+
   function msgEng(texto, tipo){
     $('eng-msg').textContent = texto || '';
     $('eng-msg').className = 'msg' + (tipo ? ' ' + tipo : '');
   }
+
   function capitalizar(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+
   async function carregarFiltrosIniciais(){
     try{
       const r = await fetch(`${API_BASE}/api/services`);
@@ -396,6 +437,7 @@
         (data.redesSociais || []).map(r => `<option value="${r}">${capitalizar(r)}</option>`).join('');
     }catch(e){ msgEng('Não foi possível carregar as redes sociais.', 'erro'); }
   }
+
   elRede.addEventListener('change', async () => {
     resetDe('tipo');
     if(!elRede.value) return;
@@ -406,6 +448,7 @@
       tipos.map(t => `<option value="${t}">${capitalizar(t)}</option>`).join('');
     elTipo.disabled = false;
   });
+
   elTipo.addEventListener('change', async () => {
     resetDe('opcao');
     if(!elTipo.value) return;
@@ -416,6 +459,7 @@
       servicosDoTipo.map(s => `<option value="${s.id}">${s.icone ? s.icone + ' ' : ''}${s.nome} (R$ ${s.precoPorMil.toFixed(2)}/1000)</option>`).join('');
     elOpcao.disabled = false;
   });
+
   elOpcao.addEventListener('change', () => {
     servicoSelecionado = servicosDoTipo.find(s => String(s.id) === elOpcao.value) || null;
     elLink.disabled = !servicoSelecionado;
@@ -423,8 +467,10 @@
     if(servicoSelecionado) elQtd.placeholder = `Entre ${servicoSelecionado.min} e ${servicoSelecionado.max}`;
     elResultado.classList.add('hidden');
   });
+
   elQtd.addEventListener('input', atualizarPreco);
   elLink.addEventListener('input', atualizarPreco);
+
   function atualizarPreco(){
     if(!servicoSelecionado || !elLink.value || !elQtd.value){ elResultado.classList.add('hidden'); return; }
     const qtd = Number(elQtd.value);
@@ -433,6 +479,7 @@
     elPreco.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
     elResultado.classList.remove('hidden');
   }
+
   function resetDe(nivel){
     if(nivel === 'tipo'){
       elTipo.innerHTML = '<option value="">Selecione a rede social primeiro</option>';
@@ -445,6 +492,7 @@
     elResultado.classList.add('hidden');
     servicoSelecionado = null;
   }
+
   elPagar.addEventListener('click', async () => {
     if(!servicoSelecionado) return;
     if(!clienteId){ msgEng('Faça login pra continuar.', 'erro'); return; }
@@ -462,12 +510,50 @@
       });
       const data = await r.json();
       if(!r.ok){ msgEng(data.erro || 'Erro ao criar pedido', 'erro'); elPagar.disabled = false; return; }
-      msgEng(`Pedido #${data.pedidoId.slice(-6)} criado. Valor: R$ ${data.valorTotal.toFixed(2)}. Prossiga para o pagamento.`, 'ok');
+
+      // Gera o PIX
+      msgEng('Gerando PIX...');
+      const rPix = await fetch(`${API_BASE}/api/pagamento`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ pedidoId: data.pedidoId }),
+      });
+      const pix = await rPix.json();
+
+      if(!rPix.ok){
+        msgEng(pix.erro || 'Erro ao gerar PIX. Tente novamente.', 'erro');
+        elPagar.disabled = false;
+        return;
+      }
+
+      // Mostra QR Code
+      let qrHtml = `<div style="text-align:center;padding:20px 0;border-top:1px solid var(--line);margin-top:16px;">
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">📱 Escaneie o QR Code ou copie o código PIX</p>`;
+      if(pix.qrCodeBase64){
+        qrHtml += `<img src="data:image/png;base64,${pix.qrCodeBase64}" style="width:180px;height:180px;border-radius:12px;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;">`;
+      }
+      if(pix.qrCode){
+        qrHtml += `<textarea style="width:100%;background:#0e1013;border:1px solid var(--line);color:var(--accent);padding:10px;border-radius:8px;font-size:11px;resize:none;height:60px;" readonly>${pix.qrCode}</textarea>
+        <button class="btn" style="margin-top:8px;" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado ✓'" data-code="${pix.qrCode}">📋 Copiar código PIX</button>`;
+      }
+      qrHtml += `<p style="font-size:12px;color:var(--muted);margin-top:12px;">Valor: <strong style="color:var(--accent)">R$ ${Number(data.valorTotal).toFixed(2)}</strong></p>
+        <p style="font-size:11px;color:var(--muted);">Após o pagamento, seu pedido é processado automaticamente.</p>
+      </div>`;
+
+      const engCard = elPagar.closest('.card');
+      let qrContainer = document.getElementById('pix-qr-container');
+      if(!qrContainer){
+        qrContainer = document.createElement('div');
+        qrContainer.id = 'pix-qr-container';
+        engCard.appendChild(qrContainer);
+      }
+      qrContainer.innerHTML = qrHtml;
+      msgEng('PIX gerado! Escaneie o QR Code abaixo.', 'ok');
     }catch(e){
       msgEng('Erro de conexão. Tente novamente.', 'erro');
     }
     elPagar.disabled = false;
   });
+
   // ===== Ticket de suporte =====
   $('ticket-enviar').addEventListener('click', async () => {
     const mensagem = $('ticket-mensagem').value;
@@ -490,6 +576,7 @@
       $('ticket-msg').className = 'msg erro';
     }
   });
+
   // ===== WhatsApp flutuante =====
   async function carregarSuporte(){
     try{
@@ -503,6 +590,7 @@
       }
     }catch(e){}
   }
+
   // ===== Ícones flutuantes no fundo do login =====
   function gerarIconesFlutuantes(){
     const container = $('floating-icons');
@@ -519,11 +607,13 @@
       container.appendChild(el);
     }
   }
+
   atualizarTopBar();
   carregarFiltrosIniciais();
   carregarSuporte();
   gerarIconesFlutuantes();
 })();
 </script>
+
 </body>
 </html>
