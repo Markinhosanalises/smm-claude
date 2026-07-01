@@ -99,7 +99,7 @@ function traduzirNome(nome) {
   return resultado;
 }
 
-
+function calcularPreco(servico, lucroGlobal, cotacao) {
   const lucroPct = servico.lucroPercentual ?? lucroGlobal ?? 30;
   const custoPorMil = servico.taxaCusto * (cotacao || 1);
   const precoPorMil = custoPorMil * (1 + lucroPct / 100);
