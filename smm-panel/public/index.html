@@ -617,7 +617,19 @@
     if(!servicoSelecionado || !clienteId) return;
     const qtd = Number($('eng-qtd').value);
     const valorTotal = (servicoSelecionado.precoPorMil * qtd) / 1000;
-    if(saldoAtual < valorTotal){ msgEng(`Saldo insuficiente (R$ ${saldoAtual.toFixed(2)}). Recarregue na aba Carteira.`, 'erro'); return; }
+
+    // busca saldo atualizado antes de processar
+    try{
+      const rSaldo = await fetch(`${API_BASE}/api/carteira?clienteId=${encodeURIComponent(clienteId)}`);
+      const dataSaldo = await rSaldo.json();
+      saldoAtual = Number(dataSaldo.saldo || 0);
+      $('saldo-display').textContent = `💰 R$ ${saldoAtual.toFixed(2)}`;
+    }catch(e){}
+
+    if(saldoAtual < valorTotal){
+      msgEng(`Saldo insuficiente (R$ ${saldoAtual.toFixed(2)}). Recarregue na aba Carteira.`, 'erro');
+      return;
+    }
     $('eng-pagar-saldo').disabled = true;
     msgEng('Processando com saldo...');
     try{
