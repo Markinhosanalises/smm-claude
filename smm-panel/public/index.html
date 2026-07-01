@@ -69,11 +69,12 @@
     background:linear-gradient(135deg,#0b0d10 0%,#0d1a12 50%,#0b0d10 100%);
   }
   .area-logada-bg::before{
-    content:'';position:absolute;inset:0;
+    content:'';position:absolute;inset:0;pointer-events:none;
     background:radial-gradient(ellipse at 20% 50%,rgba(124,255,178,.05) 0%,transparent 60%),
                radial-gradient(ellipse at 80% 20%,rgba(124,255,178,.04) 0%,transparent 50%);
   }
-  #area-logada{position:relative;z-index:1;}
+  #area-logada{position:relative;z-index:2;}
+  #area-logada .container{position:relative;z-index:2;}
 
   /* ===== HERO DE LOGIN ===== */
   .auth-hero{
