@@ -660,7 +660,7 @@
       tr.innerHTML = `
         <td>${c.nome || '-'}</td>
         <td style="color:var(--accent);">${c.usuario ? '@'+c.usuario : '-'}</td>
-        <td>${c.whatsapp}</td>
+        <td>${c.whatsapp && c.whatsapp !== 'undefined' ? c.whatsapp : c.clienteId}</td>
         <td style="color:${Number(c.saldo||0) > 0 ? 'var(--accent)' : 'var(--muted)'}; font-weight:700;">
           R$ ${Number(c.saldo||0).toFixed(2)}
         </td>
