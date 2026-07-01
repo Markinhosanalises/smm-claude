@@ -1,209 +1,158 @@
-// api/carteira.js
-// Gerencia o saldo (carteira) do cliente.
+// api/services.js
+// Endpoint público (cliente). Retorna apenas os serviços ATIVOS,
+// já com o preço final (custo + markup, convertido pra BRL se configurado).
 //
-//   GET  ?clienteId=X          -> saldo atual do cliente
-//   GET  ?pin=ADMIN&todos=1    -> lista saldo de todos os clientes (admin)
-//   POST { clienteId, valor }  -> gera PIX pra depositar saldo
-//   POST { pin, clienteId, valor, creditar:true } -> admin credita saldo manualmente
+// Query params opcionais:
+//   ?redeSocial=instagram
+//   ?servicoTipo=seguidores
+// Sem params: devolve a lista de redes sociais e tipos disponíveis
+// (pra montar os dois primeiros filtros sem precisar trazer tudo).
 
-const { fbGet, fbPatch } = require('../lib/firebase');
+const { fbGet } = require('../lib/firebase');
 
-const ADMIN_PIN = process.env.ADMIN_PIN || '891322';
+function traduzirNome(nome) {
+  if (!nome) return nome;
+  const termos = {
+    'Followers': 'Seguidores',
+    'followers': 'seguidores',
+    'Likes': 'Curtidas',
+    'likes': 'curtidas',
+    'Views': 'Visualizações',
+    'views': 'visualizações',
+    'Comments': 'Comentários',
+    'comments': 'comentários',
+    'Shares': 'Compartilhamentos',
+    'shares': 'compartilhamentos',
+    'Subscribers': 'Inscritos',
+    'subscribers': 'inscritos',
+    'Real': 'Reais',
+    'real': 'reais',
+    'Brazilian': 'Brasileiros',
+    'brazilian': 'brasileiros',
+    'Fast': 'Rápido',
+    'fast': 'rápido',
+    'Instant': 'Instantâneo',
+    'instant': 'instantâneo',
+    'High Quality': 'Alta Qualidade',
+    'high quality': 'alta qualidade',
+    'No Refill': 'Sem Reposição',
+    'no refill': 'sem reposição',
+    'With Refill': 'Com Reposição',
+    'with refill': 'com reposição',
+    'Refill': 'Reposição',
+    'refill': 'reposição',
+    'Story': 'Story',
+    'Impressions': 'Impressões',
+    'impressions': 'impressões',
+    'Reach': 'Alcance',
+    'reach': 'alcance',
+    'Profile Visit': 'Visitas ao Perfil',
+    'profile visit': 'visitas ao perfil',
+    'Save': 'Salvamentos',
+    'save': 'salvamentos',
+    'Mixed': 'Misturados',
+    'mixed': 'misturados',
+    'Worldwide': 'Mundial',
+    'worldwide': 'mundial',
+    'Global': 'Global',
+    'Organic': 'Orgânico',
+    'organic': 'orgânico',
+    'Bot': 'Bot',
+    'Max': 'Máx',
+    'Min': 'Mín',
+    'Custom': 'Personalizado',
+    'custom': 'personalizado',
+    'Targeted': 'Segmentado',
+    'targeted': 'segmentado',
+    'Arabic': 'Árabe',
+    'Indian': 'Indiano',
+    'USA': 'EUA',
+    'UK': 'Reino Unido',
+    'Stable': 'Estável',
+    'stable': 'estável',
+    'Cheap': 'Econômico',
+    'cheap': 'econômico',
+    'Premium': 'Premium',
+    'HQ': 'Alta Qualidade',
+    'Old Accounts': 'Contas Antigas',
+    'old accounts': 'contas antigas',
+    'Drop': 'Queda',
+    'drop': 'queda',
+    'Non Drop': 'Sem Queda',
+    'non drop': 'sem queda',
+    'Non-Drop': 'Sem Queda',
+    'Reels': 'Reels',
+    'Live': 'Ao Vivo',
+    'live': 'ao vivo',
+    'Poll': 'Enquete',
+    'poll': 'enquete',
+    'Mention': 'Menção',
+    'mention': 'menção',
+    'Auto': 'Auto',
+    'auto': 'auto',
+  };
 
-async function getAccessToken() {
-  const config = await fbGet('config');
-  const token = config?.mercadopago?.accessToken;
-  if (!token) throw new Error('Access Token do Mercado Pago não configurado.');
-  return token;
+  let resultado = nome;
+  for (const [en, pt] of Object.entries(termos)) {
+    resultado = resultado.replace(new RegExp(`\\b${en}\\b`, 'g'), pt);
+  }
+  return resultado;
 }
 
-// Debita saldo do cliente — usado internamente pelo order.js
-async function debitarSaldo(clienteId, valor) {
-  const carteira = (await fbGet(`carteiras/${clienteId}`)) || { saldo: 0 };
-  const saldoAtual = Number(carteira.saldo || 0);
-  if (saldoAtual < valor) throw new Error('Saldo insuficiente');
-  const novoSaldo = Math.round((saldoAtual - valor) * 100) / 100;
-  await fbPatch(`carteiras/${clienteId}`, { saldo: novoSaldo });
-  return novoSaldo;
-}
-
-// Credita saldo do cliente — usado pelo webhook e pelo admin
-async function creditarSaldo(clienteId, valor) {
-  const carteira = (await fbGet(`carteiras/${clienteId}`)) || { saldo: 0 };
-  const saldoAtual = Number(carteira.saldo || 0);
-  const novoSaldo = Math.round((saldoAtual + valor) * 100) / 100;
-  await fbPatch(`carteiras/${clienteId}`, {
-    saldo: novoSaldo,
-    ultimoCredito: Date.now(),
-  });
-  return novoSaldo;
+function calcularPreco(servico, lucroGlobal, cotacao) {
+  const lucroPct = servico.lucroPercentual ?? lucroGlobal ?? 30;
+  const custoPorMil = servico.taxaCusto * (cotacao || 1);
+  const precoPorMil = custoPorMil * (1 + lucroPct / 100);
+  return Math.round(precoPorMil * 100) / 100;
 }
 
 module.exports = async (req, res) => {
-  // ===== GET saldo =====
-  if (req.method === 'GET') {
-    const { clienteId, pin, todos } = req.query;
-
-    // admin: lista todos os clientes cadastrados com dados de saldo
-    if (pin === ADMIN_PIN && todos === '1') {
-      const [carteiras, clientes] = await Promise.all([
-        fbGet('carteiras').catch(() => ({})),
-        fbGet('clientes').catch(() => ({})),
-      ]);
-
-      // parte de todos os clientes cadastrados
-      const lista = Object.entries(clientes || {}).map(([whatsapp, c]) => {
-        const carteira = (carteiras || {})[whatsapp] || {};
-        return {
-          clienteId: whatsapp,
-          nome: c.nome || '',
-          usuario: c.usuario || '',
-          whatsapp,
-          saldo: Number(carteira.saldo || 0),
-          ultimoCredito: carteira.ultimoCredito || null,
-          criadoEm: c.criadoEm || null,
-        };
-      }).sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
-
-      return res.status(200).json({ clientes: lista });
-    }
-
-    // cliente: próprio saldo
-    if (clienteId) {
-      const carteira = (await fbGet(`carteiras/${clienteId}`)) || { saldo: 0 };
-      return res.status(200).json({ saldo: Number(carteira.saldo || 0) });
-    }
-
-    return res.status(400).json({ erro: 'clienteId ou pin+todos são obrigatórios' });
+  if (req.method !== 'GET') {
+    return res.status(405).json({ erro: 'Método não permitido' });
   }
 
-  if (req.method === 'POST') {
-    const { pin, clienteId, valor, creditar } = req.body || {};
+  try {
+    const [catalogo, config] = await Promise.all([
+      fbGet('catalogo'),
+      fbGet('config'),
+    ]);
 
-    // admin: creditar saldo manualmente
-    if (pin === ADMIN_PIN && creditar && clienteId) {
-      const novoSaldo = await creditarSaldo(clienteId, Number(valor));
-      return res.status(200).json({ ok: true, novoSaldo });
+    const lucroGlobal = config?.lucroPercentualGlobal ?? 30;
+    const cotacao = config?.cotacaoUSDBRL || null; // se null, não converte (assume taxa já na moeda final)
+
+    const ativos = Object.values(catalogo || {}).filter((s) => s && s.ativo);
+
+    const { redeSocial, servicoTipo } = req.query;
+
+    // Sem filtros: devolve só as opções pros dois primeiros seletores
+    if (!redeSocial && !servicoTipo) {
+      const redes = [...new Set(ativos.map((s) => s.redeSocial).filter(Boolean))];
+      const tipos = [...new Set(ativos.map((s) => s.servicoTipo).filter(Boolean))];
+      return res.status(200).json({ redesSociais: redes, tiposServico: tipos });
     }
 
-    // cliente: gerar PIX pra depositar saldo
-    if (!clienteId || !valor) {
-      return res.status(400).json({ erro: 'clienteId e valor são obrigatórios' });
-    }
+    let filtrados = ativos;
+    if (redeSocial) filtrados = filtrados.filter((s) => s.redeSocial === redeSocial);
+    if (servicoTipo) filtrados = filtrados.filter((s) => s.servicoTipo === servicoTipo);
 
-    const valorNum = Number(valor);
-    const config = await fbGet('config');
-    const minRecarga = Number(config?.minRecarga || 5);
-
-    if (valorNum < minRecarga) {
-      return res.status(400).json({ erro: `Valor mínimo de depósito é R$ ${minRecarga.toFixed(2)}` });
-    }
-
-    try {
-      const accessToken = await getAccessToken();
-      const config = await fbGet('config');
-      const appUrl = (config?.appUrl || '').replace(/\/$/, '');
-
-      const depositoId = `dep_${clienteId}_${Date.now()}`;
-
-      const body = {
-        transaction_amount: valorNum,
-        description: `Recarga de saldo - ${clienteId}`,
-        payment_method_id: 'pix',
-        payer: {
-          email: `cliente_${clienteId}@engaja.app`,
-        },
-        external_reference: depositoId,
-        notification_url: appUrl ? `${appUrl}/api/pagamento?action=webhook` : undefined,
+    const resultado = filtrados.map((s) => {
+      const nomeBase = s.nomeCustomizado || s.nomeOriginal || '';
+      const nomeExibido = s.nomeCustomizado ? nomeBase : traduzirNome(nomeBase);
+      return {
+        id: s.idFornecedor,
+        nome: nomeExibido,
+        servicoTipo: s.servicoTipo,
+        tipo: s.tipo || '',
+        icone: s.icone || '',
+        min: s.min,
+        max: s.max,
+        refill: s.refill,
+        precoPorMil: calcularPreco(s, lucroGlobal, cotacao),
       };
+    });
 
-      if (!appUrl) delete body.notification_url;
-
-      const resp = await fetch('https://api.mercadopago.com/v1/payments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Idempotency-Key': depositoId,
-        },
-        body: JSON.stringify(body),
-      });
-
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(`MP erro ${resp.status}: ${data.message || JSON.stringify(data)}`);
-
-      const pixData = data.point_of_interaction?.transaction_data;
-
-      // salva o depósito pendente no Firebase pra confirmar depois
-      await fbPatch(`depositos/${depositoId}`, {
-        clienteId,
-        valor: valorNum,
-        paymentId: data.id,
-        status: 'pendente',
-        criadoEm: Date.now(),
-      });
-
-      return res.status(200).json({
-        depositoId,
-        paymentId: data.id,
-        qrCode: pixData?.qr_code,
-        qrCodeBase64: pixData?.qr_code_base64,
-        valor: valorNum,
-      });
-    } catch (err) {
-      return res.status(500).json({ erro: err.message });
-    }
+    return res.status(200).json({ servicos: resultado });
+  } catch (err) {
+    return res.status(500).json({ erro: err.message });
   }
-
-  // webhook do MP confirmando depósito — recebe POST igual ao webhook de pagamento
-  if (req.method === 'POST' && req.query.action === 'webhook') {
-    try {
-      const { action, data } = req.body || {};
-      if (action !== 'payment.updated' || !data?.id) {
-        return res.status(200).json({ ok: true });
-      }
-
-      const accessToken = await getAccessToken();
-      const paymentResp = await fetch(`https://api.mercadopago.com/v1/payments/${data.id}`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` },
-      });
-      const payment = await paymentResp.json();
-
-      if (payment.status !== 'approved') {
-        return res.status(200).json({ ok: true, status: payment.status });
-      }
-
-      // external_reference tem o formato "dep_CLIENTEID_TIMESTAMP"
-      const extRef = payment.external_reference || '';
-      if (!extRef.startsWith('dep_')) {
-        return res.status(200).json({ ok: true }); // não é depósito de saldo
-      }
-
-      // busca o depósito pendente no Firebase
-      const deposito = await fbGet(`depositos/${extRef}`).catch(() => null);
-      if (!deposito || deposito.status === 'confirmado') {
-        return res.status(200).json({ ok: true }); // já processado
-      }
-
-      // credita o saldo
-      const novoSaldo = await creditarSaldo(deposito.clienteId, deposito.valor);
-
-      // marca o depósito como confirmado
-      await fbPatch(`depositos/${extRef}`, {
-        status: 'confirmado',
-        confirmedEm: Date.now(),
-        paymentId: payment.id,
-      });
-
-      return res.status(200).json({ ok: true, novoSaldo });
-    } catch (err) {
-      console.error('Webhook carteira erro:', err.message);
-      return res.status(500).json({ erro: err.message });
-    }
-  }
-
-  return res.status(405).json({ erro: 'Método não permitido' });
 };
-
-module.exports.debitarSaldo = debitarSaldo;
-module.exports.creditarSaldo = creditarSaldo;
