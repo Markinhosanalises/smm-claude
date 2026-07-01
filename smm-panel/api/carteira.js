@@ -143,14 +143,49 @@ module.exports = async (req, res) => {
     }
   }
 
-  // webhook do MP confirmando depósito
-  if (req.method === 'GET' && req.query.action === 'webhook') {
-    const { clienteId, valor, id } = req.query;
+  // webhook do MP confirmando depósito — recebe POST igual ao webhook de pagamento
+  if (req.method === 'POST' && req.query.action === 'webhook') {
     try {
-      if (!clienteId || !valor) return res.status(200).json({ ok: true });
-      const novoSaldo = await creditarSaldo(clienteId, Number(valor));
+      const { action, data } = req.body || {};
+      if (action !== 'payment.updated' || !data?.id) {
+        return res.status(200).json({ ok: true });
+      }
+
+      const accessToken = await getAccessToken();
+      const paymentResp = await fetch(`https://api.mercadopago.com/v1/payments/${data.id}`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      });
+      const payment = await paymentResp.json();
+
+      if (payment.status !== 'approved') {
+        return res.status(200).json({ ok: true, status: payment.status });
+      }
+
+      // external_reference tem o formato "dep_CLIENTEID_TIMESTAMP"
+      const extRef = payment.external_reference || '';
+      if (!extRef.startsWith('dep_')) {
+        return res.status(200).json({ ok: true }); // não é depósito de saldo
+      }
+
+      // busca o depósito pendente no Firebase
+      const deposito = await fbGet(`depositos/${extRef}`).catch(() => null);
+      if (!deposito || deposito.status === 'confirmado') {
+        return res.status(200).json({ ok: true }); // já processado
+      }
+
+      // credita o saldo
+      const novoSaldo = await creditarSaldo(deposito.clienteId, deposito.valor);
+
+      // marca o depósito como confirmado
+      await fbPatch(`depositos/${extRef}`, {
+        status: 'confirmado',
+        confirmedEm: Date.now(),
+        paymentId: payment.id,
+      });
+
       return res.status(200).json({ ok: true, novoSaldo });
     } catch (err) {
+      console.error('Webhook carteira erro:', err.message);
       return res.status(500).json({ erro: err.message });
     }
   }
