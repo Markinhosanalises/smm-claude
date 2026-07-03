@@ -1,1021 +1,321 @@
-<!-- public/index.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#7CFFB2">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Engaja aí">
-<link rel="manifest" href="/manifest.json">
-<title>Engaja aí</title>
+<meta name="description" content="Fênix Social — Plataforma de marketing digital para acelerar o crescimento das suas redes sociais. Mais alcance, mais visibilidade, mais resultados.">
+<title>Fênix Social — Marketing Digital para Redes Sociais</title>
 <style>
-  :root{
-    --bg:#0b0d10; --card:#15181c; --line:#23272d;
-    --text:#eef1f4; --muted:#8b929b; --accent:#7CFFB2; --accent-dim:#1f3a2c;
+  :root {
+    --black:#080a09;--dark:#0d110e;--card:#121a14;--line:#1e2b20;
+    --green:#7CFFB2;--green-dim:#1a3d24;--green-glow:rgba(124,255,178,.15);
+    --text:#eef4f0;--muted:#7a9480;
   }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;background:var(--bg);color:var(--text);
-    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
-    padding:0 0 100px;
-  }
-  .container{width:100%;max-width:460px;margin:0 auto;padding:0 16px;}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;margin-bottom:20px;}
-  .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 6px;font-weight:600;}
-  .title{font-size:22px;font-weight:700;margin:0 0 4px;line-height:1.25;}
-  .sub{font-size:13.5px;color:var(--muted);margin:0 0 24px;}
-  .label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;}
-  .input, .select{
-    width:100%;background:#0e1013;border:1px solid var(--line);color:var(--text);
-    padding:12px 14px;border-radius:10px;font-size:14.5px;outline:none;margin-bottom:14px;
-    transition:border-color .15s ease;
-  }
-  .input:focus, .select:focus{border-color:var(--accent);}
-  .input:disabled, .select:disabled{opacity:.4;cursor:not-allowed;}
-  .btn{
-    width:100%;background:var(--accent);color:#08110c;border:none;padding:14px;
-    border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:filter .15s ease;
-  }
-  .btn:hover{filter:brightness(1.08);}
-  .btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;}
-  .btn-sec{background:transparent;border:1px solid var(--line);color:var(--text);width:100%;padding:12px;border-radius:10px;font-size:13.5px;cursor:pointer;margin-top:8px;}
-  .msg{font-size:12.5px;color:var(--muted);margin-top:10px;min-height:16px;}
-  .msg.erro{color:#ff8b8b;}
-  .msg.ok{color:var(--accent);}
-  .tabs{display:flex;gap:8px;margin-bottom:18px;}
-  .tab{flex:1;text-align:center;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:var(--card);border:1px solid var(--line);color:var(--muted);}
-  .tab.ativa{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
-  .preco-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;}
-  .preco-label{font-size:13px;color:var(--muted);}
-  .preco{font-size:28px;font-weight:700;color:var(--accent);}
-  .pedido-item{border-bottom:1px solid var(--line);padding:12px 0;}
-  .pedido-item:last-child{border-bottom:none;}
-  .pedido-top{display:flex;justify-content:space-between;font-size:13.5px;font-weight:700;}
-  .pedido-sub{font-size:12px;color:var(--muted);margin-top:4px;}
-  .status-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
-  .status-pill.executando{background:#3a2f1f;color:#ffc97c;}
-  .status-pill.concluido{background:var(--accent-dim);color:var(--accent);}
-  .status-pill.aguardando_pagamento{background:#23272d;color:var(--muted);}
-  .status-pill.cancelado, .status-pill.erro_fornecedor{background:#3a1f1f;color:#ff8b8b;}
-  .float-whats{
-    position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;
-    background:#25D366;display:flex;align-items:center;justify-content:center;
-    font-size:26px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.4);text-decoration:none;
-    z-index:1000;
-  }
-  #btn-instalar-app{
-    position:fixed;bottom:84px;right:14px;display:none;
-    background:var(--accent);color:#08110c;border:none;border-radius:24px;
-    padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;
-    box-shadow:0 4px 14px rgba(124,255,178,.3);align-items:center;gap:6px;
-    z-index:999;
-  }
-  .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px;color:var(--muted);padding-top:16px;}
-  .top-bar button{background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;}
-  .hidden{display:none !important;}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--black);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;line-height:1.6;overflow-x:hidden;}
 
-  /* ===== FUNDO ANIMADO (login e área logada) ===== */
-  .area-logada-bg{
-    position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
-    background:linear-gradient(135deg,#0b0d10 0%,#0d1a12 50%,#0b0d10 100%);
-  }
-  .area-logada-bg::before{
-    content:'';position:absolute;inset:0;pointer-events:none;
-    background:radial-gradient(ellipse at 20% 50%,rgba(124,255,178,.05) 0%,transparent 60%),
-               radial-gradient(ellipse at 80% 20%,rgba(124,255,178,.04) 0%,transparent 50%);
-  }
-  #area-logada{position:relative;z-index:2;}
-  #area-logada .container{position:relative;z-index:2;}
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 32px;background:rgba(8,10,9,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);}
+  .nav-logo{font-size:20px;font-weight:800;color:var(--green);display:flex;align-items:center;gap:8px;text-decoration:none;}
+  .nav-logo span{color:var(--text);}
+  .nav-cta{background:var(--green);color:#061409;border:none;padding:10px 22px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;transition:filter .15s;}
+  .nav-cta:hover{filter:brightness(1.1);}
 
-  /* ===== HERO DE LOGIN ===== */
-  .auth-hero{
-    position:relative;
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    overflow:hidden;
-    padding:32px 16px;
-    background: linear-gradient(135deg, #0b0d10 0%, #0d1a12 50%, #0b0d10 100%);
+  .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px;position:relative;overflow:hidden;}
+  .hero-bg{position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(124,255,178,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(124,255,178,.05) 0%,transparent 60%);}
+  .hero-grid{position:absolute;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(124,255,178,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(124,255,178,.03) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%);}
+  .hero-content{position:relative;z-index:1;max-width:820px;}
+  .hero-badge{display:inline-flex;align-items:center;gap:6px;background:var(--green-dim);border:1px solid rgba(124,255,178,.2);color:var(--green);padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:28px;}
+  .hero-badge::before{content:'●';font-size:8px;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .hero h1{font-size:clamp(2.2rem,6.5vw,4.2rem);font-weight:900;line-height:1.05;margin-bottom:20px;letter-spacing:-.02em;}
+  .hero h1 em{font-style:normal;background:linear-gradient(135deg,var(--green),#a8ffce);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .hero-sub{font-size:clamp(1rem,2.5vw,1.15rem);color:var(--muted);max-width:580px;margin:0 auto 40px;}
+  .hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+  .btn-primary{background:var(--green);color:#061409;border:none;padding:16px 36px;border-radius:12px;font-weight:800;font-size:16px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:filter .15s,transform .1s;}
+  .btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px);}
+  .btn-secondary{background:transparent;color:var(--text);border:1px solid var(--line);padding:16px 28px;border-radius:12px;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:border-color .15s,background .15s;}
+  .btn-secondary:hover{border-color:var(--green);background:var(--green-dim);}
+  .hero-stats{display:flex;gap:40px;justify-content:center;margin-top:56px;flex-wrap:wrap;}
+  .hero-stat{text-align:center;}
+  .hero-stat-num{font-size:2rem;font-weight:900;color:var(--green);line-height:1;display:block;}
+  .hero-stat-label{font-size:12.5px;color:var(--muted);margin-top:4px;}
+
+  .redes{padding:48px 24px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--dark);}
+  .redes-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;}
+  .redes-label{font-size:13px;color:var(--muted);margin-right:8px;}
+  .rede-pill{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);padding:8px 16px;border-radius:24px;font-size:14px;font-weight:600;color:var(--text);}
+
+  section{padding:88px 24px;}
+  .section-inner{max-width:1100px;margin:0 auto;}
+  .section-eyebrow{display:block;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--green);font-weight:600;margin-bottom:12px;}
+  .section-title{font-size:clamp(1.8rem,4vw,2.7rem);font-weight:800;line-height:1.15;margin-bottom:16px;}
+  .section-sub{font-size:1.05rem;color:var(--muted);max-width:520px;}
+
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2px;margin-top:56px;border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+  .step{background:var(--card);padding:32px 24px;}
+  .step-num{font-size:2.8rem;font-weight:900;color:var(--green-dim);line-height:1;margin-bottom:16px;}
+  .step h3{font-size:1rem;font-weight:700;margin-bottom:8px;}
+  .step p{font-size:13.5px;color:var(--muted);line-height:1.6;}
+
+  .cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:56px;}
+  .card-item{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;transition:border-color .2s,transform .2s;}
+  .card-item:hover{border-color:var(--green);transform:translateY(-2px);}
+  .card-icon{font-size:2.2rem;margin-bottom:14px;display:block;}
+  .card-item h3{font-size:1.05rem;font-weight:700;margin-bottom:8px;}
+  .card-item p{font-size:13.5px;color:var(--muted);}
+
+  .dep-section{background:var(--dark);}
+  .dep-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:56px;}
+  .dep-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;}
+  .dep-stars{color:#ffc97c;font-size:16px;margin-bottom:14px;}
+  .dep-text{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:20px;}
+  .dep-author{display:flex;align-items:center;gap:12px;}
+  .dep-avatar{width:40px;height:40px;border-radius:50%;background:var(--green-dim);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .dep-name{font-weight:700;font-size:14px;}
+  .dep-handle{font-size:12px;color:var(--muted);}
+
+  .faq-list{margin-top:56px;display:flex;flex-direction:column;gap:2px;}
+  .faq-item{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .faq-q{width:100%;background:none;border:none;color:var(--text);padding:20px 24px;text-align:left;font-size:15px;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+  .faq-q::after{content:'+';font-size:20px;color:var(--green);flex-shrink:0;}
+  .faq-q.open::after{content:'−';}
+  .faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;padding:0 24px;font-size:14px;color:var(--muted);line-height:1.7;}
+  .faq-a.open{max-height:220px;padding:0 24px 20px;}
+
+  .cta-section{text-align:center;padding:96px 24px;background:radial-gradient(ellipse 80% 60% at 50% 50%,rgba(124,255,178,.07) 0%,transparent 70%);border-top:1px solid var(--line);}
+  .cta-section h2{font-size:clamp(1.8rem,4vw,3rem);font-weight:900;margin-bottom:16px;}
+  .cta-section p{color:var(--muted);font-size:1.05rem;margin-bottom:40px;}
+
+  footer{background:var(--dark);border-top:1px solid var(--line);padding:40px 32px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:20px;}
+  .footer-brand{font-weight:700;color:var(--green);font-size:16px;}
+  .footer-links{display:flex;gap:24px;flex-wrap:wrap;}
+  .footer-links a{color:var(--muted);font-size:13px;text-decoration:none;transition:color .15s;}
+  .footer-links a:hover{color:var(--text);}
+  .footer-copy{color:var(--muted);font-size:12px;width:100%;text-align:center;}
+
+  @media(max-width:600px){
+    nav{padding:14px 20px;}
+    .hero-stats{gap:24px;}
+    .steps{grid-template-columns:1fr;}
+    footer{flex-direction:column;text-align:center;}
+    .footer-links{justify-content:center;}
   }
-  .auth-hero::before{
-    content:'';
-    position:absolute;
-    inset:0;
-    background: radial-gradient(ellipse at 20% 50%, rgba(124,255,178,.07) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 20%, rgba(124,255,178,.05) 0%, transparent 50%);
-    pointer-events:none;
-  }
-  /* ícones flutuantes no fundo */
-  .floating-icons{
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    overflow:hidden;
-  }
-  .fi{
-    position:absolute;
-    font-size:32px;
-    opacity:.06;
-    animation: floatUp linear infinite;
-    user-select:none;
-  }
-  @keyframes floatUp{
-    0%  { transform: translateY(110vh) rotate(0deg);   opacity:0;   }
-    5%  { opacity:.08; }
-    95% { opacity:.08; }
-    100%{ transform: translateY(-20vh) rotate(360deg); opacity:0;   }
-  }
-  /* card de login flutuante */
-  .auth-card{
-    position:relative;
-    z-index:2;
-    width:100%;
-    max-width:380px;
-    background:rgba(21,24,28,.92);
-    border:1px solid rgba(124,255,178,.15);
-    border-radius:24px;
-    padding:36px 32px;
-    backdrop-filter:blur(12px);
-    box-shadow:0 24px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(124,255,178,.05);
-  }
-  .auth-logo{
-    text-align:center;
-    margin-bottom:24px;
-  }
-  .auth-logo .logo-circle{
-    width:64px;height:64px;border-radius:50%;
-    background:linear-gradient(135deg, #7CFFB2, #00c97a);
-    display:inline-flex;align-items:center;justify-content:center;
-    font-size:28px;margin-bottom:12px;
-    box-shadow:0 8px 24px rgba(124,255,178,.3);
-  }
-  .auth-logo h1{
-    font-size:20px;font-weight:800;margin:0 0 4px;
-    background:linear-gradient(135deg,#7CFFB2,#fff);
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  }
-  .auth-logo p{font-size:12.5px;color:var(--muted);margin:0;}
-  .auth-divider{
-    display:flex;align-items:center;gap:10px;margin:18px 0;
-  }
-  .auth-divider span{font-size:11px;color:var(--muted);white-space:nowrap;}
-  .auth-divider::before,.auth-divider::after{
-    content:'';flex:1;height:1px;background:var(--line);
-  }
-  .auth-input{
-    width:100%;background:rgba(14,16,19,.8);border:1px solid var(--line);
-    color:var(--text);padding:13px 16px;border-radius:12px;font-size:14px;
-    outline:none;margin-bottom:12px;transition:border-color .2s,box-shadow .2s;
-  }
-  .auth-input:focus{
-    border-color:var(--accent);
-    box-shadow:0 0 0 3px rgba(124,255,178,.1);
-  }
-  .auth-btn{
-    width:100%;background:linear-gradient(135deg,#7CFFB2,#00c97a);
-    color:#061409;border:none;padding:14px;border-radius:12px;
-    font-size:15px;font-weight:800;cursor:pointer;
-    transition:filter .15s,transform .1s;
-    letter-spacing:.02em;
-  }
-  .auth-btn:hover{filter:brightness(1.08);}
-  .auth-btn:active{transform:scale(.98);}
-  .auth-toggle{
-    text-align:center;margin-top:16px;font-size:13px;color:var(--muted);
-  }
-  .auth-toggle button{
-    background:none;border:none;color:var(--accent);
-    font-size:13px;font-weight:700;cursor:pointer;padding:0;
-  }
-  .auth-msg{font-size:12.5px;margin-top:10px;min-height:16px;text-align:center;}
-  .auth-msg.erro{color:#ff8b8b;}
-  .auth-msg.ok{color:var(--accent);}
-  .redes-badges{
-    display:flex;justify-content:center;gap:10px;margin-bottom:22px;flex-wrap:wrap;
-  }
-  .rede-badge{
-    display:flex;align-items:center;gap:5px;
-    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
-    border-radius:20px;padding:5px 12px;font-size:12px;color:var(--muted);
-  }
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
 <body>
 
-<!-- HERO DE LOGIN -->
-<div class="auth-hero" id="auth-hero">
+<nav>
+  <a href="#" class="nav-logo">🔥 <span>Fênix Social</span></a>
+  <a href="https://fenixsocial.site/app.html" class="nav-cta">Acessar plataforma</a>
+</nav>
 
-  <!-- ícones flutuando no fundo -->
-  <div class="floating-icons" id="floating-icons"></div>
-
-  <!-- card central -->
-  <div class="auth-card" id="auth-card">
-
-    <div class="auth-logo">
-      <div class="logo-circle">🚀</div>
-      <h1>Engaja aí</h1>
-      <p>Impulsione seu perfil nas redes sociais</p>
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge">🚀 Plataforma de marketing digital</div>
+    <h1>Acelere o crescimento<br>das suas <em>redes sociais</em></h1>
+    <p class="hero-sub">Estratégias de visibilidade e alcance para Instagram, TikTok, YouTube e muito mais. Mais presença digital, mais oportunidades de negócio.</p>
+    <div class="hero-actions">
+      <a href="https://fenixsocial.site/app.html" class="btn-primary">🔥 Começar agora — é grátis</a>
+      <a href="#como-funciona" class="btn-secondary">Ver como funciona</a>
     </div>
-
-    <div class="redes-badges">
-      <div class="rede-badge">📸 Instagram</div>
-      <div class="rede-badge">🎵 TikTok</div>
-      <div class="rede-badge">▶️ YouTube</div>
-      <div class="rede-badge">𝕏 Twitter</div>
-      <div class="rede-badge">📘 Facebook</div>
+    <div class="hero-stats">
+      <div class="hero-stat"><span class="hero-stat-num">+10K</span><span class="hero-stat-label">Campanhas ativas</span></div>
+      <div class="hero-stat"><span class="hero-stat-num">4+</span><span class="hero-stat-label">Plataformas sociais</span></div>
+      <div class="hero-stat"><span class="hero-stat-num">98%</span><span class="hero-stat-label">Clientes satisfeitos</span></div>
+      <div class="hero-stat"><span class="hero-stat-num">24h</span><span class="hero-stat-label">Suporte disponível</span></div>
     </div>
+  </div>
+</section>
 
-    <!-- LOGIN -->
-    <div id="bloco-login">
-      <div class="auth-divider"><span>Acesse sua conta</span></div>
-      <input class="auth-input" id="auth-login-id" placeholder="👤 Usuário ou 📱 WhatsApp" autocomplete="username">
-      <input class="auth-input" id="auth-senha" placeholder="🔒 Senha" type="password">
-      <button class="auth-btn" id="btn-login">Entrar</button>
-      <div class="auth-toggle">
-        <button id="btn-toggle-cadastro">Não tenho conta — criar uma</button>
-      </div>
-    </div>
-
-    <!-- CADASTRO -->
-    <div id="bloco-cadastro" class="hidden">
-      <div class="auth-divider"><span>Criar conta</span></div>
-      <input class="auth-input" id="auth-nome" placeholder="👤 Seu nome completo">
-      <input class="auth-input" id="auth-usuario" placeholder="🆔 Escolha um usuário (ex: marcos123)" autocomplete="username" style="text-transform:lowercase;">
-      <input class="auth-input" id="auth-whats" placeholder="📱 WhatsApp com DDD (ex: 21999999999)" type="tel">
-      <input class="auth-input" id="auth-senha-cad" placeholder="🔒 Crie uma senha" type="password">
-      <button class="auth-btn" id="btn-cadastrar">Criar conta</button>
-      <div class="auth-toggle">
-        <button id="btn-toggle-login">Já tenho conta — entrar</button>
-      </div>
-    </div>
-
-    <p class="auth-msg" id="auth-msg"></p>
+<div class="redes">
+  <div class="redes-inner">
+    <span class="redes-label">Disponível para:</span>
+    <div class="rede-pill">📸 Instagram</div>
+    <div class="rede-pill">🎵 TikTok</div>
+    <div class="rede-pill">▶️ YouTube</div>
+    <div class="rede-pill">📘 Facebook</div>
+    <div class="rede-pill">𝕏 Twitter/X</div>
   </div>
 </div>
 
-<!-- ÁREA LOGADO -->
-<div class="hidden" id="area-logada">
-<div class="area-logada-bg"><div class="floating-icons" id="floating-icons-logado"></div></div>
-<div class="container">
-  <div class="top-bar" id="top-bar">
-    <span id="saudacao">Visitante</span>
-    <div style="display:flex;align-items:center;gap:12px;">
-      <span id="saldo-display" style="font-size:13px;color:var(--accent);font-weight:700;cursor:pointer;" title="Ver carteira">💰 R$ 0,00</span>
-      <button id="btn-login-logout">Sair</button>
+<section id="como-funciona">
+  <div class="section-inner">
+    <span class="section-eyebrow">Simples e rápido</span>
+    <h2 class="section-title">Do cadastro ao resultado<br>em poucos minutos</h2>
+    <p class="section-sub">Nossa plataforma foi criada para ser simples. Sem contratos, sem complicação.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>Crie sua conta</h3>
+        <p>Cadastro em segundos. Só um usuário e WhatsApp — nenhum dado de cartão exigido para começar.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>Escolha a campanha</h3>
+        <p>Selecione a rede social, o tipo de estratégia e o plano que encaixa no seu objetivo.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>Informe o perfil</h3>
+        <p>Cole o link do seu perfil ou da publicação que deseja impulsionar.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <h3>Pague via PIX</h3>
+        <p>Pagamento 100% seguro via PIX. Ou carregue saldo na sua carteira e use quando quiser.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">05</div>
+        <h3>Acompanhe os resultados</h3>
+        <p>Monitore o andamento em tempo real direto no painel, com atualização automática.</p>
+      </div>
     </div>
   </div>
+</section>
 
-  <!-- ABAS -->
-  <div class="tabs hidden" id="tabs">
-    <div class="tab ativa" id="tab-engajar">🚀 Engajar</div>
-    <div class="tab" id="tab-pedidos">📦 Pedidos</div>
-    <div class="tab" id="tab-carteira">💰 Carteira</div>
-    <div class="tab" id="tab-suporte">🎧 Suporte</div>
-  </div>
-
-  <!-- WIDGET DE ENGAJAMENTO -->
-  <div id="painel-engajar" class="hidden">
-    <div class="card">
-      <p class="eyebrow">Disponível agora</p>
-      <h2 class="title">Chegou a hora de engajar o seu perfil</h2>
-      <p class="sub">Escolha a rede, o serviço e cole o link — em poucos segundos você vê o valor.</p>
-
-      <label class="label">Rede social</label>
-      <select class="select" id="eng-rede"><option value="">Carregando...</option></select>
-
-      <label class="label">Tipo de serviço</label>
-      <select class="select" id="eng-tipo" disabled><option value="">Selecione a rede social primeiro</option></select>
-
-      <label class="label">Opção</label>
-      <select class="select" id="eng-opcao" disabled><option value="">Selecione o tipo de serviço</option></select>
-
-      <label class="label">Link do perfil ou post</label>
-      <div id="eng-instrucao" class="hidden" style="background:#1a2a1a;border:1px solid rgba(124,255,178,.2);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12.5px;color:#a8e6c0;line-height:1.6;"></div>
-      <input class="input" id="eng-link" type="url" placeholder="https://instagram.com/seuperfil" disabled>
-
-      <label class="label">Quantidade</label>
-      <input class="input" id="eng-qtd" type="number" placeholder="Ex: 500" disabled>
-
-      <!-- Campo de comentários — só aparece pra serviços de comentário personalizado -->
-      <div id="eng-comments-wrap" class="hidden">
-        <label class="label">Seus comentários (um por linha)</label>
-        <textarea class="input" id="eng-comments" rows="4" placeholder="Que foto incrível!&#10;Adorei demais!&#10;Simplesmente perfeito!" style="resize:vertical;height:100px;"></textarea>
-        <p style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:14px;">Digite um comentário por linha. O sistema vai distribuir entre as publicações.</p>
+<section style="background:var(--dark);">
+  <div class="section-inner">
+    <span class="section-eyebrow">Soluções disponíveis</span>
+    <h2 class="section-title">Estratégias para<br>cada objetivo</h2>
+    <p class="section-sub">Escolha o que faz sentido para o seu perfil e orçamento.</p>
+    <div class="cards-grid">
+      <div class="card-item">
+        <span class="card-icon">📈</span>
+        <h3>Crescimento de audiência</h3>
+        <p>Expanda sua base de seguidores e aumente a autoridade do seu perfil nas redes sociais.</p>
       </div>
+      <div class="card-item">
+        <span class="card-icon">🎯</span>
+        <h3>Alcance de publicações</h3>
+        <p>Impulsione postagens específicas para chegar a mais pessoas e gerar mais interações orgânicas.</p>
+      </div>
+      <div class="card-item">
+        <span class="card-icon">▶️</span>
+        <h3>Visibilidade em vídeo</h3>
+        <p>Aumente as visualizações dos seus vídeos e reels para entrar nos algoritmos de recomendação.</p>
+      </div>
+      <div class="card-item">
+        <span class="card-icon">💬</span>
+        <h3>Engajamento personalizado</h3>
+        <p>Comentários sob medida para aumentar a interação nas suas publicações.</p>
+      </div>
+      <div class="card-item">
+        <span class="card-icon">📊</span>
+        <h3>Múltiplas plataformas</h3>
+        <p>Uma única plataforma para gerenciar suas estratégias no Instagram, TikTok, YouTube e mais.</p>
+      </div>
+      <div class="card-item">
+        <span class="card-icon">💰</span>
+        <h3>Carteira de créditos</h3>
+        <p>Recarregue sua carteira e execute campanhas quando quiser, sem precisar pagar uma por uma.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <div id="eng-resultado" class="hidden">
-        <div class="preco-row">
-          <span class="preco-label">Valor total</span>
-          <span class="preco" id="eng-preco">R$ 0,00</span>
+<section class="dep-section">
+  <div class="section-inner">
+    <span class="section-eyebrow">Casos de sucesso</span>
+    <h2 class="section-title">Quem já usou<br>recomenda</h2>
+    <div class="dep-grid">
+      <div class="dep-card">
+        <div class="dep-stars">★★★★★</div>
+        <p class="dep-text">"Em poucas horas já vi resultados no meu perfil. A plataforma é super simples de usar e o suporte respondeu rapidinho quando tive dúvida."</p>
+        <div class="dep-author">
+          <div class="dep-avatar">👩</div>
+          <div><div class="dep-name">Camila R.</div><div class="dep-handle">Criadora de conteúdo</div></div>
         </div>
-        <!-- Opções de pagamento -->
-        <div id="opcoes-pagamento" style="display:flex;gap:8px;margin-bottom:14px;">
-          <button class="btn" id="eng-pagar-saldo" style="flex:1;background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);">💰 Pagar com saldo</button>
-          <button class="btn" id="eng-pagar-pix" style="flex:1;">📱 Gerar PIX</button>
+      </div>
+      <div class="dep-card">
+        <div class="dep-stars">★★★★★</div>
+        <p class="dep-text">"Uso a carteira de créditos para gerenciar várias campanhas ao mesmo tempo. Muito mais prático do que fazer pagamento por pagamento."</p>
+        <div class="dep-author">
+          <div class="dep-avatar">👨</div>
+          <div><div class="dep-name">Rafael M.</div><div class="dep-handle">Gestor de tráfego</div></div>
         </div>
       </div>
-
-      <p class="msg" id="eng-msg"></p>
-    </div>
-  </div>
-
-  <!-- MEUS PEDIDOS -->
-  <div id="painel-pedidos" class="hidden">
-    <div class="card">
-      <p class="eyebrow">Histórico</p>
-      <h2 class="title">Meus pedidos</h2>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <p style="font-size:12px;color:var(--muted);margin:0;">Atualiza automaticamente a cada 30 segundos</p>
-        <button class="btn-sec" id="btn-atualizar-pedidos" style="width:auto;padding:8px 14px;font-size:12.5px;">🔄 Atualizar agora</button>
+      <div class="dep-card">
+        <div class="dep-stars">★★★★★</div>
+        <p class="dep-text">"Meu Reels ganhou muito mais alcance depois de usar a plataforma. Consegui crescer organicamente a partir disso. Recomendo muito."</p>
+        <div class="dep-author">
+          <div class="dep-avatar">👩</div>
+          <div><div class="dep-name">Ana Paula S.</div><div class="dep-handle">Empreendedora digital</div></div>
+        </div>
       </div>
-      <div id="lista-pedidos"></div>
-      <p class="msg" id="pedidos-msg"></p>
     </div>
   </div>
+</section>
 
-  <!-- CARTEIRA -->
-  <div id="painel-carteira" class="hidden">
-    <div class="card">
-      <p class="eyebrow">Minha carteira</p>
-      <h2 class="title">Saldo disponível</h2>
-      <div style="text-align:center;padding:20px 0;">
-        <div style="font-size:42px;font-weight:800;color:var(--accent);" id="saldo-carteira">R$ 0,00</div>
-        <p style="font-size:12.5px;color:var(--muted);margin-top:8px;">Use seu saldo pra pagar pedidos instantaneamente</p>
+<section>
+  <div class="section-inner">
+    <span class="section-eyebrow">Dúvidas frequentes</span>
+    <h2 class="section-title">Perguntas e<br>respostas</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q">Para quem é a Fênix Social?</button>
+        <div class="faq-a">Para criadores de conteúdo, empreendedores, empresas e qualquer pessoa que queira aumentar sua presença e visibilidade nas redes sociais de forma prática.</div>
       </div>
-      <label class="label">Valor do depósito (mínimo R$ 5,00)</label>
-      <input class="input" id="deposito-valor" type="number" min="5" placeholder="Ex: 50.00">
-      <button class="btn" id="deposito-btn">Gerar PIX pra recarregar</button>
-      <div id="deposito-qr" style="display:none;margin-top:16px;text-align:center;"></div>
-      <p class="msg" id="deposito-msg"></p>
+      <div class="faq-item">
+        <button class="faq-q">Quais redes sociais são suportadas?</button>
+        <div class="faq-a">Instagram, TikTok, YouTube, Facebook e Twitter/X. Nossa plataforma está em constante expansão com novas redes sendo adicionadas.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Como funciona o pagamento?</button>
+        <div class="faq-a">Aceitamos PIX. Você pode pagar campanha por campanha, ou recarregar uma carteira de créditos na plataforma e usar conforme precisar — muito mais prático para uso frequente.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Preciso deixar meu perfil público?</button>
+        <div class="faq-a">Sim. Para que as campanhas de crescimento de audiência e alcance funcionem corretamente, seu perfil precisa estar configurado como público nas configurações da rede social.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Tem suporte disponível?</button>
+        <div class="faq-a">Sim! Você pode abrir um chamado diretamente na plataforma ou entrar em contato pelo WhatsApp. Nossa equipe responde rapidamente para ajudar com qualquer dúvida.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">É seguro usar a plataforma?</button>
+        <div class="faq-a">Sim. Não solicitamos senha da sua conta em nenhum momento. O pagamento é feito via PIX com segurança total. Seus dados pessoais são protegidos conforme a LGPD.</div>
+      </div>
     </div>
   </div>
+</section>
 
-  <!-- SUPORTE -->
-  <div id="painel-suporte" class="hidden">
-    <div class="card">
-      <p class="eyebrow">Fale conosco</p>
-      <h2 class="title">Suporte</h2>
-      <textarea class="input" id="ticket-mensagem" rows="3" placeholder="Descreva sua dúvida ou problema..." style="resize:vertical;height:80px;"></textarea>
-      <button class="btn" id="ticket-enviar">📩 Enviar mensagem</button>
-      <p class="msg" id="ticket-msg"></p>
-    </div>
+<div class="cta-section">
+  <h2>Pronto para aumentar<br>sua presença digital?</h2>
+  <p>Crie sua conta grátis e comece sua primeira campanha em minutos.</p>
+  <a href="https://fenixsocial.site/app.html" class="btn-primary" style="font-size:17px;padding:18px 44px;">
+    🔥 Criar minha conta grátis
+  </a>
+</div>
 
-    <div class="card">
-      <p class="eyebrow">Histórico</p>
-      <h2 class="title" style="font-size:16px;">Meus tickets</h2>
-      <div id="lista-tickets"></div>
-      <p class="msg" id="tickets-cliente-msg"></p>
-    </div>
+<footer>
+  <div class="footer-brand">🔥 Fênix Social</div>
+  <div class="footer-links">
+    <a href="https://fenixsocial.site/app.html">Acessar plataforma</a>
+    <a href="#como-funciona">Como funciona</a>
+    <a href="termos.html">Termos de uso</a>
+    <a href="privacidade.html">Política de privacidade</a>
   </div>
-
-</div><!-- /container -->
-</div><!-- /area-logada -->
-
-<button id="btn-instalar-app">📲 Instalar app</button>
-<a class="float-whats" id="float-whats" target="_blank" style="display:none;">💬</a>
+  <div class="footer-copy">© 2026 Fênix Social. Todos os direitos reservados.</div>
+</footer>
 
 <script>
-(function(){
-  const API_BASE = '';
-  const $ = (id) => document.getElementById(id);
-
-  let clienteId = localStorage.getItem('eng_clienteId') || null;
-  let clienteNome = localStorage.getItem('eng_clienteNome') || '';
-  let whatsappSuporte = '';
-
-  function atualizarTopBar(){
-    if(clienteId){
-      $('auth-hero').classList.add('hidden');
-      $('area-logada').classList.remove('hidden');
-      $('saudacao').textContent = clienteNome ? `Olá, ${clienteNome}` : 'Logado';
-      $('tabs').classList.remove('hidden');
-      $('painel-engajar').classList.remove('hidden');
-      carregarSaldo();
-      gerarIconesFlutuantesLogado();
-    } else {
-      $('auth-hero').classList.remove('hidden');
-      $('area-logada').classList.add('hidden');
-      $('painel-pedidos').classList.add('hidden');
-      $('painel-carteira').classList.add('hidden');
-      $('painel-suporte').classList.add('hidden');
-    }
-  }
-
-  $('btn-login-logout').addEventListener('click', () => {
-    localStorage.removeItem('eng_clienteId');
-    localStorage.removeItem('eng_clienteNome');
-    clienteId = null; clienteNome = '';
-    atualizarTopBar();
-  });
-
-  $('btn-toggle-cadastro').addEventListener('click', () => {
-    $('bloco-login').classList.add('hidden');
-    $('bloco-cadastro').classList.remove('hidden');
-    $('auth-msg').textContent = '';
-  });
-
-  $('btn-toggle-login').addEventListener('click', () => {
-    $('bloco-cadastro').classList.add('hidden');
-    $('bloco-login').classList.remove('hidden');
-    $('auth-msg').textContent = '';
-  });
-
-  $('btn-login').addEventListener('click', async () => {
-    const loginId = $('auth-login-id').value.trim();
-    const senha = $('auth-senha').value;
-    if(!loginId || !senha){ msgAuth('Preenche usuário/WhatsApp e senha', 'erro'); return; }
-
-    // detecta se é WhatsApp (só números) ou usuário (tem letras)
-    const isWhats = /^\d+$/.test(loginId.replace(/[\s\-\(\)]/g, ''));
-    const acao = 'login';
-    const payload = isWhats
-      ? { acao, whatsapp: loginId, senha }
-      : { acao, usuario: loginId.toLowerCase(), senha };
-
-    try{
-      const r = await fetch(`${API_BASE}/api/auth-cliente`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(payload)
-      });
-      const data = await r.json();
-      if(!r.ok){ msgAuth(data.erro || 'Usuário/WhatsApp ou senha incorretos', 'erro'); return; }
-      clienteId = data.clienteId;
-      clienteNome = data.nome || '';
-      localStorage.setItem('eng_clienteId', clienteId);
-      localStorage.setItem('eng_clienteNome', clienteNome);
-      atualizarTopBar();
-    }catch(e){
-      msgAuth('Erro de conexão', 'erro');
-    }
-  });
-
-  $('btn-cadastrar').addEventListener('click', async () => {
-    const nome = $('auth-nome').value.trim();
-    const usuario = $('auth-usuario').value.trim().toLowerCase().replace(/[^a-z0-9_\.]/g, '');
-    const whatsapp = $('auth-whats').value.trim();
-    const senha = $('auth-senha-cad').value;
-
-    if(!nome){ msgAuth('Informe seu nome', 'erro'); return; }
-    if(!usuario || usuario.length < 3){ msgAuth('Usuário deve ter pelo menos 3 caracteres (letras, números, _ ou .)', 'erro'); return; }
-    if(!whatsapp){ msgAuth('Informe seu WhatsApp', 'erro'); return; }
-    if(!senha || senha.length < 6){ msgAuth('Senha deve ter pelo menos 6 caracteres', 'erro'); return; }
-
-    try{
-      const r = await fetch(`${API_BASE}/api/auth-cliente`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ acao: 'cadastro', nome, usuario, whatsapp, senha })
-      });
-      const data = await r.json();
-      if(!r.ok){ msgAuth(data.erro || 'Erro ao criar conta', 'erro'); return; }
-      clienteId = data.clienteId;
-      clienteNome = data.nome || '';
-      localStorage.setItem('eng_clienteId', clienteId);
-      localStorage.setItem('eng_clienteNome', clienteNome);
-      atualizarTopBar();
-    }catch(e){
-      msgAuth('Erro de conexão', 'erro');
-    }
-  });
-
-  function msgAuth(texto, tipo){
-    $('auth-msg').textContent = texto;
-    $('auth-msg').className = 'msg' + (tipo ? ' ' + tipo : '');
-  }
-
-  // ===== Abas =====
-  $('tab-engajar').addEventListener('click', () => {
-    ativarAba('engajar');
-  });
-  $('tab-pedidos').addEventListener('click', () => {
-    ativarAba('pedidos');
-    carregarMeusPedidos();
-  });
-  $('tab-carteira').addEventListener('click', () => {
-    ativarAba('carteira');
-    carregarSaldo();
-  });
-  $('saldo-display').addEventListener('click', () => {
-    ativarAba('carteira');
-    carregarSaldo();
-  });
-
-  function ativarAba(aba){
-    ['engajar','pedidos','carteira','suporte'].forEach(a => {
-      $(`tab-${a}`)?.classList.remove('ativa');
-      $(`painel-${a}`)?.classList.add('hidden');
-    });
-    $(`tab-${aba}`)?.classList.add('ativa');
-    $(`painel-${aba}`)?.classList.remove('hidden');
-  }
-
-  $('tab-suporte').addEventListener('click', () => {
-    ativarAba('suporte');
-    carregarTicketsCliente();
-  });
-
-  let intervaloPedidos = null;
-
-  async function carregarMeusPedidos(){
-    if(!clienteId) return;
-    try{
-      const r = await fetch(`${API_BASE}/api/pedidos?clienteId=${encodeURIComponent(clienteId)}`);
-      const data = await r.json();
-      const lista = $('lista-pedidos');
-      lista.innerHTML = '';
-      if(!data.pedidos || data.pedidos.length === 0){
-        $('pedidos-msg').textContent = 'Você ainda não fez nenhum pedido.';
-        return;
-      }
-      $('pedidos-msg').textContent = '';
-
-      // sincroniza status dos pedidos em andamento com o fornecedor
-      const emAndamento = (data.pedidos || []).filter(p => p.status === 'executando' && p.orderIdFornecedor);
-      await Promise.all(emAndamento.map(p =>
-        fetch(`${API_BASE}/api/pedidos?pedidoId=${encodeURIComponent(p.id)}`).catch(() => {})
-      ));
-
-      // recarrega após sincronizar
-      const r2 = await fetch(`${API_BASE}/api/pedidos?clienteId=${encodeURIComponent(clienteId)}`);
-      const data2 = await r2.json();
-      const pedidos = data2.pedidos || data.pedidos;
-
-      pedidos.forEach((p) => {
-        const progresso = p.startCount && p.quantidade
-          ? Math.min(100, Math.round(((p.quantidade - (p.restam || p.quantidade)) / p.quantidade) * 100))
-          : (p.status === 'concluido' ? 100 : p.status === 'executando' ? 50 : 0);
-
-        const corStatus = {
-          aguardando_pagamento: '#8b929b',
-          executando: '#ffc97c',
-          concluido: '#7CFFB2',
-          cancelado: '#ff8b8b',
-          erro_fornecedor: '#ff8b8b',
-        };
-        const cor = corStatus[p.status] || '#8b929b';
-
-        const div = document.createElement('div');
-        div.className = 'pedido-item';
-        div.innerHTML = `
-          <div class="pedido-top">
-            <span>${p.nomeServico || 'Serviço'}</span>
-            <span class="status-pill ${p.status}">${formatarStatus(p.status)}</span>
-          </div>
-          <div class="pedido-sub">
-            Qtd: ${p.quantidade} · R$ ${Number(p.valorTotal).toFixed(2)} · ${new Date(p.criadoEm).toLocaleDateString('pt-BR')}
-            ${p.pagamento === 'saldo' ? ' · 💰 Saldo' : ''}
-          </div>
-          ${p.status === 'executando' || p.status === 'concluido' ? `
-          <div style="margin-top:8px;">
-            <div style="height:4px;background:var(--line);border-radius:4px;overflow:hidden;">
-              <div style="height:100%;width:${progresso}%;background:${cor};border-radius:4px;transition:width .5s;"></div>
-            </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px;">${progresso}% concluído${p.restam ? ` · ${p.restam} restando` : ''}</div>
-          </div>` : ''}
-        `;
-        lista.appendChild(div);
-      });
-    }catch(e){
-      $('pedidos-msg').textContent = 'Erro ao carregar pedidos.';
-    }
-  }
-
-  // atualização automática a cada 30s quando estiver na aba de pedidos
-  function iniciarAtualizacaoPedidos(){
-    if(intervaloPedidos) clearInterval(intervaloPedidos);
-    intervaloPedidos = setInterval(() => {
-      if(!$('painel-pedidos').classList.contains('hidden')){
-        carregarMeusPedidos();
-      }
-    }, 30000);
-  }
-
-  $('btn-atualizar-pedidos').addEventListener('click', () => {
-    $('btn-atualizar-pedidos').textContent = '⏳ Atualizando...';
-    $('btn-atualizar-pedidos').disabled = true;
-    carregarMeusPedidos().then(() => {
-      $('btn-atualizar-pedidos').textContent = '🔄 Atualizar agora';
-      $('btn-atualizar-pedidos').disabled = false;
+  document.querySelectorAll('.faq-q').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const a=btn.nextElementSibling,open=btn.classList.contains('open');
+      document.querySelectorAll('.faq-q').forEach(b=>{b.classList.remove('open');b.nextElementSibling.classList.remove('open');});
+      if(!open){btn.classList.add('open');a.classList.add('open');}
     });
   });
-
-  function formatarStatus(s){
-    const mapa = {
-      aguardando_pagamento: 'Aguardando pagamento',
-      executando: 'Em andamento',
-      concluido: 'Concluído',
-      cancelado: 'Cancelado',
-      erro_fornecedor: 'Erro - contate o suporte',
-    };
-    return mapa[s] || s;
-  }
-
-  // ===== Widget de engajamento =====
-  const elRede = $('eng-rede');
-  const elTipo = $('eng-tipo');
-  const elOpcao = $('eng-opcao');
-  const elLink = $('eng-link');
-  const elQtd = $('eng-qtd');
-  const elResultado = $('eng-resultado');
-  const elPreco = $('eng-preco');
-
-  let servicosDoTipo = [];
-  let servicoSelecionado = null;
-
-  function msgEng(texto, tipo){
-    $('eng-msg').textContent = texto || '';
-    $('eng-msg').className = 'msg' + (tipo ? ' ' + tipo : '');
-  }
-
-  function capitalizar(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
-
-  async function carregarFiltrosIniciais(){
-    try{
-      const r = await fetch(`${API_BASE}/api/services`);
-      const data = await r.json();
-      elRede.innerHTML = '<option value="">Selecione</option>' +
-        (data.redesSociais || []).map(r => `<option value="${r}">${capitalizar(r)}</option>`).join('');
-    }catch(e){ msgEng('Não foi possível carregar as redes sociais.', 'erro'); }
-  }
-
-  elRede.addEventListener('change', async () => {
-    resetDe('tipo');
-    if(!elRede.value) return;
-    const r = await fetch(`${API_BASE}/api/services?redeSocial=${encodeURIComponent(elRede.value)}`);
-    const data = await r.json();
-    const tipos = [...new Set((data.servicos || []).map(s => s.servicoTipo))].filter(Boolean);
-    elTipo.innerHTML = '<option value="">Selecione</option>' +
-      tipos.map(t => `<option value="${t}">${capitalizar(t)}</option>`).join('');
-    elTipo.disabled = false;
+  document.querySelectorAll('a[href^="#"]').forEach(a=>{
+    a.addEventListener('click',e=>{
+      const t=document.querySelector(a.getAttribute('href'));
+      if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}
+    });
   });
-
-  elTipo.addEventListener('change', async () => {
-    resetDe('opcao');
-    if(!elTipo.value) return;
-    const r = await fetch(`${API_BASE}/api/services?redeSocial=${encodeURIComponent(elRede.value)}&servicoTipo=${encodeURIComponent(elTipo.value)}`);
-    const data = await r.json();
-    servicosDoTipo = data.servicos || [];
-    elOpcao.innerHTML = '<option value="">Selecione</option>' +
-      servicosDoTipo.map(s => `<option value="${s.id}">${s.icone ? s.icone + ' ' : ''}${s.nome} (R$ ${s.precoPorMil.toFixed(2)}/1000)</option>`).join('');
-    elOpcao.disabled = false;
-  });
-
-  elOpcao.addEventListener('change', () => {
-    servicoSelecionado = servicosDoTipo.find(s => String(s.id) === elOpcao.value) || null;
-    elLink.disabled = !servicoSelecionado;
-    elQtd.disabled = !servicoSelecionado;
-    if(servicoSelecionado) elQtd.placeholder = `Entre ${servicoSelecionado.min} e ${servicoSelecionado.max}`;
-    elResultado.classList.add('hidden');
-
-    // instrução dinâmica baseada no tipo de serviço
-    const instrucaoEl = $('eng-instrucao');
-    if(servicoSelecionado){
-      const tipo = (servicoSelecionado.servicoTipo || '').toLowerCase();
-      const nome = (servicoSelecionado.nome || '').toLowerCase();
-      let instrucao = '';
-
-      if(tipo.includes('seguidor') || nome.includes('seguidor') || tipo.includes('subscriber') || nome.includes('subscriber')){
-        instrucao = `👤 <strong>Cole o link do seu perfil</strong> (ex: instagram.com/seuperfil)<br>
-        ⚠️ <strong>Seu perfil deve estar PÚBLICO.</strong> Perfis privados não aceitam o serviço e não há reembolso.<br>
-        ✅ Verifique nas configurações da rede social se seu perfil está aberto ao público antes de finalizar o pedido.`;
-        elLink.placeholder = 'https://instagram.com/seuperfil';
-      } else if(tipo.includes('curtida') || nome.includes('curtida') || nome.includes('like')){
-        instrucao = `❤️ <strong>Cole o link da postagem</strong> que deseja receber curtidas.<br>
-        ⚠️ A postagem deve estar <strong>pública e visível</strong> para que o serviço seja executado.<br>
-        ✅ Ex: instagram.com/p/ABC123xyz`;
-        elLink.placeholder = 'https://instagram.com/p/seu-post';
-      } else if(tipo.includes('visuali') || nome.includes('view') || nome.includes('visuali')){
-        instrucao = `▶️ <strong>Cole o link do vídeo ou reels</strong> que deseja receber visualizações.<br>
-        ⚠️ O conteúdo deve estar <strong>público</strong> para funcionar.<br>
-        ✅ Ex: instagram.com/reel/ABC123xyz`;
-        elLink.placeholder = 'https://instagram.com/reel/seu-video';
-      } else if(tipo.includes('comentário') || tipo.includes('comentario') || nome.includes('comment')){
-        instrucao = `💬 <strong>Cole o link da postagem</strong> onde deseja receber comentários.<br>
-        ⚠️ A postagem deve estar <strong>pública</strong>.<br>
-        ✅ Ex: instagram.com/p/ABC123xyz`;
-        elLink.placeholder = 'https://instagram.com/p/seu-post';
-      } else {
-        instrucao = `🔗 <strong>Cole o link correto</strong> para o serviço selecionado.<br>
-        ⚠️ O perfil ou postagem deve estar <strong>público</strong> para que o serviço seja executado.<br>
-        ✅ Verifique as configurações de privacidade antes de finalizar.`;
-        elLink.placeholder = 'https://...';
-      }
-
-      instrucaoEl.innerHTML = instrucao;
-      instrucaoEl.classList.remove('hidden');
-    } else {
-      instrucaoEl.classList.add('hidden');
-    }
-
-    // mostra o campo de comentários só pra serviços do tipo Custom Comments
-    const isCustom = servicoSelecionado && (
-      servicoSelecionado.tipo?.toLowerCase().includes('custom') ||
-      servicoSelecionado.nome?.toLowerCase().includes('personaliz') ||
-      servicoSelecionado.nome?.toLowerCase().includes('custom')
-    );
-    $('eng-comments-wrap').classList.toggle('hidden', !isCustom);
-    if(!isCustom) $('eng-comments').value = '';
-  });
-
-  elQtd.addEventListener('input', atualizarPreco);
-  elLink.addEventListener('input', atualizarPreco);
-
-  function atualizarPreco(){
-    if(!servicoSelecionado || !elLink.value || !elQtd.value){ elResultado.classList.add('hidden'); return; }
-    const qtd = Number(elQtd.value);
-    if(qtd < servicoSelecionado.min || qtd > servicoSelecionado.max){ elResultado.classList.add('hidden'); return; }
-    const total = (servicoSelecionado.precoPorMil * qtd) / 1000;
-    elPreco.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
-    elResultado.classList.remove('hidden');
-  }
-
-  function resetDe(nivel){
-    if(nivel === 'tipo'){
-      elTipo.innerHTML = '<option value="">Selecione a rede social primeiro</option>';
-      elTipo.disabled = true;
-    }
-    elOpcao.innerHTML = '<option value="">Selecione o tipo de serviço</option>';
-    elOpcao.disabled = true;
-    elLink.value = ''; elLink.disabled = true;
-    elQtd.value = ''; elQtd.disabled = true;
-    elResultado.classList.add('hidden');
-    servicoSelecionado = null;
-  }
-
-  // ===== Saldo / Carteira =====
-  let saldoAtual = 0;
-
-  async function carregarSaldo(){
-    if(!clienteId) return;
-    try{
-      const r = await fetch(`${API_BASE}/api/carteira?clienteId=${encodeURIComponent(clienteId)}`);
-      const data = await r.json();
-      saldoAtual = Number(data.saldo || 0);
-      $('saldo-display').textContent = `💰 R$ ${saldoAtual.toFixed(2)}`;
-      if($('saldo-carteira')) $('saldo-carteira').textContent = `R$ ${saldoAtual.toFixed(2)}`;
-    }catch(e){}
-  }
-
-  $('deposito-btn').addEventListener('click', async () => {
-    const valor = Number($('deposito-valor').value);
-    if(!valor || valor < 5){ $('deposito-msg').textContent = 'Valor mínimo é R$ 5,00'; $('deposito-msg').className = 'msg erro'; return; }
-    $('deposito-btn').disabled = true;
-    $('deposito-msg').textContent = 'Gerando PIX...';
-    try{
-      const r = await fetch(`${API_BASE}/api/carteira`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ clienteId, valor }),
-      });
-      const data = await r.json();
-      if(!r.ok){ $('deposito-msg').textContent = data.erro || 'Erro'; $('deposito-msg').className = 'msg erro'; $('deposito-btn').disabled = false; return; }
-      const qrDiv = $('deposito-qr');
-      qrDiv.innerHTML = `
-        <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">Escaneie ou copie o código PIX</p>
-        ${data.qrCodeBase64 ? `<img src="data:image/png;base64,${data.qrCodeBase64}" style="width:180px;height:180px;border-radius:12px;margin-bottom:12px;display:block;margin:0 auto 12px;">` : ''}
-        ${data.qrCode ? `<textarea style="width:100%;background:#0e1013;border:1px solid var(--line);color:var(--accent);padding:10px;border-radius:8px;font-size:11px;resize:none;height:60px;" readonly>${data.qrCode}</textarea>
-        <button class="btn" style="margin-top:8px;" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado ✓'" data-code="${data.qrCode}">📋 Copiar código PIX</button>` : ''}
-        <p style="font-size:12px;color:var(--muted);margin-top:12px;">Valor: <strong style="color:var(--accent)">R$ ${Number(data.valor).toFixed(2)}</strong></p>
-        <p style="font-size:11px;color:var(--muted);">Após o pagamento, seu saldo será atualizado automaticamente.</p>
-      `;
-      qrDiv.style.display = 'block';
-      $('deposito-msg').textContent = 'PIX gerado!';
-      $('deposito-msg').className = 'msg ok';
-    }catch(e){
-      $('deposito-msg').textContent = 'Erro de conexão.';
-      $('deposito-msg').className = 'msg erro';
-    }
-    $('deposito-btn').disabled = false;
-  });
-
-  $('eng-pagar-saldo').addEventListener('click', async () => {
-    if(!servicoSelecionado || !clienteId) return;
-    const qtd = Number($('eng-qtd').value);
-    const valorTotal = (servicoSelecionado.precoPorMil * qtd) / 1000;
-
-    // busca saldo atualizado antes de processar
-    try{
-      const rSaldo = await fetch(`${API_BASE}/api/carteira?clienteId=${encodeURIComponent(clienteId)}`);
-      const dataSaldo = await rSaldo.json();
-      saldoAtual = Number(dataSaldo.saldo || 0);
-      $('saldo-display').textContent = `💰 R$ ${saldoAtual.toFixed(2)}`;
-    }catch(e){}
-
-    if(saldoAtual < valorTotal){
-      msgEng(`Saldo insuficiente (R$ ${saldoAtual.toFixed(2)}). Recarregue na aba Carteira.`, 'erro');
-      return;
-    }
-    $('eng-pagar-saldo').disabled = true;
-    msgEng('Processando com saldo...');
-    try{
-      const r = await fetch(`${API_BASE}/api/order`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ idFornecedor: servicoSelecionado.id, link: elLink.value, quantidade: qtd, clienteId, pagarComSaldo: true, comments: $('eng-comments').value || null }),
-      });
-      const data = await r.json();
-      if(!r.ok){ msgEng(data.erro || 'Erro', 'erro'); $('eng-pagar-saldo').disabled = false; return; }
-      saldoAtual = data.novoSaldo || 0;
-      $('saldo-display').textContent = `💰 R$ ${saldoAtual.toFixed(2)}`;
-      msgEng(`✅ Pedido enviado! Novo saldo: R$ ${saldoAtual.toFixed(2)}`, 'ok');
-    }catch(e){ msgEng('Erro de conexão.', 'erro'); }
-    $('eng-pagar-saldo').disabled = false;
-  });
-
-  $('eng-pagar-pix').addEventListener('click', async () => {
-    if(!servicoSelecionado || !clienteId){ msgEng('Faça login pra continuar.', 'erro'); return; }
-    $('eng-pagar-pix').disabled = true;
-    msgEng('Criando pedido...');
-    try{
-      const r = await fetch(`${API_BASE}/api/order`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ idFornecedor: servicoSelecionado.id, link: elLink.value, quantidade: Number($('eng-qtd').value), clienteId, pagarComSaldo: false, comments: $('eng-comments').value || null }),
-      });
-      const data = await r.json();
-      if(!r.ok){ msgEng(data.erro || 'Erro ao criar pedido', 'erro'); $('eng-pagar-pix').disabled = false; return; }
-      msgEng('Gerando PIX...');
-      const rPix = await fetch(`${API_BASE}/api/pagamento`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ pedidoId: data.pedidoId }),
-      });
-      const pix = await rPix.json();
-      if(!rPix.ok){ msgEng(pix.erro || 'Erro ao gerar PIX.', 'erro'); $('eng-pagar-pix').disabled = false; return; }
-      let qrHtml = `<div style="text-align:center;padding:20px 0;border-top:1px solid var(--line);margin-top:16px;">
-        <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">📱 Escaneie o QR Code ou copie o código PIX</p>`;
-      if(pix.qrCodeBase64) qrHtml += `<img src="data:image/png;base64,${pix.qrCodeBase64}" style="width:180px;height:180px;border-radius:12px;margin-bottom:12px;display:block;margin:0 auto 12px;">`;
-      if(pix.qrCode) qrHtml += `<textarea style="width:100%;background:#0e1013;border:1px solid var(--line);color:var(--accent);padding:10px;border-radius:8px;font-size:11px;resize:none;height:60px;" readonly>${pix.qrCode}</textarea>
-        <button class="btn" style="margin-top:8px;" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado ✓'" data-code="${pix.qrCode}">📋 Copiar código PIX</button>`;
-      qrHtml += `<p style="font-size:12px;color:var(--muted);margin-top:12px;">Valor: <strong style="color:var(--accent)">R$ ${Number(data.valorTotal).toFixed(2)}</strong></p>
-        <p style="font-size:11px;color:var(--muted);">Após o pagamento, seu pedido é processado automaticamente.</p></div>`;
-      let qrContainer = document.getElementById('pix-qr-container');
-      if(!qrContainer){ qrContainer = document.createElement('div'); qrContainer.id = 'pix-qr-container'; $('eng-pagar-pix').closest('.card').appendChild(qrContainer); }
-      qrContainer.innerHTML = qrHtml;
-      msgEng('PIX gerado! Escaneie o QR Code abaixo.', 'ok');
-    }catch(e){ msgEng('Erro de conexão.', 'erro'); }
-    $('eng-pagar-pix').disabled = false;
-  });
-
-  // ===== Ticket de suporte =====
-  $('ticket-enviar').addEventListener('click', async () => {
-    const mensagem = $('ticket-mensagem').value;
-    if(!mensagem){ return; }
-    try{
-      const r = await fetch(`${API_BASE}/api/tickets`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ clienteId, nome: clienteNome, mensagem })
-      });
-      if(r.ok){
-        $('ticket-msg').textContent = 'Mensagem enviada! Vamos te responder em breve.';
-        $('ticket-msg').className = 'msg ok';
-        $('ticket-mensagem').value = '';
-      } else {
-        $('ticket-msg').textContent = 'Erro ao enviar. Tente o WhatsApp abaixo.';
-        $('ticket-msg').className = 'msg erro';
-      }
-    }catch(e){
-      $('ticket-msg').textContent = 'Erro de conexão.';
-      $('ticket-msg').className = 'msg erro';
-    }
-  });
-
-  // ===== WhatsApp flutuante =====
-  async function carregarSuporte(){
-    try{
-      const r = await fetch(`${API_BASE}/api/config`);
-      const data = await r.json();
-      if(data.whatsappSuporte){
-        whatsappSuporte = data.whatsappSuporte;
-        const el = $('float-whats');
-        if(el){
-          el.href = `https://wa.me/${whatsappSuporte}`;
-          el.style.display = 'flex';
-          el.style.visibility = 'visible';
-          el.style.opacity = '1';
-        }
-      }
-    }catch(e){}
-  }
-
-  // ===== Tickets do cliente =====
-  async function carregarTicketsCliente(){
-    if(!clienteId) return;
-    $('tickets-cliente-msg').textContent = 'Carregando...';
-    try{
-      const r = await fetch(`${API_BASE}/api/tickets?clienteId=${encodeURIComponent(clienteId)}`);
-      const data = await r.json();
-      const lista = $('lista-tickets');
-      lista.innerHTML = '';
-      if(!data.tickets || data.tickets.length === 0){
-        $('tickets-cliente-msg').textContent = 'Nenhum ticket enviado ainda.';
-        return;
-      }
-      $('tickets-cliente-msg').textContent = '';
-      data.tickets.forEach((t) => {
-        const div = document.createElement('div');
-        div.className = 'pedido-item';
-        div.innerHTML = `
-          <div class="pedido-top">
-            <span style="font-size:12.5px;">${t.mensagem}</span>
-            <span class="status-pill ${t.status === 'resolvido' ? 'concluido' : 'executando'}">${t.status === 'resolvido' ? 'Resolvido' : 'Aberto'}</span>
-          </div>
-          <div class="pedido-sub">${new Date(t.criadoEm).toLocaleDateString('pt-BR')}</div>
-          ${t.resposta ? `
-          <div style="margin-top:10px;background:#0e1013;border-left:3px solid var(--accent);padding:10px 12px;border-radius:0 8px 8px 0;">
-            <div style="font-size:11px;color:var(--accent);margin-bottom:4px;">💬 Resposta do suporte</div>
-            <div style="font-size:13px;">${t.resposta}</div>
-          </div>` : '<div style="font-size:11px;color:var(--muted);margin-top:6px;">⏳ Aguardando resposta</div>'}
-        `;
-        lista.appendChild(div);
-      });
-    }catch(e){
-      $('tickets-cliente-msg').textContent = 'Erro ao carregar tickets.';
-    }
-  }
-
-  // ===== Ícones flutuantes na área logada =====
-  function gerarIconesFlutuantesLogado(){
-    const container = $('floating-icons-logado');
-    if(!container || container.children.length > 0) return;
-    const icones = ['📸','❤️','👥','💬','▶️','⭐','🔥','📊','🚀','✨','🎯','📱','🎵','📈'];
-    for(let i = 0; i < 15; i++){
-      const el = document.createElement('div');
-      el.className = 'fi';
-      el.textContent = icones[Math.floor(Math.random() * icones.length)];
-      el.style.left = Math.random() * 100 + 'vw';
-      el.style.animationDuration = (15 + Math.random() * 25) + 's';
-      el.style.animationDelay = (Math.random() * 25) + 's';
-      el.style.fontSize = (14 + Math.random() * 18) + 'px';
-      container.appendChild(el);
-    }
-  }
-
-  // ===== Valor mínimo de recarga =====
-  let minRecarga = 5;
-  async function carregarMinRecarga(){
-    try{
-      const r = await fetch(`${API_BASE}/api/config`);
-      const data = await r.json();
-      minRecarga = Number(data.minRecarga || 5);
-      const inputDeposito = $('deposito-valor');
-      if(inputDeposito){
-        inputDeposito.min = minRecarga;
-        inputDeposito.placeholder = `Mínimo R$ ${minRecarga.toFixed(2)}`;
-      }
-    }catch(e){}
-  }
-
-  // ===== Ícones flutuantes no fundo do login =====
-  function gerarIconesFlutuantes(){
-    const container = $('floating-icons');
-    if(!container) return;
-    const icones = ['📸','❤️','👥','💬','▶️','⭐','🔥','📊','🚀','✨','🎯','📱','🎵','𝕏','📘'];
-    for(let i = 0; i < 30; i++){
-      const el = document.createElement('div');
-      el.className = 'fi';
-      el.textContent = icones[Math.floor(Math.random() * icones.length)];
-      el.style.left = Math.random() * 100 + 'vw';
-      el.style.animationDuration = (12 + Math.random() * 20) + 's';
-      el.style.animationDelay = (Math.random() * 20) + 's';
-      el.style.fontSize = (20 + Math.random() * 28) + 'px';
-      container.appendChild(el);
-    }
-  }
-
-  // ===== PWA — botão de instalar =====
-  let deferredPrompt = null;
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    const btn = document.getElementById('btn-instalar-app');
-    if(btn) btn.style.display = 'flex';
-  });
-
-  window.addEventListener('appinstalled', () => {
-    const btn = document.getElementById('btn-instalar-app');
-    if(btn) btn.style.display = 'none';
-    deferredPrompt = null;
-  });
-
-  document.getElementById('btn-instalar-app')?.addEventListener('click', async () => {
-    if(!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-  });
-
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  }
-
-  atualizarTopBar();
-  carregarFiltrosIniciais();
-  carregarSuporte();
-  gerarIconesFlutuantes();
-  iniciarAtualizacaoPedidos();
-  carregarMinRecarga();
-})();
 </script>
-
 </body>
 </html>
