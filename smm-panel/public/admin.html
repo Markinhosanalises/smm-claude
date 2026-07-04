@@ -187,7 +187,7 @@
     <div style="overflow-x:auto;">
       <table>
         <thead>
-          <tr><th>Nº Pedido</th><th>Cliente</th><th>ID Fornecedor</th><th>Serviço</th><th>Qtd</th><th>Valor</th><th>Status</th><th>Criado em</th><th></th></tr>
+          <tr><th>Nº Pedido</th><th>Cliente</th><th>ID Fornecedor</th><th>Serviço</th><th>Link</th><th>Qtd</th><th>Valor</th><th>Status</th><th>Criado em</th><th></th></tr>
         </thead>
         <tbody id="tabela-pedidos-body"></tbody>
       </table>
@@ -569,6 +569,9 @@
         </td>
         <td style="font-size:12px;color:var(--muted);">${p.orderIdFornecedor || '⏳'}</td>
         <td style="font-size:13px;">${p.nomeServico || '-'}</td>
+        <td style="font-size:11px;color:var(--muted);max-width:160px;word-break:break-all;">
+          <a href="${p.link||'#'}" target="_blank" style="color:var(--accent);text-decoration:none;" title="${p.link||''}">${p.link ? (p.link.length > 35 ? p.link.slice(0,35)+'...' : p.link) : '-'}</a>
+        </td>
         <td>${p.quantidade}</td>
         <td>R$ ${Number(p.valorTotal).toFixed(2)}</td>
         <td><span class="tag ${p.status === 'concluido' ? 'ativo' : 'inativo'}">${p.status}</span></td>
@@ -967,10 +970,11 @@
       $('modal-pedidos-lista').innerHTML = pedidos.length === 0
         ? '<p style="color:var(--muted);font-size:13px;">Nenhum pedido.</p>'
         : pedidos.map(p=>`
-          <div style="border-bottom:1px solid var(--line);padding:8px 0;display:flex;justify-content:space-between;align-items:center;">
+          <div style="border-bottom:1px solid var(--line);padding:8px 0;display:flex;justify-content:space-between;align-items:flex-start;">
             <div>
               <span style="color:var(--accent);font-weight:700;font-size:12px;">${p.numeroPedido||'-'}</span>
               <span style="font-size:13px;margin-left:8px;">${p.nomeServico||'-'}</span>
+              ${p.link ? `<div style="font-size:11px;margin-top:3px;"><a href="${p.link}" target="_blank" style="color:var(--muted);text-decoration:none;">🔗 ${p.link.length>50?p.link.slice(0,50)+'...':p.link}</a></div>` : ''}
             </div>
             <div style="text-align:right;">
               <div style="font-size:13px;font-weight:700;">R$ ${Number(p.valorTotal).toFixed(2)}</div>
