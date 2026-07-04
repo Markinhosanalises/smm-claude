@@ -69,6 +69,7 @@
     <button class="admin-tab" data-tab="pedidos">🛒 Pedidos</button>
     <button class="admin-tab" data-tab="tickets">💬 Suporte</button>
     <button class="admin-tab" data-tab="clientes">👥 Clientes</button>
+    <button class="admin-tab" data-tab="revendedores">🤝 Revendedores</button>
     <button class="admin-tab" data-tab="integracoes">🔌 Integrações</button>
   </div>
 
@@ -228,6 +229,7 @@
             <th>Nome</th>
             <th>Usuário</th>
             <th>WhatsApp</th>
+            <th>Origem</th>
             <th>Saldo</th>
             <th>Último crédito</th>
             <th>Cadastro</th>
@@ -260,6 +262,39 @@
     <p class="msg" id="mp-msg"></p>
   </div>
   </div><!-- /tab-integracoes -->
+
+  <div class="admin-section" id="tab-revendedores">
+  <div class="card">
+    <h2>Criar revendedor</h2>
+    <div class="row">
+      <div><label>Nome</label><input id="rev-nome" placeholder="Nome do revendedor"></div>
+      <div><label>Usuário</label><input id="rev-usuario" placeholder="revendedor1"></div>
+    </div>
+    <div class="row">
+      <div><label>WhatsApp (vira o ID)</label><input id="rev-whats" placeholder="21999999999" type="tel"></div>
+      <div><label>Senha</label><input id="rev-senha" type="password" placeholder="Senha do revendedor"></div>
+    </div>
+    <div class="row">
+      <div><label>Desconto sobre seu preço (%)</label><input id="rev-desconto" type="number" min="0" max="90" placeholder="Ex: 30"></div>
+      <div></div>
+    </div>
+    <button id="rev-criar-btn">🤝 Criar revendedor</button>
+    <p class="msg" id="rev-criar-msg"></p>
+  </div>
+
+  <div class="card">
+    <h2>Revendedores cadastrados</h2>
+    <button class="secundario" id="rev-listar-btn">Atualizar lista</button>
+    <div style="overflow-x:auto;margin-top:14px;">
+      <table>
+        <thead>
+          <tr><th>Nome</th><th>Usuário</th><th>WhatsApp</th><th>Desconto</th><th>Saldo</th><th>Creditar</th><th>Alterar desconto</th></tr>
+        </thead>
+        <tbody id="tabela-revendedores"></tbody>
+      </table>
+    </div>
+  </div>
+  </div><!-- /tab-revendedores -->
 
 </div>
 
@@ -676,6 +711,7 @@
         <td>${c.nome || '-'}</td>
         <td style="color:var(--accent);">${c.usuario ? '@'+c.usuario : '-'}</td>
         <td>${c.whatsapp && c.whatsapp !== 'undefined' ? c.whatsapp : c.clienteId}</td>
+        <td style="font-size:12px;">${origemEmoji(c.origem)}</td>
         <td style="color:${Number(c.saldo||0) > 0 ? 'var(--accent)' : 'var(--muted)'}; font-weight:700;">
           R$ ${Number(c.saldo||0).toFixed(2)}
         </td>
@@ -711,6 +747,11 @@
 
   $('busca-cliente').addEventListener('input', renderizarClientes);
   $('filtro-saldo').addEventListener('change', renderizarClientes);
+
+  function origemEmoji(origem){
+    const mapa = { google:'🔎 Google', youtube:'▶️ YouTube', instagram:'📸 Instagram', facebook:'📘 Facebook', tiktok:'🎵 TikTok', indicacao:'👥 Indicação', outros:'💬 Outros', nao_informado:'-' };
+    return mapa[origem] || origem || '-';
+  }
 
   $('creditar-manual-btn').addEventListener('click', async () => {
     const clienteId = $('creditar-id').value.replace(/\D/g, '');
