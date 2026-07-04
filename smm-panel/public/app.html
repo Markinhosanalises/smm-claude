@@ -379,6 +379,19 @@
       <div id="lista-tickets"></div>
       <p class="msg" id="tickets-cliente-msg"></p>
     </div>
+
+    <div class="card">
+      <p class="eyebrow">Para desenvolvedores</p>
+      <h2 class="title" style="font-size:16px;">🔑 Chave de API</h2>
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:16px;">Use nossa API pra integrar o Fênix Social no seu sistema. <a href="/api-docs.html" target="_blank" style="color:var(--accent);">Ver documentação →</a></p>
+      <div id="api-key-display" style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px;font-family:monospace;font-size:13px;color:var(--green);word-break:break-all;">Nenhuma chave gerada</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" id="btn-gerar-chave" style="flex:1;">🔑 Gerar nova chave</button>
+        <button class="btn-sec" id="btn-revogar-chave" style="flex:0 0 auto;">🗑️ Revogar</button>
+        <button class="btn-sec" id="btn-copiar-chave" style="flex:0 0 auto;">📋 Copiar</button>
+      </div>
+      <p class="msg" id="api-key-msg"></p>
+    </div>
   </div>
 
   <!-- PAINEL REVENDEDOR -->
@@ -990,6 +1003,61 @@
   });
 
   // ===== WhatsApp flutuante =====
+  // ===== Chave de API =====
+  $('btn-gerar-chave')?.addEventListener('click', async () => {
+    $('btn-gerar-chave').disabled = true;
+    $('api-key-msg').textContent = 'Gerando...';
+    try{
+      const senha = prompt('Digite sua senha para confirmar:');
+      if(!senha){ $('btn-gerar-chave').disabled = false; return; }
+      const r = await fetch(`${API_BASE}/api/auth-cliente`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ acao:'gerar-chave', clienteId, senha })
+      });
+      const data = await r.json();
+      if(r.ok && data.chave){
+        localStorage.setItem('eng_apiKey', data.chave);
+        $('api-key-display').textContent = data.chave;
+        $('api-key-msg').textContent = '✅ Chave gerada! Guarde em local seguro.';
+        $('api-key-msg').className = 'msg ok';
+      } else {
+        $('api-key-msg').textContent = data.erro || 'Senha incorreta ou erro ao gerar chave';
+        $('api-key-msg').className = 'msg erro';
+      }
+    }catch(e){ $('api-key-msg').textContent = 'Erro de conexão'; $('api-key-msg').className = 'msg erro'; }
+    $('btn-gerar-chave').disabled = false;
+  });
+
+  $('btn-revogar-chave')?.addEventListener('click', async () => {
+    if(!confirm('Revogar a chave vai invalidar todas as integrações que a usam. Confirma?')) return;
+    const senha = prompt('Digite sua senha:');
+    if(!senha) return;
+    const r = await fetch(`${API_BASE}/api/auth-cliente`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ acao:'revogar-chave', clienteId, senha })
+    });
+    if(r.ok){
+      localStorage.removeItem('eng_apiKey');
+      $('api-key-display').textContent = 'Nenhuma chave gerada';
+      $('api-key-msg').textContent = '🗑️ Chave revogada.';
+      $('api-key-msg').className = 'msg';
+    }
+  });
+
+  $('btn-copiar-chave')?.addEventListener('click', () => {
+    const chave = $('api-key-display').textContent;
+    if(chave && chave !== 'Nenhuma chave gerada'){
+      navigator.clipboard.writeText(chave);
+      $('api-key-msg').textContent = '📋 Copiado!';
+      $('api-key-msg').className = 'msg ok';
+      setTimeout(()=>{ if($('api-key-msg')) $('api-key-msg').textContent=''; }, 2000);
+    }
+  });
+
+  // recupera chave salva no localStorage
+  const chaveSalva = localStorage.getItem('eng_apiKey');
+  if(chaveSalva && $('api-key-display')) $('api-key-display').textContent = chaveSalva;
+
   async function carregarSuporte(){
     try{
       const r = await fetch(`${API_BASE}/api/config`);
