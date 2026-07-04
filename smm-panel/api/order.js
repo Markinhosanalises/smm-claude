@@ -9,6 +9,15 @@ function calcularPreco(servico, lucroGlobal, cotacao) {
   return Math.round(precoPorMil * 100) / 100;
 }
 
+async function gerarNumeroPedido() {
+  // pega o contador atual e incrementa atomicamente
+  const contador = (await fbGet('config/contadorPedidos').catch(() => null)) || 0;
+  const novo = Number(contador) + 1;
+  await fbPatch('config', { contadorPedidos: novo });
+  // formata como #00001, #00002, etc.
+  return '#' + String(novo).padStart(5, '0');
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ erro: 'Método não permitido' });
@@ -52,7 +61,9 @@ module.exports = async (req, res) => {
       }
 
       // 1. Cria o pedido primeiro com status executando
+      const numeroPedido = await gerarNumeroPedido();
       const pedido = {
+        numeroPedido,
         idFornecedor,
         nomeServico: servico.nomeCustomizado || servico.nomeOriginal,
         link,
@@ -105,7 +116,9 @@ module.exports = async (req, res) => {
     }
 
     // pagamento via PIX (fluxo normal)
+    const numeroPedido = await gerarNumeroPedido();
     const pedido = {
+      numeroPedido,
       idFornecedor,
       nomeServico: servico.nomeCustomizado || servico.nomeOriginal,
       link,
