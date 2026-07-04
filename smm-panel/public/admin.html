@@ -177,11 +177,17 @@
   <div class="admin-section" id="tab-pedidos">
   <div class="card">
     <h2>Pedidos</h2>
-    <button class="secundario" id="pedidos-btn">Atualizar lista</button>
-    <div style="overflow-x:auto;margin-top:14px;">
+    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:flex-end;flex-wrap:wrap;">
+      <div style="flex:1;">
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px;">Buscar por cliente, serviço ou nº pedido</label>
+        <input id="busca-pedido" placeholder="Ex: marcos, #00042, seguidores..." style="margin-bottom:0;">
+      </div>
+      <button class="secundario" id="pedidos-btn">Atualizar</button>
+    </div>
+    <div style="overflow-x:auto;">
       <table>
         <thead>
-          <tr><th>Nº Pedido</th><th>ID Fornecedor</th><th>Serviço</th><th>Qtd</th><th>Valor</th><th>Status</th><th>Criado em</th><th></th></tr>
+          <tr><th>Nº Pedido</th><th>Cliente</th><th>ID Fornecedor</th><th>Serviço</th><th>Qtd</th><th>Valor</th><th>Status</th><th>Criado em</th><th></th></tr>
         </thead>
         <tbody id="tabela-pedidos-body"></tbody>
       </table>
@@ -255,6 +261,7 @@
             <th>Cadastro</th>
             <th>Desconto %</th>
             <th>Creditar R$</th>
+            <th></th>
           </tr>
         </thead>
         <tbody id="tabela-clientes-body"></tbody>
@@ -514,32 +521,67 @@
     });
   }
 
+  let todosPedidos = [];
+
   async function carregarPedidos(){
     const r = await fetch(`${API_BASE}/api/pedidos?pin=${encodeURIComponent(PIN)}`);
     const data = await r.json();
+    todosPedidos = data.pedidos || [];
+
+    // busca os nomes dos clientes no Firebase pra exibir
+    const clientesCache = {};
+    for(const p of todosPedidos){
+      if(p.clienteId && !clientesCache[p.clienteId]){
+        try{
+          const rc = await fetch(`${API_BASE}/api/carteira?pin=${encodeURIComponent(PIN)}&todos=1`);
+          const dc = await rc.json();
+          (dc.clientes||[]).forEach(c => clientesCache[c.clienteId] = c);
+        }catch(e){}
+        break; // faz só uma chamada, não uma por pedido
+      }
+    }
+
+    renderizarPedidos(todosPedidos, clientesCache);
+    window._clientesCache = clientesCache;
+  }
+
+  function renderizarPedidos(pedidos, clientesCache){
+    const busca = ($('busca-pedido')?.value || '').toLowerCase();
+    const lista = busca ? pedidos.filter(p =>
+      (p.numeroPedido||'').toLowerCase().includes(busca) ||
+      (p.nomeServico||'').toLowerCase().includes(busca) ||
+      (p.clienteId||'').includes(busca) ||
+      ((clientesCache||{})[p.clienteId]?.nome||'').toLowerCase().includes(busca) ||
+      ((clientesCache||{})[p.clienteId]?.usuario||'').toLowerCase().includes(busca)
+    ) : pedidos;
+
     const tbody = $('tabela-pedidos-body');
     tbody.innerHTML = '';
-    (data.pedidos || []).forEach((p) => {
+    lista.forEach((p) => {
+      const cli = (clientesCache||{})[p.clienteId];
+      const nomeCliente = cli ? `${cli.nome||''} ${cli.usuario?'(@'+cli.usuario+')':''}`.trim() : (p.clienteId || '-');
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="color:var(--accent);font-weight:700;">${p.numeroPedido || '-'}</td>
-        <td style="font-size:12px;color:var(--muted);">${p.orderIdFornecedor || '⏳ aguardando'}</td>
-        <td>${p.nomeServico}</td>
+        <td style="font-size:12px;">
+          <div style="font-weight:600;">${cli?.nome || p.clienteId || '-'}</div>
+          ${cli?.usuario ? `<div style="color:var(--muted);font-size:11px;">@${cli.usuario}</div>` : ''}
+        </td>
+        <td style="font-size:12px;color:var(--muted);">${p.orderIdFornecedor || '⏳'}</td>
+        <td style="font-size:13px;">${p.nomeServico || '-'}</td>
         <td>${p.quantidade}</td>
         <td>R$ ${Number(p.valorTotal).toFixed(2)}</td>
         <td><span class="tag ${p.status === 'concluido' ? 'ativo' : 'inativo'}">${p.status}</span></td>
-        <td>${new Date(p.criadoEm).toLocaleString('pt-BR')}</td>
-        <td>${p.status === 'aguardando_pagamento' ? `<button class="secundario btn-confirmar-pgto" data-id="${p.id}">✅ Confirmar pgto</button>` : ''}</td>
+        <td style="font-size:12px;">${new Date(p.criadoEm).toLocaleString('pt-BR')}</td>
+        <td>${p.status === 'aguardando_pagamento' ? `<button class="secundario btn-confirmar-pgto" data-id="${p.id}" style="font-size:12px;padding:6px 10px;">✅ Confirmar</button>` : ''}</td>
       `;
       tbody.appendChild(tr);
     });
 
     document.querySelectorAll('.btn-confirmar-pgto').forEach((btn) => {
       btn.addEventListener('click', async () => {
-        btn.disabled = true;
-        btn.textContent = 'Confirmando...';
+        btn.disabled = true; btn.textContent = 'Confirmando...';
         const r = await fetch(`${API_BASE}/api/pagamento?pin=${encodeURIComponent(PIN)}&pedidoId=${btn.dataset.id}`);
-        const data = await r.json();
         btn.textContent = r.ok ? 'Enviado ✓' : 'Erro';
         if(r.ok) setTimeout(carregarPedidos, 1500);
       });
@@ -547,6 +589,10 @@
   }
 
   $('pedidos-btn').addEventListener('click', carregarPedidos);
+
+  $('busca-pedido')?.addEventListener('input', () => {
+    renderizarPedidos(todosPedidos, window._clientesCache || {});
+  });
 
   // ===== Redes sociais cadastradas =====
   let redesCadastradas = JSON.parse(localStorage.getItem('admin_redes') || '[]');
@@ -803,6 +849,9 @@
             <button class="secundario btn-creditar" data-id="${c.whatsapp || c.clienteId}" style="font-size:12px;padding:6px 10px;">💰</button>
           </div>
         </td>
+        <td>
+          <button class="secundario btn-historico" data-id="${c.whatsapp || c.clienteId}" data-nome="${c.nome||c.clienteId}" style="font-size:12px;padding:6px 10px;">📋 Histórico</button>
+        </td>
       `;
       tbody.appendChild(tr);
     });
@@ -898,8 +947,111 @@
   $('ordenar-servico').addEventListener('change', () => {
     carregarServicos($('busca-servico').value);
   });
+
+  // ===== Histórico do cliente =====
+  async function abrirHistorico(clienteId, nomeCliente){
+    $('modal-cliente-nome').textContent = nomeCliente;
+    $('modal-historico').style.display = 'block';
+    $('modal-pedidos-lista').innerHTML = '<p style="color:var(--muted);font-size:13px;">Carregando...</p>';
+    $('modal-recargas-lista').innerHTML = '<p style="color:var(--muted);font-size:13px;">Carregando...</p>';
+
+    // pedidos do cliente
+    try{
+      const r = await fetch(`${API_BASE}/api/pedidos?clienteId=${encodeURIComponent(clienteId)}`);
+      const data = await r.json();
+      const pedidos = data.pedidos || [];
+      const totalGasto = pedidos.reduce((s,p)=>s+Number(p.valorTotal||0),0);
+      $('modal-total-pedidos').textContent = pedidos.length;
+      $('modal-total-gasto').textContent = `R$ ${totalGasto.toFixed(2)}`;
+
+      $('modal-pedidos-lista').innerHTML = pedidos.length === 0
+        ? '<p style="color:var(--muted);font-size:13px;">Nenhum pedido.</p>'
+        : pedidos.map(p=>`
+          <div style="border-bottom:1px solid var(--line);padding:8px 0;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <span style="color:var(--accent);font-weight:700;font-size:12px;">${p.numeroPedido||'-'}</span>
+              <span style="font-size:13px;margin-left:8px;">${p.nomeServico||'-'}</span>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px;font-weight:700;">R$ ${Number(p.valorTotal).toFixed(2)}</div>
+              <div style="font-size:11px;color:var(--muted);">${p.status} · ${new Date(p.criadoEm).toLocaleDateString('pt-BR')}</div>
+            </div>
+          </div>`).join('');
+    }catch(e){
+      $('modal-pedidos-lista').innerHTML = '<p style="color:#ff8b8b;font-size:13px;">Erro ao carregar pedidos.</p>';
+    }
+
+    // recargas do cliente
+    try{
+      const r2 = await fetch(`https://smm-panel-e762e-default-rtdb.firebaseio.com/depositos.json`);
+      const deps = await r2.json() || {};
+      const minhasRecargas = Object.entries(deps)
+        .filter(([,d]) => d && d.clienteId === clienteId)
+        .sort(([,a],[,b]) => b.criadoEm - a.criadoEm);
+
+      // busca saldo atual
+      const r3 = await fetch(`${API_BASE}/api/carteira?clienteId=${encodeURIComponent(clienteId)}`);
+      const saldoData = await r3.json();
+      $('modal-saldo-atual').textContent = `R$ ${Number(saldoData.saldo||0).toFixed(2)}`;
+
+      $('modal-recargas-lista').innerHTML = minhasRecargas.length === 0
+        ? '<p style="color:var(--muted);font-size:13px;">Nenhuma recarga via PIX registrada.</p>'
+        : minhasRecargas.map(([id,d])=>`
+          <div style="border-bottom:1px solid var(--line);padding:8px 0;display:flex;justify-content:space-between;">
+            <div style="font-size:13px;">💰 Recarga PIX</div>
+            <div style="text-align:right;">
+              <div style="font-weight:700;color:var(--accent);">+ R$ ${Number(d.valor||0).toFixed(2)}</div>
+              <div style="font-size:11px;color:var(--muted);">${d.status} · ${new Date(d.criadoEm).toLocaleDateString('pt-BR')}</div>
+            </div>
+          </div>`).join('');
+    }catch(e){
+      $('modal-recargas-lista').innerHTML = '<p style="color:#ff8b8b;font-size:13px;">Erro ao carregar recargas.</p>';
+    }
+  }
+
+  // delega o clique no btn-historico (funciona mesmo após rerenderização)
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.btn-historico');
+    if(btn) abrirHistorico(btn.dataset.id, btn.dataset.nome);
+  });
+
 })();
 </script>
+
+<!-- Modal histórico -->
+<div id="modal-historico" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.75);overflow-y:auto;padding:40px 16px;">
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:18px;max-width:680px;margin:0 auto;padding:28px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div>
+        <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Histórico do cliente</div>
+        <h2 style="font-size:18px;margin:0;" id="modal-cliente-nome">—</h2>
+      </div>
+      <button onclick="document.getElementById('modal-historico').style.display='none'" style="background:none;border:1px solid var(--line);color:var(--muted);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;">✕ Fechar</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
+      <div style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:12px;">
+        <div style="font-size:11px;color:var(--muted);">Total gasto</div>
+        <div style="font-size:20px;font-weight:800;color:var(--accent);" id="modal-total-gasto">R$ 0,00</div>
+      </div>
+      <div style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:12px;">
+        <div style="font-size:11px;color:var(--muted);">Pedidos</div>
+        <div style="font-size:20px;font-weight:800;" id="modal-total-pedidos">0</div>
+      </div>
+      <div style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:12px;">
+        <div style="font-size:11px;color:var(--muted);">Saldo atual</div>
+        <div style="font-size:20px;font-weight:800;color:var(--accent);" id="modal-saldo-atual">R$ 0,00</div>
+      </div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;">📦 Pedidos</div>
+      <div id="modal-pedidos-lista"></div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;">💰 Recargas</div>
+      <div id="modal-recargas-lista"></div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
