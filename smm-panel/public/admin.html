@@ -233,7 +233,8 @@
             <th>Saldo</th>
             <th>Último crédito</th>
             <th>Cadastro</th>
-            <th>Creditar</th>
+            <th>Desconto %</th>
+            <th>Creditar R$</th>
           </tr>
         </thead>
         <tbody id="tabela-clientes-body"></tbody>
@@ -718,11 +719,28 @@
         <td style="font-size:12px;color:var(--muted);">${c.ultimoCredito ? new Date(c.ultimoCredito).toLocaleDateString('pt-BR') : '-'}</td>
         <td style="font-size:12px;color:var(--muted);">${c.criadoEm ? new Date(c.criadoEm).toLocaleDateString('pt-BR') : '-'}</td>
         <td style="display:flex;gap:6px;align-items:center;">
-          <input type="number" min="0.01" step="0.01" placeholder="R$" style="width:80px;margin-bottom:0;padding:6px 8px;font-size:12px;" data-creditar="${c.whatsapp}">
-          <button class="secundario btn-creditar" data-id="${c.whatsapp}" style="font-size:12px;padding:6px 10px;">💰</button>
+          <input type="number" min="0" max="90" placeholder="%" style="width:60px;margin-bottom:0;padding:6px 8px;font-size:12px;" data-desconto="${c.whatsapp || c.clienteId}" value="${c.desconto||0}">
+          <button class="secundario btn-desconto" data-id="${c.whatsapp || c.clienteId}" style="font-size:12px;padding:6px 8px;" title="Salvar desconto">%</button>
+        </td>
+        <td style="display:flex;gap:6px;align-items:center;">
+          <input type="number" min="0.01" step="0.01" placeholder="R$" style="width:80px;margin-bottom:0;padding:6px 8px;font-size:12px;" data-creditar="${c.whatsapp || c.clienteId}">
+          <button class="secundario btn-creditar" data-id="${c.whatsapp || c.clienteId}" style="font-size:12px;padding:6px 10px;">💰</button>
         </td>
       `;
       tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.btn-desconto').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const input = document.querySelector(`[data-desconto="${id}"]`);
+        const desconto = Number(input.value);
+        if(isNaN(desconto)||desconto<0||desconto>90){btn.textContent='!';setTimeout(()=>btn.textContent='%',1500);return;}
+        btn.disabled=true;
+        const r = await fetch(`${API_BASE}/api/auth-cliente`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'set-desconto',pin:PIN,clienteId:id,desconto})});
+        btn.textContent=r.ok?'✓':'✗';btn.disabled=false;
+        setTimeout(()=>btn.textContent='%',1500);
+      });
     });
 
     document.querySelectorAll('.btn-creditar').forEach((btn) => {
