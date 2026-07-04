@@ -710,6 +710,7 @@
             ${p.numeroPedido ? `<strong style="color:var(--accent)">${p.numeroPedido}</strong> · ` : ''}Qtd: ${p.quantidade} · R$ ${Number(p.valorTotal).toFixed(2)} · ${new Date(p.criadoEm).toLocaleDateString('pt-BR')}
             ${p.pagamento === 'saldo' ? ' · 💰 Saldo' : ''}
           </div>
+          ${p.link ? `<div style="font-size:11.5px;margin-top:4px;"><a href="${p.link}" target="_blank" style="color:var(--muted);text-decoration:none;">🔗 ${p.link.length>50?p.link.slice(0,50)+'...':p.link}</a></div>` : ''}
           ${p.status === 'executando' || p.status === 'concluido' ? `
           <div style="margin-top:8px;">
             <div style="height:4px;background:var(--line);border-radius:4px;overflow:hidden;">
