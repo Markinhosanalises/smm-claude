@@ -118,6 +118,26 @@
     <p class="msg" id="cfg-msg"></p>
   </div>
 
+  <div class="card">
+    <h2>Redes sociais cadastradas</h2>
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;">As redes cadastradas aqui aparecem como opção ao ativar serviços no catálogo.</p>
+    <div class="row" style="align-items:flex-end;">
+      <div>
+        <label>Nome da rede (ex: instagram, tiktok)</label>
+        <input id="nova-rede-nome" placeholder="Ex: instagram" style="text-transform:lowercase;">
+      </div>
+      <div>
+        <label>Emoji (opcional)</label>
+        <input id="nova-rede-emoji" placeholder="Ex: 📸" style="width:80px;">
+      </div>
+      <div style="flex:0 0 auto;">
+        <button id="btn-add-rede">+ Adicionar</button>
+      </div>
+    </div>
+    <div id="lista-redes" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+    <p class="msg" id="redes-msg"></p>
+  </div>
+
   </div><!-- /tab-config -->
 
   <div class="admin-section" id="tab-catalogo">
@@ -453,7 +473,10 @@
         </td>
         <td><input value="${s.nomeCustomizado || ''}" data-campo="nomeCustomizado" data-id="${s.idFornecedor}"></td>
         <td>${s.categoriaOriginal || ''}</td>
-        <td><input value="${s.redeSocial || ''}" placeholder="instagram" data-campo="redeSocial" data-id="${s.idFornecedor}"></td>
+        <td><select data-campo="redeSocial" data-id="${s.idFornecedor}" style="margin-bottom:0;padding:6px 8px;font-size:12.5px;">
+          <option value="">-- selecione --</option>
+          ${redesCadastradas.map(r=>`<option value="${r.nome}" ${s.redeSocial===r.nome?'selected':''}>${r.emoji||''} ${r.nome}</option>`).join('')}
+        </select></td>
         <td><input value="${s.servicoTipo || ''}" placeholder="seguidores" data-campo="servicoTipo" data-id="${s.idFornecedor}"></td>
         <td>${s.taxaCusto}</td>
         <td><input class="small-input" type="number" value="${s.lucroPercentual ?? ''}" data-campo="lucroPercentual" data-id="${s.idFornecedor}" data-custo="${s.taxaCusto}"></td>
@@ -525,7 +548,57 @@
 
   $('pedidos-btn').addEventListener('click', carregarPedidos);
 
-  // ===== Abas do admin =====
+  // ===== Redes sociais cadastradas =====
+  let redesCadastradas = JSON.parse(localStorage.getItem('admin_redes') || '[]');
+
+  // redes padrão se não tiver nenhuma cadastrada
+  if (redesCadastradas.length === 0) {
+    redesCadastradas = [
+      { nome: 'instagram', emoji: '📸' },
+      { nome: 'tiktok', emoji: '🎵' },
+      { nome: 'youtube', emoji: '▶️' },
+      { nome: 'facebook', emoji: '📘' },
+      { nome: 'twitter', emoji: '𝕏' },
+    ];
+    localStorage.setItem('admin_redes', JSON.stringify(redesCadastradas));
+  }
+
+  function salvarRedes() {
+    localStorage.setItem('admin_redes', JSON.stringify(redesCadastradas));
+  }
+
+  function renderizarRedes() {
+    const lista = $('lista-redes');
+    if (!lista) return;
+    lista.innerHTML = redesCadastradas.map((r, i) => `
+      <div style="display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:5px 12px;">
+        <span>${r.emoji || ''} ${r.nome}</span>
+        <button onclick="removerRede(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0;font-size:14px;line-height:1;">×</button>
+      </div>
+    `).join('');
+  }
+
+  window.removerRede = function(i) {
+    redesCadastradas.splice(i, 1);
+    salvarRedes();
+    renderizarRedes();
+  };
+
+  $('btn-add-rede').addEventListener('click', () => {
+    const nome = $('nova-rede-nome').value.trim().toLowerCase();
+    const emoji = $('nova-rede-emoji').value.trim();
+    if (!nome) { $('redes-msg').textContent = 'Digite o nome da rede'; return; }
+    if (redesCadastradas.find(r => r.nome === nome)) { $('redes-msg').textContent = 'Rede já cadastrada'; return; }
+    redesCadastradas.push({ nome, emoji });
+    salvarRedes();
+    renderizarRedes();
+    $('nova-rede-nome').value = '';
+    $('nova-rede-emoji').value = '';
+    $('redes-msg').textContent = '✅ Rede adicionada!';
+    setTimeout(() => $('redes-msg').textContent = '', 2000);
+  });
+
+  renderizarRedes();
   document.querySelectorAll('.admin-tab').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('ativa'));
