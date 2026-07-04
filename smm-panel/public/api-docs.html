@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fênix Social API — Documentação</title>
+<style>
+  :root{--bg:#080a09;--dark:#0d110e;--card:#121a14;--line:#1e2b20;--green:#7CFFB2;--green-dim:#1a3d24;--text:#eef4f0;--muted:#7a9480;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.6;}
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:14px 32px;background:rgba(8,10,9,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);}
+  .nav-logo{font-size:18px;font-weight:800;color:var(--green);text-decoration:none;}
+  .nav-logo span{color:var(--text);}
+  .nav-btn{background:var(--green);color:#061409;border:none;padding:8px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;}
+  .layout{display:flex;min-height:100vh;padding-top:56px;}
+  .sidebar{width:240px;flex-shrink:0;position:fixed;top:56px;bottom:0;overflow-y:auto;padding:24px 16px;border-right:1px solid var(--line);background:var(--dark);}
+  .sidebar h3{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:20px 0 8px;padding:0 8px;}
+  .sidebar a{display:block;padding:7px 12px;border-radius:8px;text-decoration:none;color:var(--muted);font-size:13.5px;transition:background .15s,color .15s;}
+  .sidebar a:hover,.sidebar a.ativa{background:var(--green-dim);color:var(--green);}
+  .content{margin-left:240px;padding:40px 48px;max-width:900px;width:100%;}
+  h1{font-size:2rem;font-weight:900;margin-bottom:8px;}
+  h2{font-size:1.3rem;font-weight:800;margin:48px 0 12px;padding-top:48px;border-top:1px solid var(--line);}
+  h2:first-of-type{border-top:none;padding-top:0;}
+  h3{font-size:1rem;font-weight:700;margin:24px 0 8px;}
+  p{color:var(--muted);font-size:14.5px;margin-bottom:14px;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700;margin-right:8px;}
+  .get{background:#1a2f1a;color:#7CFFB2;}
+  .post{background:#2a1f0e;color:#ffc97c;}
+  .endpoint{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 24px;margin-bottom:16px;}
+  .endpoint-title{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:15px;font-weight:700;}
+  .endpoint-url{font-family:monospace;font-size:13px;color:var(--green);}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:16px;}
+  th{text-align:left;padding:8px 12px;background:var(--card);color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--line);}
+  td{padding:10px 12px;border-bottom:1px solid var(--line);}
+  td:first-child{font-family:monospace;color:var(--green);font-size:13px;}
+  td:last-child{color:var(--muted);}
+  pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;font-size:12.5px;overflow-x:auto;margin-bottom:16px;font-family:'Courier New',monospace;line-height:1.6;}
+  code{background:var(--card);border:1px solid var(--line);padding:2px 7px;border-radius:5px;font-size:12.5px;font-family:monospace;color:var(--green);}
+  .alert{background:var(--green-dim);border:1px solid rgba(124,255,178,.2);border-radius:10px;padding:14px 18px;font-size:13.5px;margin-bottom:20px;}
+  .alert strong{color:var(--green);}
+  .copy-btn{float:right;background:transparent;border:1px solid var(--line);color:var(--muted);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;transition:border-color .15s;}
+  .copy-btn:hover{border-color:var(--green);color:var(--green);}
+  @media(max-width:768px){.sidebar{display:none;}.content{margin-left:0;padding:24px 20px;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">🔥 <span>Fênix Social</span> <span style="color:var(--muted);font-weight:400;font-size:14px;">/ API Docs</span></a>
+  <a href="/app.html" class="nav-btn">Acessar painel</a>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <h3>Início</h3>
+    <a href="#introducao" class="ativa">Introdução</a>
+    <a href="#autenticacao">Autenticação</a>
+    <a href="#erros">Erros</a>
+
+    <h3>Endpoints</h3>
+    <a href="#services">Listar serviços</a>
+    <a href="#balance">Consultar saldo</a>
+    <a href="#add">Criar pedido</a>
+    <a href="#status">Status do pedido</a>
+
+    <h3>Exemplos</h3>
+    <a href="#exemplo-curl">cURL</a>
+    <a href="#exemplo-js">JavaScript</a>
+    <a href="#exemplo-python">Python</a>
+  </aside>
+
+  <main class="content">
+    <h1>Fênix Social API</h1>
+    <p>Integre nossa plataforma de marketing digital diretamente no seu sistema. Crie pedidos, consulte status e gerencie saldo programaticamente.</p>
+
+    <div class="alert">
+      <strong>URL base:</strong> <code>https://fenixsocial.site/api/public-api</code><br>
+      Todos os endpoints usam essa URL base com o parâmetro <code>action</code>.
+    </div>
+
+    <h2 id="autenticacao">Autenticação</h2>
+    <p>Todas as requisições precisam de uma chave de API. Gere a sua no painel em <strong>Configurações → API</strong>.</p>
+    <p>Passe a chave em toda requisição via header ou query param:</p>
+
+    <h3>Via header (recomendado)</h3>
+    <pre>Authorization: Bearer fsx_sua_chave_aqui</pre>
+
+    <h3>Via query param</h3>
+    <pre>https://fenixsocial.site/api/public-api?action=balance&key=fsx_sua_chave_aqui</pre>
+
+    <h2 id="erros">Erros</h2>
+    <p>Quando algo dá errado, a API retorna um objeto com o campo <code>error</code>:</p>
+    <pre>{"error": "Saldo insuficiente. Disponível: R$ 5.00. Necessário: R$ 10.00"}</pre>
+    <table>
+      <tr><th>Código</th><th>Significado</th></tr>
+      <tr><td>200</td><td>Sucesso</td></tr>
+      <tr><td>400</td><td>Parâmetros inválidos ou saldo insuficiente</td></tr>
+      <tr><td>401</td><td>Chave de API inválida ou ausente</td></tr>
+      <tr><td>404</td><td>Serviço ou pedido não encontrado</td></tr>
+      <tr><td>500</td><td>Erro interno — entre em contato com o suporte</td></tr>
+    </table>
+
+    <h2 id="services">Listar serviços</h2>
+    <div class="endpoint">
+      <div class="endpoint-title">
+        <span class="badge get">GET</span>
+        <span class="endpoint-url">?action=services</span>
+      </div>
+      <p>Retorna todos os serviços disponíveis com o preço já calculado para a sua conta (com desconto aplicado se houver).</p>
+      <h3>Resposta</h3>
+      <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>[
+  {
+    "service": "1234",
+    "name": "Instagram Seguidores Brasileiros",
+    "category": "Instagram Followers [Brazil]",
+    "type": "seguidores",
+    "rate": 2.50,
+    "min": 100,
+    "max": 10000,
+    "refill": true
+  },
+  ...
+]</pre>
+      <table>
+        <tr><th>Campo</th><th>Descrição</th></tr>
+        <tr><td>service</td><td>ID do serviço (use no action=add)</td></tr>
+        <tr><td>name</td><td>Nome do serviço</td></tr>
+        <tr><td>rate</td><td>Preço por 1000 unidades em BRL</td></tr>
+        <tr><td>min / max</td><td>Quantidade mínima e máxima por pedido</td></tr>
+        <tr><td>refill</td><td>Se o serviço tem reposição automática</td></tr>
+      </table>
+    </div>
+
+    <h2 id="balance">Consultar saldo</h2>
+    <div class="endpoint">
+      <div class="endpoint-title">
+        <span class="badge get">GET</span>
+        <span class="endpoint-url">?action=balance</span>
+      </div>
+      <p>Retorna o saldo disponível na carteira da sua conta.</p>
+      <h3>Resposta</h3>
+      <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>{
+  "balance": "47.50",
+  "currency": "BRL"
+}</pre>
+    </div>
+
+    <h2 id="add">Criar pedido</h2>
+    <div class="endpoint">
+      <div class="endpoint-title">
+        <span class="badge post">POST</span>
+        <span class="endpoint-url">?action=add</span>
+      </div>
+      <p>Cria um novo pedido. O valor é debitado automaticamente do saldo da sua carteira.</p>
+      <h3>Parâmetros (body JSON)</h3>
+      <table>
+        <tr><th>Parâmetro</th><th>Tipo</th><th>Descrição</th></tr>
+        <tr><td>action</td><td>string</td><td>"add"</td></tr>
+        <tr><td>service</td><td>string</td><td>ID do serviço (veja action=services)</td></tr>
+        <tr><td>link</td><td>string</td><td>Link do perfil ou postagem</td></tr>
+        <tr><td>quantity</td><td>number</td><td>Quantidade desejada</td></tr>
+        <tr><td>comments</td><td>string</td><td>(opcional) Comentários separados por linha</td></tr>
+      </table>
+      <h3>Exemplo de requisição</h3>
+      <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>{
+  "action": "add",
+  "service": "1234",
+  "link": "https://instagram.com/seuperfil",
+  "quantity": 500
+}</pre>
+      <h3>Resposta</h3>
+      <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>{
+  "order": "#00042",
+  "status": "executando",
+  "charge": "1.25",
+  "currency": "BRL"
+}</pre>
+      <div class="alert" style="margin-top:16px;">
+        <strong>⚠️ Atenção:</strong> O perfil ou publicação deve estar <strong>público</strong>. Pedidos com perfis privados não são reembolsados.
+      </div>
+    </div>
+
+    <h2 id="status">Status do pedido</h2>
+    <div class="endpoint">
+      <div class="endpoint-title">
+        <span class="badge get">GET</span>
+        <span class="endpoint-url">?action=status&order=NUMERO</span>
+      </div>
+      <p>Consulta o status atual de um pedido pelo número gerado no momento da criação.</p>
+      <table>
+        <tr><th>Parâmetro</th><th>Descrição</th></tr>
+        <tr><td>order</td><td>Número do pedido (ex: #00042)</td></tr>
+      </table>
+      <h3>Resposta</h3>
+      <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>{
+  "order": "#00042",
+  "status": "executando",
+  "charge": "1.25",
+  "start_count": 1200,
+  "remains": 300,
+  "currency": "BRL"
+}</pre>
+      <table>
+        <tr><th>Status</th><th>Significado</th></tr>
+        <tr><td>executando</td><td>Pedido em andamento</td></tr>
+        <tr><td>concluido</td><td>Pedido finalizado com sucesso</td></tr>
+        <tr><td>aguardando_pagamento</td><td>Aguardando confirmação de pagamento</td></tr>
+        <tr><td>cancelado</td><td>Pedido cancelado</td></tr>
+        <tr><td>erro_fornecedor</td><td>Erro ao processar — entre em contato com o suporte</td></tr>
+      </table>
+    </div>
+
+    <h2 id="exemplo-curl">Exemplos — cURL</h2>
+    <h3>Listar serviços</h3>
+    <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>curl "https://fenixsocial.site/api/public-api?action=services" \
+  -H "Authorization: Bearer fsx_sua_chave_aqui"</pre>
+
+    <h3>Criar pedido</h3>
+    <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>curl -X POST "https://fenixsocial.site/api/public-api?action=add" \
+  -H "Authorization: Bearer fsx_sua_chave_aqui" \
+  -H "Content-Type: application/json" \
+  -d '{"action":"add","service":"1234","link":"https://instagram.com/seuperfil","quantity":500}'</pre>
+
+    <h2 id="exemplo-js">Exemplos — JavaScript</h2>
+    <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>const API_KEY = 'fsx_sua_chave_aqui';
+const BASE = 'https://fenixsocial.site/api/public-api';
+const headers = { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' };
+
+// Listar serviços
+const services = await fetch(`${BASE}?action=services`, { headers }).then(r => r.json());
+
+// Criar pedido
+const order = await fetch(`${BASE}?action=add`, {
+  method: 'POST',
+  headers,
+  body: JSON.stringify({ action: 'add', service: '1234', link: 'https://instagram.com/perfil', quantity: 500 })
+}).then(r => r.json());
+
+console.log(order); // { order: '#00042', status: 'executando', charge: '1.25', currency: 'BRL' }
+
+// Consultar status
+const status = await fetch(`${BASE}?action=status&order=${order.order}`, { headers }).then(r => r.json());</pre>
+
+    <h2 id="exemplo-python">Exemplos — Python</h2>
+    <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>import requests
+
+API_KEY = 'fsx_sua_chave_aqui'
+BASE = 'https://fenixsocial.site/api/public-api'
+HEADERS = {'Authorization': f'Bearer {API_KEY}', 'Content-Type': 'application/json'}
+
+# Listar serviços
+services = requests.get(f'{BASE}?action=services', headers=HEADERS).json()
+
+# Criar pedido
+order = requests.post(f'{BASE}?action=add', headers=HEADERS, json={
+    'action': 'add',
+    'service': '1234',
+    'link': 'https://instagram.com/seuperfil',
+    'quantity': 500
+}).json()
+
+print(order)  # {'order': '#00042', 'status': 'executando', 'charge': '1.25', 'currency': 'BRL'}
+
+# Consultar status
+status = requests.get(f'{BASE}?action=status&order={order["order"]}', headers=HEADERS).json()</pre>
+
+    <div style="margin-top:60px;padding:24px;background:var(--card);border:1px solid var(--line);border-radius:14px;text-align:center;">
+      <p style="margin:0 0 12px;">Precisa de ajuda com a integração?</p>
+      <a href="/app.html" class="nav-btn">Falar com o suporte</a>
+    </div>
+
+    <div style="height:60px;"></div>
+  </main>
+</div>
+
+<script>
+  function copiar(btn){
+    const pre = btn.parentElement;
+    const texto = pre.innerText.replace('Copiar','').trim();
+    navigator.clipboard.writeText(texto).then(()=>{
+      btn.textContent = 'Copiado ✓';
+      setTimeout(()=>btn.textContent='Copiar', 2000);
+    });
+  }
+
+  // highlight ativo na sidebar
+  const links = document.querySelectorAll('.sidebar a');
+  window.addEventListener('scroll', ()=>{
+    const pos = window.scrollY + 100;
+    links.forEach(a=>{
+      const id = a.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      if(el && el.offsetTop <= pos && el.offsetTop + el.offsetHeight > pos){
+        links.forEach(l=>l.classList.remove('ativa'));
+        a.classList.add('ativa');
+      }
+    });
+  });
+</script>
+</body>
+</html>
