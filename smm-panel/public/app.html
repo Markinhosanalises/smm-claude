@@ -246,6 +246,16 @@
       <input class="auth-input" id="auth-usuario" placeholder="🆔 Escolha um usuário (ex: marcos123)" autocomplete="username" style="text-transform:lowercase;">
       <input class="auth-input" id="auth-whats" placeholder="📱 WhatsApp com DDD (ex: 21999999999)" type="tel">
       <input class="auth-input" id="auth-senha-cad" placeholder="🔒 Crie uma senha" type="password">
+      <select class="auth-input" id="auth-origem" style="cursor:pointer;">
+        <option value="">🔍 Como nos conheceu?</option>
+        <option value="google">🔎 Google</option>
+        <option value="youtube">▶️ YouTube</option>
+        <option value="instagram">📸 Instagram</option>
+        <option value="facebook">📘 Facebook</option>
+        <option value="tiktok">🎵 TikTok</option>
+        <option value="indicacao">👥 Indicação de amigo</option>
+        <option value="outros">💬 Outros</option>
+      </select>
       <button class="auth-btn" id="btn-cadastrar">Criar conta</button>
       <div class="auth-toggle">
         <button id="btn-toggle-login">Já tenho conta — entrar</button>
@@ -371,6 +381,74 @@
     </div>
   </div>
 
+  <!-- PAINEL REVENDEDOR -->
+  <div id="painel-revendedor" class="hidden">
+    <div class="card" style="margin-bottom:16px;">
+      <p class="eyebrow">Painel Revendedor</p>
+      <h2 class="title" style="font-size:18px;" id="rev-saudacao">Bem-vindo!</h2>
+      <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;">
+        <div style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:14px 18px;flex:1;min-width:120px;">
+          <div style="font-size:11px;color:var(--muted);">Seu saldo</div>
+          <div style="font-size:22px;font-weight:800;color:var(--accent);" id="rev-saldo">R$ 0,00</div>
+        </div>
+        <div style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:14px 18px;flex:1;min-width:120px;">
+          <div style="font-size:11px;color:var(--muted);">Clientes</div>
+          <div style="font-size:22px;font-weight:800;color:var(--text);" id="rev-total-clientes">0</div>
+        </div>
+        <div style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:14px 18px;flex:1;min-width:120px;">
+          <div style="font-size:11px;color:var(--muted);">Seu desconto</div>
+          <div style="font-size:22px;font-weight:800;color:var(--accent);" id="rev-desconto">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs" style="display:flex;margin-bottom:16px;">
+      <div class="tab ativa" id="tab-rev-clientes" style="cursor:pointer;">👥 Clientes</div>
+      <div class="tab" id="tab-rev-pedidos" style="cursor:pointer;">📦 Pedidos</div>
+      <div class="tab" id="tab-rev-novo" style="cursor:pointer;">➕ Novo cliente</div>
+    </div>
+
+    <div id="painel-rev-clientes" class="card">
+      <p class="eyebrow">Seus clientes</p>
+      <div id="lista-rev-clientes" style="margin-top:12px;"></div>
+      <p class="msg" id="rev-clientes-msg"></p>
+    </div>
+
+    <div id="painel-rev-pedidos" class="card hidden">
+      <p class="eyebrow">Pedidos dos clientes</p>
+      <div style="overflow-x:auto;margin-top:12px;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead><tr style="color:var(--muted);font-size:11px;">
+            <th style="text-align:left;padding:6px;">Nº</th>
+            <th style="text-align:left;padding:6px;">Cliente</th>
+            <th style="text-align:left;padding:6px;">Serviço</th>
+            <th style="text-align:left;padding:6px;">Qtd</th>
+            <th style="text-align:left;padding:6px;">Valor</th>
+            <th style="text-align:left;padding:6px;">Status</th>
+          </tr></thead>
+          <tbody id="tabela-rev-pedidos"></tbody>
+        </table>
+      </div>
+      <p class="msg" id="rev-pedidos-msg"></p>
+    </div>
+
+    <div id="painel-rev-novo" class="card hidden">
+      <p class="eyebrow">Cadastrar cliente</p>
+      <label class="label">Nome completo</label>
+      <input class="input" id="rev-nc-nome" placeholder="Nome do cliente">
+      <label class="label">WhatsApp (com DDD)</label>
+      <input class="input" id="rev-nc-whats" placeholder="21999999999" type="tel">
+      <label class="label">Usuário</label>
+      <input class="input" id="rev-nc-usuario" placeholder="cliente123">
+      <label class="label">Senha</label>
+      <input class="input" id="rev-nc-senha" placeholder="Senha do cliente" type="password">
+      <button class="btn" id="rev-nc-btn">Cadastrar cliente</button>
+      <p class="msg" id="rev-nc-msg"></p>
+    </div>
+
+    <button class="btn-sec" id="rev-sair-btn" style="margin-top:16px;width:100%;">Sair da conta</button>
+  </div>
+
 </div><!-- /container -->
 </div><!-- /area-logada -->
 
@@ -384,6 +462,8 @@
 
   let clienteId = localStorage.getItem('eng_clienteId') || null;
   let clienteNome = localStorage.getItem('eng_clienteNome') || '';
+  let isRevendedor = localStorage.getItem('eng_isRevendedor') === 'true';
+  let revendedorSenha = localStorage.getItem('eng_revSenha') || '';
   let whatsappSuporte = '';
 
   function atualizarTopBar(){
@@ -391,9 +471,19 @@
       $('auth-hero').classList.add('hidden');
       $('area-logada').classList.remove('hidden');
       $('saudacao').textContent = clienteNome ? `Olá, ${clienteNome}` : 'Logado';
-      $('tabs').classList.remove('hidden');
-      $('painel-engajar').classList.remove('hidden');
-      carregarSaldo();
+
+      if(isRevendedor){
+        // mostra painel do revendedor
+        $('tabs').classList.add('hidden');
+        $('painel-engajar').classList.add('hidden');
+        $('painel-revendedor').classList.remove('hidden');
+        carregarPainelRevendedor();
+      } else {
+        $('tabs').classList.remove('hidden');
+        $('painel-engajar').classList.remove('hidden');
+        $('painel-revendedor').classList.add('hidden');
+        carregarSaldo();
+      }
       gerarIconesFlutuantesLogado();
     } else {
       $('auth-hero').classList.remove('hidden');
@@ -401,6 +491,7 @@
       $('painel-pedidos').classList.add('hidden');
       $('painel-carteira').classList.add('hidden');
       $('painel-suporte').classList.add('hidden');
+      $('painel-revendedor').classList.add('hidden');
     }
   }
 
@@ -428,12 +519,28 @@
     const senha = $('auth-senha').value;
     if(!loginId || !senha){ msgAuth('Preenche usuário/WhatsApp e senha', 'erro'); return; }
 
-    // detecta se é WhatsApp (só números) ou usuário (tem letras)
+    // tenta primeiro como revendedor
+    const idNumerico = loginId.replace(/\D/g, '');
+    const rRev = await fetch(`${API_BASE}/api/revendedor?revendedorId=${encodeURIComponent(idNumerico)}&senha=${encodeURIComponent(senha)}`);
+    if(rRev.ok){
+      const dataRev = await rRev.json();
+      clienteId = idNumerico;
+      clienteNome = dataRev.nome || '';
+      isRevendedor = true;
+      revendedorSenha = senha;
+      localStorage.setItem('eng_clienteId', clienteId);
+      localStorage.setItem('eng_clienteNome', clienteNome);
+      localStorage.setItem('eng_isRevendedor', 'true');
+      localStorage.setItem('eng_revSenha', senha);
+      atualizarTopBar();
+      return;
+    }
+
+    // tenta como cliente normal
     const isWhats = /^\d+$/.test(loginId.replace(/[\s\-\(\)]/g, ''));
-    const acao = 'login';
     const payload = isWhats
-      ? { acao, whatsapp: loginId, senha }
-      : { acao, usuario: loginId.toLowerCase(), senha };
+      ? { acao: 'login', whatsapp: loginId, senha }
+      : { acao: 'login', usuario: loginId.toLowerCase(), senha };
 
     try{
       const r = await fetch(`${API_BASE}/api/auth-cliente`, {
@@ -444,8 +551,11 @@
       if(!r.ok){ msgAuth(data.erro || 'Usuário/WhatsApp ou senha incorretos', 'erro'); return; }
       clienteId = data.clienteId;
       clienteNome = data.nome || '';
+      isRevendedor = false;
       localStorage.setItem('eng_clienteId', clienteId);
       localStorage.setItem('eng_clienteNome', clienteNome);
+      localStorage.setItem('eng_isRevendedor', 'false');
+      localStorage.removeItem('eng_revSenha');
       atualizarTopBar();
     }catch(e){
       msgAuth('Erro de conexão', 'erro');
@@ -457,6 +567,7 @@
     const usuario = $('auth-usuario').value.trim().toLowerCase().replace(/[^a-z0-9_\.]/g, '');
     const whatsapp = $('auth-whats').value.trim();
     const senha = $('auth-senha-cad').value;
+    const origem = $('auth-origem').value || 'nao_informado';
 
     if(!nome){ msgAuth('Informe seu nome', 'erro'); return; }
     if(!usuario || usuario.length < 3){ msgAuth('Usuário deve ter pelo menos 3 caracteres (letras, números, _ ou .)', 'erro'); return; }
@@ -466,7 +577,7 @@
     try{
       const r = await fetch(`${API_BASE}/api/auth-cliente`, {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ acao: 'cadastro', nome, usuario, whatsapp, senha })
+        body: JSON.stringify({ acao: 'cadastro', nome, usuario, whatsapp, senha, origem })
       });
       const data = await r.json();
       if(!r.ok){ msgAuth(data.erro || 'Erro ao criar conta', 'erro'); return; }
@@ -964,7 +1075,121 @@
     }catch(e){}
   }
 
-  // ===== Ícones flutuantes no fundo do login =====
+  // ===== PAINEL DO REVENDEDOR =====
+  async function carregarPainelRevendedor(){
+    try{
+      const r = await fetch(`${API_BASE}/api/revendedor?revendedorId=${encodeURIComponent(clienteId)}&senha=${encodeURIComponent(revendedorSenha)}`);
+      const data = await r.json();
+      if($('rev-saudacao')) $('rev-saudacao').textContent = `Olá, ${data.nome}!`;
+      if($('rev-saldo')) $('rev-saldo').textContent = `R$ ${Number(data.saldo||0).toFixed(2)}`;
+      if($('rev-desconto')) $('rev-desconto').textContent = `${data.desconto||0}%`;
+    }catch(e){}
+    carregarClientesRevendedor();
+  }
+
+  async function carregarClientesRevendedor(){
+    try{
+      const r = await fetch(`${API_BASE}/api/revendedor?pin=${encodeURIComponent('rev')}&acao=clientes&id=${clienteId}`);
+      // endpoint público pra revendedor ver seus clientes
+      const rr = await fetch(`${API_BASE}/api/pedidos?revendedorId=${encodeURIComponent(clienteId)}`);
+      const dadosPedidos = await rr.json();
+
+      const lista = $('lista-rev-clientes');
+      if(!lista) return;
+
+      const pedidosPorCliente = {};
+      (dadosPedidos.pedidos || []).forEach(p => {
+        if(!pedidosPorCliente[p.clienteId]) pedidosPorCliente[p.clienteId] = 0;
+        pedidosPorCliente[p.clienteId]++;
+      });
+
+      // busca clientes via endpoint de pedidos (traz clienteIds únicos)
+      const clientesUnicos = [...new Set((dadosPedidos.pedidos||[]).map(p=>p.clienteId).filter(Boolean))];
+      if($('rev-total-clientes')) $('rev-total-clientes').textContent = clientesUnicos.length;
+
+      lista.innerHTML = clientesUnicos.length === 0
+        ? '<p style="color:var(--muted);font-size:13px;">Nenhum cliente com pedidos ainda.</p>'
+        : clientesUnicos.map(cid => `
+          <div style="border-bottom:1px solid var(--line);padding:10px 0;">
+            <div style="font-weight:600;font-size:13.5px;">${cid}</div>
+            <div style="font-size:12px;color:var(--muted);">${pedidosPorCliente[cid]||0} pedido(s)</div>
+          </div>`).join('');
+    }catch(e){
+      if($('rev-clientes-msg')) $('rev-clientes-msg').textContent = 'Erro ao carregar clientes.';
+    }
+  }
+
+  async function carregarPedidosRevendedor(){
+    try{
+      const r = await fetch(`${API_BASE}/api/pedidos?revendedorId=${encodeURIComponent(clienteId)}`);
+      const data = await r.json();
+      const tbody = $('tabela-rev-pedidos');
+      if(!tbody) return;
+      tbody.innerHTML = '';
+      (data.pedidos||[]).forEach(p => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--line)';
+        tr.innerHTML = `
+          <td style="padding:8px 6px;color:var(--accent);font-weight:700;">${p.numeroPedido||'-'}</td>
+          <td style="padding:8px 6px;font-size:12px;">${p.clienteId||'-'}</td>
+          <td style="padding:8px 6px;font-size:12px;">${p.nomeServico||'-'}</td>
+          <td style="padding:8px 6px;">${p.quantidade}</td>
+          <td style="padding:8px 6px;">R$ ${Number(p.valorTotal).toFixed(2)}</td>
+          <td style="padding:8px 6px;"><span class="status-pill ${p.status}">${formatarStatus(p.status)}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      if(!data.pedidos?.length) $('rev-pedidos-msg').textContent = 'Nenhum pedido ainda.';
+    }catch(e){}
+  }
+
+  // abas do revendedor
+  ['clientes','pedidos','novo'].forEach(aba => {
+    const tab = $(`tab-rev-${aba}`);
+    if(!tab) return;
+    tab.addEventListener('click', () => {
+      ['clientes','pedidos','novo'].forEach(a => {
+        $(`tab-rev-${a}`)?.classList.remove('ativa');
+        $(`painel-rev-${a}`)?.classList.add('hidden');
+      });
+      tab.classList.add('ativa');
+      $(`painel-rev-${aba}`)?.classList.remove('hidden');
+      if(aba === 'pedidos') carregarPedidosRevendedor();
+    });
+  });
+
+  // cadastrar cliente pelo revendedor
+  $('rev-nc-btn')?.addEventListener('click', async () => {
+    const nome = $('rev-nc-nome').value;
+    const whats = $('rev-nc-whats').value;
+    const usuario = $('rev-nc-usuario').value;
+    const senha = $('rev-nc-senha').value;
+    if(!nome||!whats||!senha){ $('rev-nc-msg').textContent='Preencha todos os campos'; $('rev-nc-msg').className='msg erro'; return; }
+    $('rev-nc-btn').disabled = true;
+    try{
+      const r = await fetch(`${API_BASE}/api/revendedor`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ revendedorId: clienteId, senha: revendedorSenha, acao:'criar-cliente', nomeCliente: nome, whatsappCliente: whats, usuarioCliente: usuario, senhaCliente: senha })
+      });
+      const data = await r.json();
+      if(r.ok){
+        $('rev-nc-msg').textContent = `✅ Cliente cadastrado! ID: ${data.clienteId}`;
+        $('rev-nc-msg').className = 'msg ok';
+        $('rev-nc-nome').value = ''; $('rev-nc-whats').value = ''; $('rev-nc-usuario').value = ''; $('rev-nc-senha').value = '';
+      } else {
+        $('rev-nc-msg').textContent = data.erro || 'Erro';
+        $('rev-nc-msg').className = 'msg erro';
+      }
+    }catch(e){ $('rev-nc-msg').textContent='Erro de conexão'; $('rev-nc-msg').className='msg erro'; }
+    $('rev-nc-btn').disabled = false;
+  });
+
+  // sair (revendedor)
+  $('rev-sair-btn')?.addEventListener('click', () => {
+    localStorage.clear();
+    clienteId = null; clienteNome = ''; isRevendedor = false; revendedorSenha = '';
+    atualizarTopBar();
+  });
   function gerarIconesFlutuantes(){
     const container = $('floating-icons');
     if(!container) return;
