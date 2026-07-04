@@ -92,6 +92,37 @@ module.exports = async (req, res) => {
       });
     }
 
+    // ===== GERAR CHAVE DE API =====
+    if (acao === 'gerar-chave') {
+      const { clienteId } = req.body || {};
+      const id = normalizarWhats(clienteId);
+      const cli = await fbGet(`clientes/${id}`).catch(() => null);
+      if (!cli || cli.senha !== senha) return res.status(401).json({ erro: 'Senha incorreta' });
+
+      const crypto = require('crypto');
+      if (cli.apiKey) {
+        await fbPatch(`api_keys/${cli.apiKey}`, { revogada: true }).catch(() => {});
+      }
+      const novaChave = 'fsx_' + crypto.randomBytes(24).toString('hex');
+      await fbPatch(`clientes/${id}`, { apiKey: novaChave });
+      await fbPut(`api_keys/${novaChave}`, { clienteId: id, criadoEm: Date.now() });
+      return res.status(200).json({ chave: novaChave });
+    }
+
+    // ===== REVOGAR CHAVE DE API =====
+    if (acao === 'revogar-chave') {
+      const { clienteId } = req.body || {};
+      const id = normalizarWhats(clienteId);
+      const cli = await fbGet(`clientes/${id}`).catch(() => null);
+      if (!cli || cli.senha !== senha) return res.status(401).json({ erro: 'Senha incorreta' });
+
+      if (cli.apiKey) {
+        await fbPatch(`api_keys/${cli.apiKey}`, { revogada: true }).catch(() => {});
+      }
+      await fbPatch(`clientes/${id}`, { apiKey: null });
+      return res.status(200).json({ ok: true });
+    }
+
     return res.status(400).json({ erro: 'Ação inválida' });
   } catch (err) {
     return res.status(500).json({ erro: err.message });
