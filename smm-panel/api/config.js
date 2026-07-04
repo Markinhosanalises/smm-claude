@@ -1,26 +1,38 @@
 // api/config.js
-// Endpoint admin: salva URL/KEY do fornecedor e o percentual de lucro global.
-// Protegido por PIN simples (mesmo padrão dos outros painéis admin do Marcos).
-
 const { fbPatch, fbGet } = require('../lib/firebase');
+const { saldoFornecedor } = require('../lib/fornecedor');
 
 const ADMIN_PIN = process.env.ADMIN_PIN || '891322';
 
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
-    const { pin } = req.query;
+    const { pin, action } = req.query;
 
-    // sem PIN: devolve só o que é seguro pro cliente ver (nunca a key do fornecedor)
+    // action=balance — saldo do fornecedor (antes era /api/balance)
+    if (action === 'balance') {
+      if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
+      try {
+        const data = await saldoFornecedor();
+        const saldo = data.saldo ?? data.balance;
+        const moeda = data.moeda ?? data.currency;
+        if (saldo === undefined) return res.status(502).json({ erro: 'Resposta inesperada do fornecedor' });
+        return res.status(200).json({ saldo, moeda });
+      } catch (err) {
+        return res.status(500).json({ erro: err.message });
+      }
+    }
+
+    // sem PIN: devolve só o que é seguro pro cliente ver
     if (!pin) {
       const configPublica = await fbGet('config').catch(() => null);
       return res.status(200).json({
         whatsappSuporte: configPublica?.whatsappSuporte || '',
+        minRecarga: configPublica?.minRecarga || 5,
       });
     }
 
-    if (pin !== ADMIN_PIN) {
-      return res.status(401).json({ erro: 'PIN inválido' });
-    }
+    if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
+
     const config = await fbGet('config').catch(() => null);
     return res.status(200).json({
       fornecedorConfigurado: !!(config && config.fornecedor && config.fornecedor.key),
@@ -37,9 +49,7 @@ module.exports = async (req, res) => {
   if (req.method === 'POST') {
     const { pin, url, key, lucroPercentualGlobal, cotacaoUSDBRL, whatsappSuporte, mpAccessToken, appUrl, minRecarga } = req.body || {};
 
-    if (pin !== ADMIN_PIN) {
-      return res.status(401).json({ erro: 'PIN inválido' });
-    }
+    if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
 
     const update = {};
     if (url && key) update.fornecedor = { url, key };
