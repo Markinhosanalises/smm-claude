@@ -377,7 +377,7 @@
   });
 
   $('cfg-saldo-btn').addEventListener('click', async () => {
-    const r = await fetch(`${API_BASE}/api/balance?pin=${encodeURIComponent(PIN)}`);
+    const r = await fetch(`${API_BASE}/api/config?action=balance&pin=${encodeURIComponent(PIN)}`);
     const data = await r.json();
     $('cfg-saldo').value = r.ok ? `${data.saldo} ${data.moeda}` : (data.erro || 'erro');
   });
