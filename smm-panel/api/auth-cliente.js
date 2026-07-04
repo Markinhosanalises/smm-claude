@@ -51,6 +51,7 @@ module.exports = async (req, res) => {
         whatsapp: chave,
         usuario: user,
         senha,
+        origem: req.body?.origem || 'nao_informado',
         criadoEm: Date.now(),
       });
 
@@ -96,3 +97,41 @@ module.exports = async (req, res) => {
     return res.status(500).json({ erro: err.message });
   }
 };
+
+// ===== Geração de chave de API (adicionado aqui pra economizar função) =====
+// Exporta como rota separada via module.exports.gerarChave
+const crypto = require('crypto');
+
+async function gerarChaveAPI(req, res) {
+  const { fbGet: fbG, fbPut: fbP, fbPatch: fbPa } = require('../lib/firebase');
+
+  if (req.method === 'GET') {
+    const { clienteId, senha } = req.query;
+    if (!clienteId || !senha) return res.status(400).json({ erro: 'clienteId e senha obrigatórios' });
+    const cliente = await fbG(`clientes/${clienteId}`).catch(() => null);
+    if (!cliente || cliente.senha !== senha) return res.status(401).json({ erro: 'Não autorizado' });
+    return res.status(200).json({ chave: cliente.apiKey || null });
+  }
+
+  if (req.method === 'POST') {
+    const { clienteId, senha, acao } = req.body || {};
+    if (!clienteId || !senha) return res.status(400).json({ erro: 'clienteId e senha obrigatórios' });
+    const cliente = await fbG(`clientes/${clienteId}`).catch(() => null);
+    if (!cliente || cliente.senha !== senha) return res.status(401).json({ erro: 'Não autorizado' });
+
+    if (acao === 'revogar') {
+      if (cliente.apiKey) await fbPa(`api_keys/${cliente.apiKey}`, { revogada: true }).catch(() => {});
+      await fbPa(`clientes/${clienteId}`, { apiKey: null });
+      return res.status(200).json({ ok: true });
+    }
+
+    if (cliente.apiKey) await fbPa(`api_keys/${cliente.apiKey}`, { revogada: true }).catch(() => {});
+    const novaChave = 'fsx_' + crypto.randomBytes(24).toString('hex');
+    await fbPa(`clientes/${clienteId}`, { apiKey: novaChave });
+    await fbP(`api_keys/${novaChave}`, { clienteId, criadoEm: Date.now() });
+    return res.status(200).json({ chave: novaChave });
+  }
+  return res.status(405).json({ erro: 'Método não permitido' });
+}
+
+module.exports.gerarChave = gerarChaveAPI;
