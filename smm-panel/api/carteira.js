@@ -69,6 +69,7 @@ module.exports = async (req, res) => {
           nome: c.nome || '',
           usuario: c.usuario || '',
           whatsapp: c.whatsapp || whatsapp,
+          origem: c.origem || 'nao_informado',
           saldo: Number(carteira.saldo || 0),
           ultimoCredito: carteira.ultimoCredito || null,
           criadoEm: c.criadoEm || null,
