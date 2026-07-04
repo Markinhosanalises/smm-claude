@@ -92,6 +92,15 @@ module.exports = async (req, res) => {
       });
     }
 
+    // ===== SET DESCONTO (admin) =====
+    if (acao === 'set-desconto') {
+      const { pin, clienteId: cid, desconto } = req.body || {};
+      if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
+      const id = normalizarWhats(cid) || cid;
+      await fbPatch(`clientes/${id}`, { desconto: Number(desconto || 0) });
+      return res.status(200).json({ ok: true });
+    }
+
     // ===== GERAR CHAVE DE API =====
     if (acao === 'gerar-chave') {
       const { clienteId } = req.body || {};
