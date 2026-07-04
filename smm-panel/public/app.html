@@ -284,6 +284,7 @@
     <div class="tab" id="tab-pedidos">📦 Pedidos</div>
     <div class="tab" id="tab-carteira">💰 Carteira</div>
     <div class="tab" id="tab-suporte">🎧 Suporte</div>
+    <div class="tab" id="tab-api">🔑 API</div>
   </div>
 
   <!-- WIDGET DE ENGAJAMENTO -->
@@ -363,6 +364,33 @@
     </div>
   </div>
 
+  <!-- API -->
+  <div id="painel-api" class="hidden">
+    <div class="card">
+      <p class="eyebrow">Para desenvolvedores</p>
+      <h2 class="title">🔑 Chave de API</h2>
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:16px;">Integre o Fênix Social no seu sistema usando nossa API. <a href="/api-docs.html" target="_blank" style="color:var(--accent);">Ver documentação →</a></p>
+      <div id="api-key-display" style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px;font-family:monospace;font-size:13px;color:var(--green);word-break:break-all;">Nenhuma chave gerada</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" id="btn-gerar-chave" style="flex:1;">🔑 Gerar nova chave</button>
+        <button class="btn-sec" id="btn-copiar-chave">📋 Copiar</button>
+        <button class="btn-sec" id="btn-revogar-chave">🗑️ Revogar</button>
+      </div>
+      <p class="msg" id="api-key-msg"></p>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">Como usar</p>
+      <h2 class="title" style="font-size:16px;">Exemplo rápido</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Liste os serviços disponíveis:</p>
+      <div style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:14px;font-family:monospace;font-size:12px;color:var(--muted);line-height:1.7;">
+        curl "https://fenixsocial.site/api/public-api?action=services" \<br>
+        &nbsp;&nbsp;-H "Authorization: Bearer <span style="color:var(--accent);">fsx_sua_chave</span>"
+      </div>
+      <a href="/api-docs.html" target="_blank" class="btn-sec" style="display:block;text-align:center;margin-top:12px;text-decoration:none;">📄 Documentação completa</a>
+    </div>
+  </div>
+
   <!-- SUPORTE -->
   <div id="painel-suporte" class="hidden">
     <div class="card">
@@ -372,25 +400,11 @@
       <button class="btn" id="ticket-enviar">📩 Enviar mensagem</button>
       <p class="msg" id="ticket-msg"></p>
     </div>
-
     <div class="card">
       <p class="eyebrow">Histórico</p>
       <h2 class="title" style="font-size:16px;">Meus tickets</h2>
       <div id="lista-tickets"></div>
       <p class="msg" id="tickets-cliente-msg"></p>
-    </div>
-
-    <div class="card">
-      <p class="eyebrow">Para desenvolvedores</p>
-      <h2 class="title" style="font-size:16px;">🔑 Chave de API</h2>
-      <p style="font-size:13.5px;color:var(--muted);margin-bottom:16px;">Use nossa API pra integrar o Fênix Social no seu sistema. <a href="/api-docs.html" target="_blank" style="color:var(--accent);">Ver documentação →</a></p>
-      <div id="api-key-display" style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px;font-family:monospace;font-size:13px;color:var(--green);word-break:break-all;">Nenhuma chave gerada</div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn" id="btn-gerar-chave" style="flex:1;">🔑 Gerar nova chave</button>
-        <button class="btn-sec" id="btn-revogar-chave" style="flex:0 0 auto;">🗑️ Revogar</button>
-        <button class="btn-sec" id="btn-copiar-chave" style="flex:0 0 auto;">📋 Copiar</button>
-      </div>
-      <p class="msg" id="api-key-msg"></p>
     </div>
   </div>
 
@@ -504,6 +518,7 @@
       $('painel-pedidos').classList.add('hidden');
       $('painel-carteira').classList.add('hidden');
       $('painel-suporte').classList.add('hidden');
+      $('painel-api').classList.add('hidden');
       $('painel-revendedor').classList.add('hidden');
     }
   }
@@ -627,13 +642,17 @@
   });
 
   function ativarAba(aba){
-    ['engajar','pedidos','carteira','suporte'].forEach(a => {
+    ['engajar','pedidos','carteira','suporte','api'].forEach(a => {
       $(`tab-${a}`)?.classList.remove('ativa');
       $(`painel-${a}`)?.classList.add('hidden');
     });
     $(`tab-${aba}`)?.classList.add('ativa');
     $(`painel-${aba}`)?.classList.remove('hidden');
   }
+
+  $('tab-api').addEventListener('click', () => {
+    ativarAba('api');
+  });
 
   $('tab-suporte').addEventListener('click', () => {
     ativarAba('suporte');
