@@ -564,7 +564,7 @@
             <span class="status-pill ${p.status}">${formatarStatus(p.status)}</span>
           </div>
           <div class="pedido-sub">
-            Qtd: ${p.quantidade} · R$ ${Number(p.valorTotal).toFixed(2)} · ${new Date(p.criadoEm).toLocaleDateString('pt-BR')}
+            ${p.numeroPedido ? `<strong style="color:var(--accent)">${p.numeroPedido}</strong> · ` : ''}Qtd: ${p.quantidade} · R$ ${Number(p.valorTotal).toFixed(2)} · ${new Date(p.criadoEm).toLocaleDateString('pt-BR')}
             ${p.pagamento === 'saldo' ? ' · 💰 Saldo' : ''}
           </div>
           ${p.status === 'executando' || p.status === 'concluido' ? `
