@@ -17,17 +17,11 @@
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:20px;}
   .card h2{font-size:15px;margin:0 0 16px;color:var(--accent);}
   label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;}
-  input, select{
-    width:100%;background:#0e1013;border:1px solid var(--line);color:var(--text);
-    padding:10px 12px;border-radius:8px;font-size:14px;margin-bottom:14px;outline:none;
-  }
+  input, select{width:100%;background:#0e1013;border:1px solid var(--line);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;margin-bottom:14px;outline:none;}
   input:focus, select:focus{border-color:var(--accent);}
   .row{display:flex;gap:14px;}
   .row > *{flex:1;}
-  button{
-    background:var(--accent);color:#08110c;border:none;padding:10px 18px;
-    border-radius:8px;font-weight:700;font-size:13.5px;cursor:pointer;
-  }
+  button{background:var(--accent);color:#08110c;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13.5px;cursor:pointer;}
   button.secundario{background:transparent;border:1px solid var(--line);color:var(--text);}
   button:disabled{opacity:.5;cursor:not-allowed;}
   table{width:100%;border-collapse:collapse;font-size:13px;}
@@ -44,13 +38,9 @@
   .admin-tab.ativa{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);font-weight:700;}
   .admin-section{display:none;}
   .admin-section.visivel{display:block;}
-  .status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
-  .status-badge.ok{background:#1f3a2c;color:var(--accent);}
-  .status-badge.nao{background:#3a1f1f;color:#ff8b8b;}
 </style>
 </head>
 <body>
-
 <div id="login-gate">
   <h1>Acesso admin</h1>
   <label>PIN</label>
@@ -61,8 +51,6 @@
 
 <div class="wrap" id="painel" style="display:none">
   <h1>Painel de Engajamento — Admin</h1>
-
-  <!-- ABAS DO ADMIN -->
   <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
     <button class="admin-tab ativa" data-tab="config">⚙️ Configurações</button>
     <button class="admin-tab" data-tab="catalogo">📦 Catálogo</button>
@@ -77,67 +65,36 @@
   <div class="card">
     <h2>Configuração do fornecedor</h2>
     <div class="row">
-      <div>
-        <label>URL da API</label>
-        <input id="cfg-url" placeholder="https://measmm.com/api/v2">
-      </div>
-      <div>
-        <label>API Key</label>
-        <input id="cfg-key" type="password" placeholder="sua chave">
-      </div>
+      <div><label>URL da API</label><input id="cfg-url" placeholder="https://measmm.com/api/v2"></div>
+      <div><label>API Key</label><input id="cfg-key" type="password" placeholder="sua chave"></div>
     </div>
     <div class="row">
-      <div>
-        <label>Lucro percentual global (%)</label>
-        <input id="cfg-lucro" type="number" placeholder="30">
-      </div>
-      <div>
-        <label>Saldo no fornecedor</label>
-        <input id="cfg-saldo" disabled placeholder="clique em atualizar">
-      </div>
+      <div><label>Lucro percentual global (%)</label><input id="cfg-lucro" type="number" placeholder="30"></div>
+      <div><label>Saldo no fornecedor</label><input id="cfg-saldo" disabled placeholder="clique em atualizar"></div>
     </div>
     <div class="row">
-      <div>
-        <label>Cotação USD → BRL (a taxa do fornecedor vem em dólar)</label>
-        <input id="cfg-cotacao" type="number" step="0.01" placeholder="Ex: 5.40">
-      </div>
-      <div>
-        <label>WhatsApp de suporte (com DDI, só números)</label>
-        <input id="cfg-whats" placeholder="Ex: 5521999999999">
-      </div>
+      <div><label>Cotação USD → BRL</label><input id="cfg-cotacao" type="number" step="0.01" placeholder="Ex: 5.40"></div>
+      <div><label>WhatsApp de suporte (com DDI)</label><input id="cfg-whats" placeholder="Ex: 5521999999999"></div>
     </div>
     <div class="row">
-      <div>
-        <label>Valor mínimo de recarga de saldo (R$)</label>
-        <input id="cfg-min-recarga" type="number" min="1" step="0.01" placeholder="Ex: 10.00">
-      </div>
+      <div><label>Valor mínimo de recarga (R$)</label><input id="cfg-min-recarga" type="number" min="1" step="0.01" placeholder="Ex: 10.00"></div>
       <div></div>
     </div>
     <button id="cfg-salvar">Salvar configuração</button>
     <button class="secundario" id="cfg-saldo-btn">Atualizar saldo</button>
     <p class="msg" id="cfg-msg"></p>
   </div>
-
   <div class="card">
     <h2>Redes sociais cadastradas</h2>
     <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;">As redes cadastradas aqui aparecem como opção ao ativar serviços no catálogo.</p>
     <div class="row" style="align-items:flex-end;">
-      <div>
-        <label>Nome da rede (ex: instagram, tiktok)</label>
-        <input id="nova-rede-nome" placeholder="Ex: instagram" style="text-transform:lowercase;">
-      </div>
-      <div>
-        <label>Emoji (opcional)</label>
-        <input id="nova-rede-emoji" placeholder="Ex: 📸" style="width:80px;">
-      </div>
-      <div style="flex:0 0 auto;">
-        <button id="btn-add-rede">+ Adicionar</button>
-      </div>
+      <div><label>Nome da rede</label><input id="nova-rede-nome" placeholder="Ex: instagram" style="text-transform:lowercase;"></div>
+      <div><label>Emoji</label><input id="nova-rede-emoji" placeholder="Ex: 📸" style="width:80px;"></div>
+      <div style="flex:0 0 auto;"><button id="btn-add-rede">+ Adicionar</button></div>
     </div>
     <div id="lista-redes" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
     <p class="msg" id="redes-msg"></p>
   </div>
-
   </div><!-- /tab-config -->
 
   <div class="admin-section" id="tab-catalogo">
@@ -147,7 +104,7 @@
     <button class="secundario" id="ver-ativos-btn">Ver somente ativos</button>
     <p class="msg" id="sync-msg"></p>
     <div style="margin-top:14px;">
-      <label>Buscar por nome, categoria, rede ou ID (a lista completa é grande demais pra mostrar tudo de uma vez)</label>
+      <label>Buscar por nome, categoria, rede ou ID</label>
       <div class="row">
         <input id="busca-servico" placeholder="Ex: instagram, seguidores, curtidas...">
         <select id="ordenar-servico" style="flex:0 0 220px;">
@@ -170,8 +127,6 @@
       </table>
     </div>
   </div>
-
-  </div>
   </div><!-- /tab-catalogo -->
 
   <div class="admin-section" id="tab-pedidos">
@@ -187,7 +142,18 @@
     <div style="overflow-x:auto;">
       <table>
         <thead>
-          <tr><th>Nº Pedido</th><th>Cliente</th><th>ID Fornecedor</th><th>Serviço</th><th>Link</th><th>Qtd</th><th>Valor</th><th>Status</th><th>Criado em</th><th></th></tr>
+          <tr>
+            <th>Nº Pedido</th>
+            <th>Cliente</th>
+            <th>Nº Pedido Fornecedor</th>
+            <th>Serviço (Cód. fornecedor)</th>
+            <th>Link</th>
+            <th>Qtd</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th>Criado em</th>
+            <th></th>
+          </tr>
         </thead>
         <tbody id="tabela-pedidos-body"></tbody>
       </table>
@@ -202,7 +168,7 @@
     <div style="overflow-x:auto;margin-top:14px;">
       <table>
         <thead>
-          <tr><th>Nome</th><th>WhatsApp</th><th>Mensagem</th><th>Pedido</th><th>Status</th><th>Resposta</th><th></th></tr>
+          <tr><th>Nome</th><th>WhatsApp</th><th>Mensagem</th><th>Pedido</th><th>Status</th><th>Resposta</th></tr>
         </thead>
         <tbody id="tabela-tickets-body"></tbody>
       </table>
@@ -213,56 +179,31 @@
   <div class="admin-section" id="tab-clientes">
   <div class="card">
     <h2>Creditar saldo manualmente</h2>
-    <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;">Use para adicionar saldo a qualquer cliente pelo WhatsApp ou ID.</p>
     <div class="row">
-      <div>
-        <label>WhatsApp / ID do cliente (só números)</label>
-        <input id="creditar-id" placeholder="Ex: 21993473619">
-      </div>
-      <div>
-        <label>Valor a creditar (R$)</label>
-        <input id="creditar-valor" type="number" min="0.01" step="0.01" placeholder="Ex: 50.00">
-      </div>
+      <div><label>WhatsApp / ID do cliente (só números)</label><input id="creditar-id" placeholder="Ex: 21993473619"></div>
+      <div><label>Valor a creditar (R$)</label><input id="creditar-valor" type="number" min="0.01" step="0.01" placeholder="Ex: 50.00"></div>
     </div>
     <button id="creditar-manual-btn">💰 Creditar saldo</button>
     <p class="msg" id="creditar-msg"></p>
   </div>
-
   <div class="card">
     <h2>Todos os clientes</h2>
     <div class="row" style="margin-bottom:14px;align-items:flex-end;">
-      <div>
-        <label>Buscar por nome, usuário ou WhatsApp</label>
-        <input id="busca-cliente" placeholder="Ex: marcos, @marcos123, 21999...">
-      </div>
-      <div style="flex:0 0 200px;">
-        <label>Filtrar por saldo</label>
+      <div><label>Buscar por nome, usuário ou WhatsApp</label><input id="busca-cliente" placeholder="Ex: marcos, @marcos123, 21999..."></div>
+      <div style="flex:0 0 200px;"><label>Filtrar por saldo</label>
         <select id="filtro-saldo">
           <option value="">Todos</option>
           <option value="com">Com saldo</option>
           <option value="sem">Sem saldo</option>
         </select>
       </div>
-      <div style="flex:0 0 120px;">
-        <button class="secundario" id="clientes-btn" style="width:100%;margin-top:0;">🔄 Atualizar</button>
-      </div>
+      <div style="flex:0 0 120px;"><button class="secundario" id="clientes-btn" style="width:100%;margin-top:0;">🔄 Atualizar</button></div>
     </div>
     <p class="msg" id="clientes-msg"></p>
     <div style="overflow-x:auto;">
       <table>
         <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Usuário</th>
-            <th>WhatsApp</th>
-            <th>Origem</th>
-            <th>Saldo</th>
-            <th>Último crédito</th>
-            <th>Cadastro</th>
-            <th>Desconto %</th>
-            <th>Creditar R$</th>
-            <th></th>
-          </tr>
+          <tr><th>Nome</th><th>Usuário</th><th>WhatsApp</th><th>Origem</th><th>Saldo</th><th>Último crédito</th><th>Cadastro</th><th>Desconto %</th><th>Creditar R$</th><th></th></tr>
         </thead>
         <tbody id="tabela-clientes-body"></tbody>
       </table>
@@ -275,16 +216,15 @@
   <div class="card">
     <h2>Mercado Pago</h2>
     <p class="msg" id="mp-status-msg"></p>
-    <label>Access Token (começa com APP_USR- ou TEST-)</label>
+    <label>Access Token</label>
     <input id="mp-token" type="password" placeholder="APP_USR-...">
-    <label>URL do seu site (usada no webhook do MP)</label>
-    <input id="mp-appurl" placeholder="https://smm-claude.vercel.app">
+    <label>URL do seu site</label>
+    <input id="mp-appurl" placeholder="https://fenixsocial.site">
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
-      Cadastre os dois webhooks abaixo no painel do Mercado Pago (Webhooks → Modo de produção):<br><br>
-      <strong style="color:var(--accent);">Webhook 1 — Pagamentos avulsos:</strong><br>
-      <span id="mp-webhook-url" style="color:var(--accent);word-break:break-all;">https://smm-claude.vercel.app/api/pagamento?action=webhook</span><br><br>
+      <strong style="color:var(--accent);">Webhook 1 — Pagamentos:</strong><br>
+      <span id="mp-webhook-url" style="color:var(--accent);word-break:break-all;"></span><br><br>
       <strong style="color:var(--accent);">Webhook 2 — Recargas de saldo:</strong><br>
-      <span id="mp-webhook-carteira" style="color:var(--accent);word-break:break-all;">https://smm-claude.vercel.app/api/carteira?action=webhook</span>
+      <span id="mp-webhook-carteira" style="color:var(--accent);word-break:break-all;"></span>
     </p>
     <button id="mp-salvar">Salvar configuração do MP</button>
     <p class="msg" id="mp-msg"></p>
@@ -309,62 +249,47 @@
     <button id="rev-criar-btn">🤝 Criar revendedor</button>
     <p class="msg" id="rev-criar-msg"></p>
   </div>
-
   <div class="card">
     <h2>Revendedores cadastrados</h2>
     <button class="secundario" id="rev-listar-btn">Atualizar lista</button>
     <div style="overflow-x:auto;margin-top:14px;">
       <table>
-        <thead>
-          <tr><th>Nome</th><th>Usuário</th><th>WhatsApp</th><th>Desconto</th><th>Saldo</th><th>Creditar</th><th>Alterar desconto</th></tr>
-        </thead>
+        <thead><tr><th>Nome</th><th>Usuário</th><th>WhatsApp</th><th>Desconto</th><th>Saldo</th><th>Creditar</th><th>Alterar desconto</th></tr></thead>
         <tbody id="tabela-revendedores"></tbody>
       </table>
     </div>
   </div>
   </div><!-- /tab-revendedores -->
-
 </div>
 
 <script>
 (function(){
   const API_BASE = '';
   let PIN = '';
-
   const $ = (id) => document.getElementById(id);
   let lucroGlobalAtual = 30;
-  let cotacaoAtual = 0; // 0 = sem conversão (assume que custo já está na moeda de venda)
+  let cotacaoAtual = 0;
 
   $('login-btn').addEventListener('click', async () => {
     PIN = $('login-pin').value;
     if(!PIN){ $('login-msg').textContent = 'Digite o PIN'; return; }
     const r = await fetch(`${API_BASE}/api/config?pin=${encodeURIComponent(PIN)}`);
-    if(r.ok){
-      localStorage.setItem('admin_pin', PIN);
-      entrarNoAdmin();
-    } else {
-      $('login-msg').textContent = 'PIN incorreto';
-    }
+    if(r.ok){ localStorage.setItem('admin_pin', PIN); entrarNoAdmin(); }
+    else { $('login-msg').textContent = 'PIN incorreto'; }
   });
 
   function entrarNoAdmin(){
     $('login-gate').style.display = 'none';
     $('painel').style.display = 'block';
-    carregarConfig();
-    carregarServicos();
-    carregarPedidos();
-    carregarTickets();
-    carregarClientes();
-    carregarIntegracoes();
+    carregarConfig(); carregarServicos(); carregarPedidos();
+    carregarTickets(); carregarClientes(); carregarIntegracoes();
   }
 
-  // login automático se PIN salvo
   const pinSalvo = localStorage.getItem('admin_pin');
   if(pinSalvo){
     PIN = pinSalvo;
     fetch(`${API_BASE}/api/config?pin=${encodeURIComponent(PIN)}`).then(r => {
-      if(r.ok){ entrarNoAdmin(); }
-      else { localStorage.removeItem('admin_pin'); }
+      if(r.ok){ entrarNoAdmin(); } else { localStorage.removeItem('admin_pin'); }
     }).catch(() => {});
   }
 
@@ -381,27 +306,13 @@
   }
 
   $('cfg-salvar').addEventListener('click', async () => {
-    const body = {
-      pin: PIN,
-      lucroPercentualGlobal: $('cfg-lucro').value,
-      cotacaoUSDBRL: $('cfg-cotacao').value,
-      whatsappSuporte: $('cfg-whats').value,
-      minRecarga: $('cfg-min-recarga').value ? Number($('cfg-min-recarga').value) : null,
-    };
-    if($('cfg-url').value && $('cfg-key').value){
-      body.url = $('cfg-url').value;
-      body.key = $('cfg-key').value;
-    }
-    const r = await fetch(`${API_BASE}/api/config`, {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
-    });
+    const body = { pin: PIN, lucroPercentualGlobal: $('cfg-lucro').value, cotacaoUSDBRL: $('cfg-cotacao').value, whatsappSuporte: $('cfg-whats').value, minRecarga: $('cfg-min-recarga').value ? Number($('cfg-min-recarga').value) : null };
+    if($('cfg-url').value && $('cfg-key').value){ body.url = $('cfg-url').value; body.key = $('cfg-key').value; }
+    const r = await fetch(`${API_BASE}/api/config`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     const data = await r.json();
     $('cfg-msg').textContent = r.ok ? 'Configuração salva.' : (data.erro || 'Erro');
     $('cfg-msg').className = 'msg ' + (r.ok ? 'ok' : 'erro');
-    if(r.ok){
-      lucroGlobalAtual = Number($('cfg-lucro').value || 30);
-      cotacaoAtual = Number($('cfg-cotacao').value || 0);
-    }
+    if(r.ok){ lucroGlobalAtual = Number($('cfg-lucro').value || 30); cotacaoAtual = Number($('cfg-cotacao').value || 0); }
   });
 
   $('cfg-saldo-btn').addEventListener('click', async () => {
@@ -412,18 +323,10 @@
 
   $('sync-btn').addEventListener('click', async () => {
     $('sync-msg').textContent = 'Sincronizando...';
-    const r = await fetch(`${API_BASE}/api/sync-services`, {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pin: PIN })
-    });
+    const r = await fetch(`${API_BASE}/api/sync-services`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pin: PIN }) });
     const data = await r.json();
-    if(r.ok){
-      $('sync-msg').textContent = `${data.totalServicos} serviços sincronizados.`;
-      $('sync-msg').className = 'msg ok';
-      carregarServicos();
-    } else {
-      $('sync-msg').textContent = data.erro || 'Erro ao sincronizar';
-      $('sync-msg').className = 'msg erro';
-    }
+    if(r.ok){ $('sync-msg').textContent = `${data.totalServicos} serviços sincronizados.`; $('sync-msg').className = 'msg ok'; carregarServicos(); }
+    else { $('sync-msg').textContent = data.erro || 'Erro ao sincronizar'; $('sync-msg').className = 'msg erro'; }
   });
 
   async function carregarServicos(termo, somenteAtivos){
@@ -435,29 +338,13 @@
     try {
       const r = await fetch(`${API_BASE}/api/admin-services?pin=${encodeURIComponent(PIN)}${q}${qAtivos}${qOrdem}`);
       data = await r.json();
-      if(!r.ok){
-        $('servicos-msg').textContent = data.erro || `Erro ${r.status} ao buscar serviços. Tente novamente em alguns segundos.`;
-        $('servicos-msg').className = 'msg erro';
-        return;
-      }
-    } catch(e) {
-      $('servicos-msg').textContent = 'A busca demorou demais ou falhou. Tente um termo mais específico ou tente de novo.';
-      $('servicos-msg').className = 'msg erro';
-      return;
-    }
+      if(!r.ok){ $('servicos-msg').textContent = data.erro || `Erro ${r.status}`; $('servicos-msg').className = 'msg erro'; return; }
+    } catch(e) { $('servicos-msg').textContent = 'Falha na busca. Tente novamente.'; $('servicos-msg').className = 'msg erro'; return; }
 
     const tbody = $('tabela-servicos-body');
     tbody.innerHTML = '';
-
-    if(!termo){
-      $('servicos-msg').textContent = `${data.total} serviços no catálogo. Digite algo na busca acima pra encontrar o que você quer ativar (mostrando os primeiros ${(data.servicos||[]).length}).`;
-      $('servicos-msg').className = 'msg';
-    } else {
-      $('servicos-msg').textContent = data.limitado
-        ? `${data.total} resultados — mostrando os primeiros 200. Refine a busca pra ver os demais.`
-        : `${data.total} resultado(s).`;
-      $('servicos-msg').className = 'msg';
-    }
+    if(!termo){ $('servicos-msg').textContent = `${data.total} serviços no catálogo. Digite algo na busca pra filtrar.`; $('servicos-msg').className = 'msg'; }
+    else { $('servicos-msg').textContent = data.limitado ? `${data.total} resultados — mostrando os primeiros 200.` : `${data.total} resultado(s).`; $('servicos-msg').className = 'msg'; }
 
     (data.servicos || []).forEach((s) => {
       const tr = document.createElement('tr');
@@ -466,7 +353,7 @@
         <td><input type="checkbox" ${s.ativo ? 'checked' : ''} data-campo="ativo" data-id="${s.idFornecedor}"></td>
         <td>
           <select data-campo="icone" data-id="${s.idFornecedor}">
-            <option value="" ${!s.icone ? 'selected':''}>Sem ícone</option>
+            <option value="" ${!s.icone?'selected':''}>Sem ícone</option>
             <option value="🇧🇷" ${s.icone==='🇧🇷'?'selected':''}>🇧🇷 Brasil</option>
             <option value="🌍" ${s.icone==='🌍'?'selected':''}>🌍 Mundial</option>
             <option value="⭐" ${s.icone==='⭐'?'selected':''}>⭐ Premium</option>
@@ -508,27 +395,22 @@
         const linha = btn.closest('tr');
         const campos = {};
         linha.querySelectorAll('[data-campo]').forEach((el) => {
-          const campo = el.dataset.campo;
-          campos[campo] = el.type === 'checkbox' ? el.checked : el.value;
+          campos[el.dataset.campo] = el.type === 'checkbox' ? el.checked : el.value;
         });
-        const r2 = await fetch(`${API_BASE}/api/admin-services`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ pin: PIN, idFornecedor: id, ...campos })
-        });
+        const r2 = await fetch(`${API_BASE}/api/admin-services`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pin: PIN, idFornecedor: id, ...campos }) });
         btn.textContent = r2.ok ? 'Salvo ✓' : 'Erro';
         setTimeout(() => btn.textContent = 'Salvar', 1500);
       });
     });
   }
 
+  // ===== Pedidos =====
   let todosPedidos = [];
 
   async function carregarPedidos(){
     const r = await fetch(`${API_BASE}/api/pedidos?pin=${encodeURIComponent(PIN)}`);
     const data = await r.json();
     todosPedidos = data.pedidos || [];
-
-    // busca os nomes dos clientes no Firebase pra exibir
     const clientesCache = {};
     for(const p of todosPedidos){
       if(p.clienteId && !clientesCache[p.clienteId]){
@@ -537,10 +419,9 @@
           const dc = await rc.json();
           (dc.clientes||[]).forEach(c => clientesCache[c.clienteId] = c);
         }catch(e){}
-        break; // faz só uma chamada, não uma por pedido
+        break;
       }
     }
-
     renderizarPedidos(todosPedidos, clientesCache);
     window._clientesCache = clientesCache;
   }
@@ -551,6 +432,7 @@
       (p.numeroPedido||'').toLowerCase().includes(busca) ||
       (p.nomeServico||'').toLowerCase().includes(busca) ||
       (p.clienteId||'').includes(busca) ||
+      String(p.idFornecedor||'').includes(busca) ||
       ((clientesCache||{})[p.clienteId]?.nome||'').toLowerCase().includes(busca) ||
       ((clientesCache||{})[p.clienteId]?.usuario||'').toLowerCase().includes(busca)
     ) : pedidos;
@@ -559,7 +441,6 @@
     tbody.innerHTML = '';
     lista.forEach((p) => {
       const cli = (clientesCache||{})[p.clienteId];
-      const nomeCliente = cli ? `${cli.nome||''} ${cli.usuario?'(@'+cli.usuario+')':''}`.trim() : (p.clienteId || '-');
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="color:var(--accent);font-weight:700;">${p.numeroPedido || '-'}</td>
@@ -568,9 +449,12 @@
           ${cli?.usuario ? `<div style="color:var(--muted);font-size:11px;">@${cli.usuario}</div>` : ''}
         </td>
         <td style="font-size:12px;color:var(--muted);">${p.orderIdFornecedor || '⏳'}</td>
-        <td style="font-size:13px;">${p.nomeServico || '-'}</td>
-        <td style="font-size:11px;color:var(--muted);max-width:160px;word-break:break-all;">
-          <a href="${p.link||'#'}" target="_blank" style="color:var(--accent);text-decoration:none;" title="${p.link||''}">${p.link ? (p.link.length > 35 ? p.link.slice(0,35)+'...' : p.link) : '-'}</a>
+        <td style="font-size:13px;">
+          <div>${p.nomeServico || '-'}</div>
+          ${p.idFornecedor ? `<div style="font-size:11px;color:var(--accent);font-family:monospace;margin-top:2px;">cód: ${p.idFornecedor}</div>` : ''}
+        </td>
+        <td style="font-size:11px;max-width:140px;word-break:break-all;">
+          <a href="${p.link||'#'}" target="_blank" style="color:var(--accent);text-decoration:none;" title="${p.link||''}">${p.link ? (p.link.length > 30 ? p.link.slice(0,30)+'...' : p.link) : '-'}</a>
         </td>
         <td>${p.quantidade}</td>
         <td>R$ ${Number(p.valorTotal).toFixed(2)}</td>
@@ -592,415 +476,258 @@
   }
 
   $('pedidos-btn').addEventListener('click', carregarPedidos);
+  $('busca-pedido')?.addEventListener('input', () => { renderizarPedidos(todosPedidos, window._clientesCache || {}); });
 
-  $('busca-pedido')?.addEventListener('input', () => {
-    renderizarPedidos(todosPedidos, window._clientesCache || {});
-  });
-
-  // ===== Redes sociais cadastradas =====
+  // ===== Redes sociais =====
   let redesCadastradas = JSON.parse(localStorage.getItem('admin_redes') || '[]');
-
-  // redes padrão se não tiver nenhuma cadastrada
-  if (redesCadastradas.length === 0) {
-    redesCadastradas = [
-      { nome: 'instagram', emoji: '📸' },
-      { nome: 'tiktok', emoji: '🎵' },
-      { nome: 'youtube', emoji: '▶️' },
-      { nome: 'facebook', emoji: '📘' },
-      { nome: 'twitter', emoji: '𝕏' },
-    ];
+  if(redesCadastradas.length === 0){
+    redesCadastradas = [{nome:'instagram',emoji:'📸'},{nome:'tiktok',emoji:'🎵'},{nome:'youtube',emoji:'▶️'},{nome:'facebook',emoji:'📘'},{nome:'twitter',emoji:'𝕏'}];
     localStorage.setItem('admin_redes', JSON.stringify(redesCadastradas));
   }
-
-  function salvarRedes() {
-    localStorage.setItem('admin_redes', JSON.stringify(redesCadastradas));
-  }
-
-  function renderizarRedes() {
-    const lista = $('lista-redes');
-    if (!lista) return;
-    lista.innerHTML = redesCadastradas.map((r, i) => `
+  function salvarRedes(){ localStorage.setItem('admin_redes', JSON.stringify(redesCadastradas)); }
+  function renderizarRedes(){
+    const lista = $('lista-redes'); if(!lista) return;
+    lista.innerHTML = redesCadastradas.map((r,i)=>`
       <div style="display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:5px 12px;">
-        <span>${r.emoji || ''} ${r.nome}</span>
-        <button onclick="removerRede(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0;font-size:14px;line-height:1;">×</button>
-      </div>
-    `).join('');
+        <span>${r.emoji||''} ${r.nome}</span>
+        <button onclick="removerRede(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0;font-size:14px;">×</button>
+      </div>`).join('');
   }
-
-  window.removerRede = function(i) {
-    redesCadastradas.splice(i, 1);
-    salvarRedes();
-    renderizarRedes();
-  };
-
+  window.removerRede = function(i){ redesCadastradas.splice(i,1); salvarRedes(); renderizarRedes(); };
   $('btn-add-rede').addEventListener('click', () => {
     const nome = $('nova-rede-nome').value.trim().toLowerCase();
     const emoji = $('nova-rede-emoji').value.trim();
-    if (!nome) { $('redes-msg').textContent = 'Digite o nome da rede'; return; }
-    if (redesCadastradas.find(r => r.nome === nome)) { $('redes-msg').textContent = 'Rede já cadastrada'; return; }
-    redesCadastradas.push({ nome, emoji });
-    salvarRedes();
-    renderizarRedes();
-    $('nova-rede-nome').value = '';
-    $('nova-rede-emoji').value = '';
-    $('redes-msg').textContent = '✅ Rede adicionada!';
-    setTimeout(() => $('redes-msg').textContent = '', 2000);
+    if(!nome){ $('redes-msg').textContent='Digite o nome da rede'; return; }
+    if(redesCadastradas.find(r=>r.nome===nome)){ $('redes-msg').textContent='Rede já cadastrada'; return; }
+    redesCadastradas.push({nome,emoji}); salvarRedes(); renderizarRedes();
+    $('nova-rede-nome').value=''; $('nova-rede-emoji').value='';
+    $('redes-msg').textContent='✅ Rede adicionada!'; setTimeout(()=>$('redes-msg').textContent='',2000);
   });
-
   renderizarRedes();
+
+  // ===== Abas =====
   document.querySelectorAll('.admin-tab').forEach((btn) => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('ativa'));
-      document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('visivel'));
+      document.querySelectorAll('.admin-tab').forEach(b=>b.classList.remove('ativa'));
+      document.querySelectorAll('.admin-section').forEach(s=>s.classList.remove('visivel'));
       btn.classList.add('ativa');
-      $('tab-' + btn.dataset.tab).classList.add('visivel');
+      $('tab-'+btn.dataset.tab).classList.add('visivel');
     });
   });
 
-  // ===== Integrações MP =====
+  // ===== Integrações =====
   async function carregarIntegracoes(){
     const r = await fetch(`${API_BASE}/api/config?pin=${encodeURIComponent(PIN)}`);
     const data = await r.json();
     $('mp-appurl').value = data.appUrl || '';
     const mpOk = data.mpConfigurado;
     $('mp-status-msg').textContent = mpOk ? '✅ Mercado Pago configurado' : '⚠️ Mercado Pago não configurado ainda';
-    $('mp-status-msg').className = 'msg ' + (mpOk ? 'ok' : 'erro');
-    if(data.appUrl) {
+    $('mp-status-msg').className = 'msg '+(mpOk?'ok':'erro');
+    if(data.appUrl){
       $('mp-webhook-url').textContent = `${data.appUrl}/api/pagamento?action=webhook`;
+      $('mp-webhook-carteira').textContent = `${data.appUrl}/api/carteira?action=webhook`;
     }
   }
-
   $('mp-salvar').addEventListener('click', async () => {
-    const body = {
-      pin: PIN,
-      mpAccessToken: $('mp-token').value,
-      appUrl: $('mp-appurl').value,
-    };
-    const r = await fetch(`${API_BASE}/api/config`, {
-      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
-    });
+    const body = { pin: PIN, mpAccessToken: $('mp-token').value, appUrl: $('mp-appurl').value };
+    const r = await fetch(`${API_BASE}/api/config`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     const data = await r.json();
-    $('mp-msg').textContent = r.ok ? 'Configuração do MP salva.' : (data.erro || 'Erro');
-    $('mp-msg').className = 'msg ' + (r.ok ? 'ok' : 'erro');
+    $('mp-msg').textContent = r.ok ? 'Configuração do MP salva.' : (data.erro||'Erro');
+    $('mp-msg').className = 'msg '+(r.ok?'ok':'erro');
     if(r.ok) carregarIntegracoes();
   });
-
   $('mp-appurl').addEventListener('input', () => {
-    const url = $('mp-appurl').value.replace(/\/$/, '');
-    if(url) $('mp-webhook-url').textContent = `${url}/api/pagamento?action=webhook`;
+    const url = $('mp-appurl').value.replace(/\/$/,'');
+    if(url){ $('mp-webhook-url').textContent=`${url}/api/pagamento?action=webhook`; $('mp-webhook-carteira').textContent=`${url}/api/carteira?action=webhook`; }
   });
 
+  // ===== Tickets =====
   async function carregarTickets(){
     const r = await fetch(`${API_BASE}/api/tickets?pin=${encodeURIComponent(PIN)}`);
     const data = await r.json();
     const tbody = $('tabela-tickets-body');
     tbody.innerHTML = '';
-    (data.tickets || []).forEach((t) => {
+    (data.tickets||[]).forEach((t) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${t.nome || ''}</td>
-        <td>${t.whatsapp || t.clienteId || ''}</td>
-        <td style="max-width:200px;">${t.mensagem || ''}</td>
-        <td>${t.pedidoId ? t.pedidoId.slice(-6) : '-'}</td>
-        <td><span class="tag ${t.status === 'resolvido' ? 'ativo' : 'inativo'}">${t.status}</span></td>
+        <td>${t.nome||''}</td><td>${t.whatsapp||t.clienteId||''}</td>
+        <td style="max-width:200px;">${t.mensagem||''}</td>
+        <td>${t.pedidoId?t.pedidoId.slice(-6):'-'}</td>
+        <td><span class="tag ${t.status==='resolvido'?'ativo':'inativo'}">${t.status}</span></td>
         <td style="min-width:180px;">
-          <input value="${t.resposta || ''}" data-resposta="${t.id}" placeholder="Digite a resposta..." style="margin-bottom:6px;">
+          <input value="${t.resposta||''}" data-resposta="${t.id}" placeholder="Resposta..." style="margin-bottom:6px;">
           <div style="display:flex;gap:6px;">
             <button class="secundario btn-responder-ticket" data-id="${t.id}" style="flex:1;font-size:12px;padding:6px;">💬 Responder</button>
-            <button class="secundario btn-resolver-ticket" data-id="${t.id}" style="flex:1;font-size:12px;padding:6px;">${t.status === 'resolvido' ? '🔄 Reabrir' : '✅ Resolver'}</button>
+            <button class="secundario btn-resolver-ticket" data-id="${t.id}" style="flex:1;font-size:12px;padding:6px;">${t.status==='resolvido'?'🔄 Reabrir':'✅ Resolver'}</button>
           </div>
-        </td>
-      `;
+        </td>`;
       tbody.appendChild(tr);
     });
-
     document.querySelectorAll('.btn-responder-ticket').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
-        const respostaInput = document.querySelector(`[data-resposta="${id}"]`);
-        if(!respostaInput.value.trim()){ btn.textContent = 'Digite algo!'; setTimeout(()=>btn.textContent='💬 Responder',1500); return; }
-        btn.disabled = true;
-        const r2 = await fetch(`${API_BASE}/api/tickets`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ pin: PIN, ticketId: id, resposta: respostaInput.value })
-        });
-        btn.textContent = r2.ok ? 'Enviado ✓' : 'Erro';
-        btn.disabled = false;
-        setTimeout(() => { btn.textContent = '💬 Responder'; }, 1500);
+        const inp = document.querySelector(`[data-resposta="${id}"]`);
+        if(!inp.value.trim()){ btn.textContent='Digite algo!'; setTimeout(()=>btn.textContent='💬 Responder',1500); return; }
+        btn.disabled=true;
+        const r2 = await fetch(`${API_BASE}/api/tickets`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:PIN,ticketId:id,resposta:inp.value})});
+        btn.textContent=r2.ok?'Enviado ✓':'Erro'; btn.disabled=false;
+        setTimeout(()=>btn.textContent='💬 Responder',1500);
       });
     });
-
     document.querySelectorAll('.btn-resolver-ticket').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
-        const respostaInput = document.querySelector(`[data-resposta="${id}"]`);
-        const ticketAtual = (data.tickets || []).find((t) => t.id === id);
-        const novoStatus = ticketAtual.status === 'resolvido' ? 'aberto' : 'resolvido';
-        await fetch(`${API_BASE}/api/tickets`, {
-          method: 'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ pin: PIN, ticketId: id, status: novoStatus, resposta: respostaInput.value })
-        });
+        const inp = document.querySelector(`[data-resposta="${id}"]`);
+        const t = (data.tickets||[]).find(t=>t.id===id);
+        const novoStatus = t.status==='resolvido'?'aberto':'resolvido';
+        await fetch(`${API_BASE}/api/tickets`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:PIN,ticketId:id,status:novoStatus,resposta:inp.value})});
         carregarTickets();
       });
     });
   }
-
   $('tickets-btn').addEventListener('click', carregarTickets);
 
-  // ===== Clientes e saldos =====
-  async function carregarClientes(){
-    const r = await fetch(`${API_BASE}/api/carteira?pin=${encodeURIComponent(PIN)}&todos=1`);
-    const data = await r.json();
-    const tbody = $('tabela-clientes-body');
-    tbody.innerHTML = '';
-    if(!data.clientes || data.clientes.length === 0){
-      $('clientes-msg').textContent = 'Nenhum cliente com saldo cadastrado ainda.';
-      return;
-    }
-    $('clientes-msg').textContent = '';
-    data.clientes.forEach((c) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${c.clienteId}</td>
-        <td>${c.nome || '-'}</td>
-        <td style="color:var(--accent);font-weight:700;">R$ ${Number(c.saldo||0).toFixed(2)}</td>
-        <td><input type="number" min="0.01" step="0.01" placeholder="Ex: 10.00" style="width:120px;margin-bottom:0;padding:6px 8px;font-size:12.5px;" data-creditar="${c.clienteId}"></td>
-        <td><button class="secundario btn-creditar" data-id="${c.clienteId}">Creditar</button></td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    document.querySelectorAll('.btn-creditar').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        const input = document.querySelector(`[data-creditar="${id}"]`);
-        const valor = Number(input.value);
-        if(!valor || valor <= 0){ btn.textContent = 'Informe o valor'; return; }
-        btn.disabled = true;
-        btn.textContent = 'Creditando...';
-        const r = await fetch(`${API_BASE}/api/carteira`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ pin: PIN, clienteId: id, valor, creditar: true })
-        });
-        const data = await r.json();
-        if(r.ok){
-          btn.textContent = `✓ R$ ${Number(data.novoSaldo).toFixed(2)}`;
-          input.value = '';
-          setTimeout(() => { btn.textContent = 'Creditar'; btn.disabled = false; carregarClientes(); }, 2000);
-        } else {
-          btn.textContent = 'Erro';
-          btn.disabled = false;
-        }
-      });
-    });
-  }
-
-  $('clientes-btn').addEventListener('click', carregarClientes);
-
+  // ===== Clientes =====
   let todosClientes = [];
-
   async function carregarClientes(){
-    $('clientes-msg').textContent = 'Carregando...';
+    $('clientes-msg').textContent='Carregando...';
     const r = await fetch(`${API_BASE}/api/carteira?pin=${encodeURIComponent(PIN)}&todos=1`);
     const data = await r.json();
-    todosClientes = data.clientes || [];
-    $('clientes-msg').textContent = '';
+    todosClientes = data.clientes||[];
+    $('clientes-msg').textContent='';
     renderizarClientes();
   }
 
-  function renderizarClientes(){
-    const busca = ($('busca-cliente').value || '').toLowerCase();
-    const filtroSaldo = $('filtro-saldo').value;
+  function origemEmoji(origem){
+    const mapa={google:'🔎 Google',youtube:'▶️ YouTube',instagram:'📸 Instagram',facebook:'📘 Facebook',tiktok:'🎵 TikTok',indicacao:'👥 Indicação',outros:'💬 Outros',nao_informado:'-'};
+    return mapa[origem]||origem||'-';
+  }
 
-    let lista = todosClientes.filter(c => {
-      if(busca){
-        const match = (c.nome||'').toLowerCase().includes(busca) ||
-          (c.usuario||'').toLowerCase().includes(busca) ||
-          (c.whatsapp||'').includes(busca);
-        if(!match) return false;
-      }
-      if(filtroSaldo === 'com' && Number(c.saldo||0) <= 0) return false;
-      if(filtroSaldo === 'sem' && Number(c.saldo||0) > 0) return false;
+  function renderizarClientes(){
+    const busca=($('busca-cliente').value||'').toLowerCase();
+    const filtroSaldo=$('filtro-saldo').value;
+    let lista=todosClientes.filter(c=>{
+      if(busca){ const match=(c.nome||'').toLowerCase().includes(busca)||(c.usuario||'').toLowerCase().includes(busca)||(c.whatsapp||'').includes(busca); if(!match) return false; }
+      if(filtroSaldo==='com'&&Number(c.saldo||0)<=0) return false;
+      if(filtroSaldo==='sem'&&Number(c.saldo||0)>0) return false;
       return true;
     });
-
-    $('clientes-total-msg').textContent = `${lista.length} cliente(s) encontrado(s) de ${todosClientes.length} total.`;
-
-    const tbody = $('tabela-clientes-body');
-    tbody.innerHTML = '';
-    lista.forEach((c) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${c.nome || '-'}</td>
-        <td style="color:var(--accent);">${c.usuario ? '@'+c.usuario : '-'}</td>
-        <td>${c.whatsapp && c.whatsapp !== 'undefined' ? c.whatsapp : c.clienteId}</td>
+    $('clientes-total-msg').textContent=`${lista.length} cliente(s) de ${todosClientes.length} total.`;
+    const tbody=$('tabela-clientes-body'); tbody.innerHTML='';
+    lista.forEach((c)=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td>${c.nome||'-'}</td>
+        <td style="color:var(--accent);">${c.usuario?'@'+c.usuario:'-'}</td>
+        <td>${c.whatsapp&&c.whatsapp!=='undefined'?c.whatsapp:c.clienteId}</td>
         <td style="font-size:12px;">${origemEmoji(c.origem)}</td>
-        <td style="color:${Number(c.saldo||0) > 0 ? 'var(--accent)' : 'var(--muted)'}; font-weight:700;">
-          R$ ${Number(c.saldo||0).toFixed(2)}
-        </td>
-        <td style="font-size:12px;color:var(--muted);">${c.ultimoCredito ? new Date(c.ultimoCredito).toLocaleDateString('pt-BR') : '-'}</td>
-        <td style="font-size:12px;color:var(--muted);">${c.criadoEm ? new Date(c.criadoEm).toLocaleDateString('pt-BR') : '-'}</td>
-        <td>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <input type="number" min="0" max="90" placeholder="%" style="width:60px;margin-bottom:0;padding:6px 8px;font-size:12px;" data-desconto="${c.whatsapp || c.clienteId}" value="${c.desconto||0}">
-            <button class="secundario btn-desconto" data-id="${c.whatsapp || c.clienteId}" style="font-size:12px;padding:6px 8px;" title="Salvar desconto">%</button>
-          </div>
-        </td>
-        <td>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <input type="number" min="0.01" step="0.01" placeholder="R$" style="width:80px;margin-bottom:0;padding:6px 8px;font-size:12px;" data-creditar="${c.whatsapp || c.clienteId}">
-            <button class="secundario btn-creditar" data-id="${c.whatsapp || c.clienteId}" style="font-size:12px;padding:6px 10px;">💰</button>
-          </div>
-        </td>
-        <td>
-          <button class="secundario btn-historico" data-id="${c.whatsapp || c.clienteId}" data-nome="${c.nome||c.clienteId}" style="font-size:12px;padding:6px 10px;">📋 Histórico</button>
-        </td>
+        <td style="color:${Number(c.saldo||0)>0?'var(--accent)':'var(--muted)'};font-weight:700;">R$ ${Number(c.saldo||0).toFixed(2)}</td>
+        <td style="font-size:12px;color:var(--muted);">${c.ultimoCredito?new Date(c.ultimoCredito).toLocaleDateString('pt-BR'):'-'}</td>
+        <td style="font-size:12px;color:var(--muted);">${c.criadoEm?new Date(c.criadoEm).toLocaleDateString('pt-BR'):'-'}</td>
+        <td><div style="display:flex;gap:6px;align-items:center;">
+          <input type="number" min="0" max="90" placeholder="%" style="width:60px;margin-bottom:0;padding:6px 8px;font-size:12px;" data-desconto="${c.whatsapp||c.clienteId}" value="${c.desconto||0}">
+          <button class="secundario btn-desconto" data-id="${c.whatsapp||c.clienteId}" style="font-size:12px;padding:6px 8px;">%</button>
+        </div></td>
+        <td><div style="display:flex;gap:6px;align-items:center;">
+          <input type="number" min="0.01" step="0.01" placeholder="R$" style="width:80px;margin-bottom:0;padding:6px 8px;font-size:12px;" data-creditar="${c.whatsapp||c.clienteId}">
+          <button class="secundario btn-creditar" data-id="${c.whatsapp||c.clienteId}" style="font-size:12px;padding:6px 10px;">💰</button>
+        </div></td>
+        <td><button class="secundario btn-historico" data-id="${c.whatsapp||c.clienteId}" data-nome="${c.nome||c.clienteId}" style="font-size:12px;padding:6px 10px;">📋 Histórico</button></td>
       `;
       tbody.appendChild(tr);
     });
 
-    document.querySelectorAll('.btn-desconto').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        const input = document.querySelector(`[data-desconto="${id}"]`);
-        const desconto = Number(input.value);
+    document.querySelectorAll('.btn-desconto').forEach((btn)=>{
+      btn.addEventListener('click', async()=>{
+        const id=btn.dataset.id; const input=document.querySelector(`[data-desconto="${id}"]`); const desconto=Number(input.value);
         if(isNaN(desconto)||desconto<0||desconto>90){btn.textContent='!';setTimeout(()=>btn.textContent='%',1500);return;}
         btn.disabled=true;
-        const r = await fetch(`${API_BASE}/api/auth-cliente`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'set-desconto',pin:PIN,clienteId:id,desconto})});
-        btn.textContent=r.ok?'✓':'✗';btn.disabled=false;
-        setTimeout(()=>btn.textContent='%',1500);
+        const r=await fetch(`${API_BASE}/api/auth-cliente`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'set-desconto',pin:PIN,clienteId:id,desconto})});
+        btn.textContent=r.ok?'✓':'✗'; btn.disabled=false; setTimeout(()=>btn.textContent='%',1500);
       });
     });
 
-    document.querySelectorAll('.btn-creditar').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        const input = document.querySelector(`[data-creditar="${id}"]`);
-        const valor = Number(input.value);
-        if(!valor || valor <= 0){ btn.textContent = '!'; setTimeout(()=>btn.textContent='💰',1500); return; }
-        btn.disabled = true;
-        const r = await fetch(`${API_BASE}/api/carteira`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ pin: PIN, clienteId: id, valor, creditar: true })
-        });
-        const data = await r.json();
-        btn.textContent = r.ok ? '✓' : '✗';
-        btn.disabled = false;
-        input.value = '';
-        setTimeout(() => { btn.textContent = '💰'; carregarClientes(); }, 1500);
+    document.querySelectorAll('.btn-creditar').forEach((btn)=>{
+      btn.addEventListener('click', async()=>{
+        const id=btn.dataset.id; const input=document.querySelector(`[data-creditar="${id}"]`); const valor=Number(input.value);
+        if(!valor||valor<=0){btn.textContent='!';setTimeout(()=>btn.textContent='💰',1500);return;}
+        btn.disabled=true;
+        const r=await fetch(`${API_BASE}/api/carteira`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:PIN,clienteId:id,valor,creditar:true})});
+        const data=await r.json(); btn.textContent=r.ok?'✓':'✗'; btn.disabled=false; input.value='';
+        setTimeout(()=>{btn.textContent='💰'; carregarClientes();},1500);
       });
     });
   }
 
   $('busca-cliente').addEventListener('input', renderizarClientes);
   $('filtro-saldo').addEventListener('change', renderizarClientes);
+  $('clientes-btn').addEventListener('click', carregarClientes);
 
-  function origemEmoji(origem){
-    const mapa = { google:'🔎 Google', youtube:'▶️ YouTube', instagram:'📸 Instagram', facebook:'📘 Facebook', tiktok:'🎵 TikTok', indicacao:'👥 Indicação', outros:'💬 Outros', nao_informado:'-' };
-    return mapa[origem] || origem || '-';
-  }
-
-  $('creditar-manual-btn').addEventListener('click', async () => {
-    const clienteId = $('creditar-id').value.replace(/\D/g, '');
-    const valor = Number($('creditar-valor').value);
-    if(!clienteId){ $('creditar-msg').textContent = 'Informe o WhatsApp do cliente'; $('creditar-msg').className = 'msg erro'; return; }
-    if(!valor || valor <= 0){ $('creditar-msg').textContent = 'Informe um valor válido'; $('creditar-msg').className = 'msg erro'; return; }
-    $('creditar-manual-btn').disabled = true;
-    $('creditar-msg').textContent = 'Creditando...';
-    const r = await fetch(`${API_BASE}/api/carteira`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ pin: PIN, clienteId, valor, creditar: true })
-    });
-    const data = await r.json();
-    if(r.ok){
-      $('creditar-msg').textContent = `✅ R$ ${valor.toFixed(2)} creditado! Novo saldo: R$ ${Number(data.novoSaldo).toFixed(2)}`;
-      $('creditar-msg').className = 'msg ok';
-      $('creditar-id').value = '';
-      $('creditar-valor').value = '';
-      carregarClientes();
-    } else {
-      $('creditar-msg').textContent = data.erro || 'Erro ao creditar';
-      $('creditar-msg').className = 'msg erro';
-    }
-    $('creditar-manual-btn').disabled = false;
+  $('creditar-manual-btn').addEventListener('click', async()=>{
+    const clienteId=$('creditar-id').value.replace(/\D/g,''); const valor=Number($('creditar-valor').value);
+    if(!clienteId){$('creditar-msg').textContent='Informe o WhatsApp';$('creditar-msg').className='msg erro';return;}
+    if(!valor||valor<=0){$('creditar-msg').textContent='Informe um valor válido';$('creditar-msg').className='msg erro';return;}
+    $('creditar-manual-btn').disabled=true; $('creditar-msg').textContent='Creditando...';
+    const r=await fetch(`${API_BASE}/api/carteira`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:PIN,clienteId,valor,creditar:true})});
+    const data=await r.json();
+    if(r.ok){$('creditar-msg').textContent=`✅ R$ ${valor.toFixed(2)} creditado! Novo saldo: R$ ${Number(data.novoSaldo).toFixed(2)}`;$('creditar-msg').className='msg ok';$('creditar-id').value='';$('creditar-valor').value='';carregarClientes();}
+    else{$('creditar-msg').textContent=data.erro||'Erro';$('creditar-msg').className='msg erro';}
+    $('creditar-manual-btn').disabled=false;
   });
 
   function calcularPrecoFinal(custo, lucroPercentual){
-    const lucro = (lucroPercentual === '' || lucroPercentual === null || lucroPercentual === undefined)
-      ? lucroGlobalAtual
-      : Number(lucroPercentual);
-    const custoConvertido = Number(custo) * (cotacaoAtual || 1);
-    const valor = custoConvertido * (1 + lucro / 100);
-    return valor.toFixed(4);
+    const lucro=(lucroPercentual===''||lucroPercentual===null||lucroPercentual===undefined)?lucroGlobalAtual:Number(lucroPercentual);
+    const custoConvertido=Number(custo)*(cotacaoAtual||1);
+    return (custoConvertido*(1+lucro/100)).toFixed(4);
   }
 
   let buscaTimeout;
-  $('busca-servico').addEventListener('input', (e) => {
-    clearTimeout(buscaTimeout);
-    const valor = e.target.value;
-    if(valor.length > 0 && valor.length < 3) return; // espera pelo menos 3 letras
-    buscaTimeout = setTimeout(() => carregarServicos(valor), 500);
+  $('busca-servico').addEventListener('input',(e)=>{
+    clearTimeout(buscaTimeout); const valor=e.target.value;
+    if(valor.length>0&&valor.length<3) return;
+    buscaTimeout=setTimeout(()=>carregarServicos(valor),500);
   });
-
-  $('ver-ativos-btn').addEventListener('click', () => {
-    $('busca-servico').value = '';
-    carregarServicos('', true);
-  });
-
-  $('ordenar-servico').addEventListener('change', () => {
-    carregarServicos($('busca-servico').value);
-  });
+  $('ver-ativos-btn').addEventListener('click',()=>{ $('busca-servico').value=''; carregarServicos('',true); });
+  $('ordenar-servico').addEventListener('change',()=>{ carregarServicos($('busca-servico').value); });
 
   // ===== Histórico do cliente =====
   async function abrirHistorico(clienteId, nomeCliente){
-    $('modal-cliente-nome').textContent = nomeCliente;
-    $('modal-historico').style.display = 'block';
-    $('modal-pedidos-lista').innerHTML = '<p style="color:var(--muted);font-size:13px;">Carregando...</p>';
-    $('modal-recargas-lista').innerHTML = '<p style="color:var(--muted);font-size:13px;">Carregando...</p>';
-
-    // pedidos do cliente
+    $('modal-cliente-nome').textContent=nomeCliente;
+    $('modal-historico').style.display='block';
+    $('modal-pedidos-lista').innerHTML='<p style="color:var(--muted);font-size:13px;">Carregando...</p>';
+    $('modal-recargas-lista').innerHTML='<p style="color:var(--muted);font-size:13px;">Carregando...</p>';
     try{
-      const r = await fetch(`${API_BASE}/api/pedidos?clienteId=${encodeURIComponent(clienteId)}`);
-      const data = await r.json();
-      const pedidos = data.pedidos || [];
-      const totalGasto = pedidos.reduce((s,p)=>s+Number(p.valorTotal||0),0);
-      $('modal-total-pedidos').textContent = pedidos.length;
-      $('modal-total-gasto').textContent = `R$ ${totalGasto.toFixed(2)}`;
-
-      $('modal-pedidos-lista').innerHTML = pedidos.length === 0
-        ? '<p style="color:var(--muted);font-size:13px;">Nenhum pedido.</p>'
-        : pedidos.map(p=>`
+      const r=await fetch(`${API_BASE}/api/pedidos?clienteId=${encodeURIComponent(clienteId)}`);
+      const data=await r.json(); const pedidos=data.pedidos||[];
+      const totalGasto=pedidos.reduce((s,p)=>s+Number(p.valorTotal||0),0);
+      $('modal-total-pedidos').textContent=pedidos.length;
+      $('modal-total-gasto').textContent=`R$ ${totalGasto.toFixed(2)}`;
+      $('modal-pedidos-lista').innerHTML=pedidos.length===0
+        ?'<p style="color:var(--muted);font-size:13px;">Nenhum pedido.</p>'
+        :pedidos.map(p=>`
           <div style="border-bottom:1px solid var(--line);padding:8px 0;display:flex;justify-content:space-between;align-items:flex-start;">
             <div>
               <span style="color:var(--accent);font-weight:700;font-size:12px;">${p.numeroPedido||'-'}</span>
               <span style="font-size:13px;margin-left:8px;">${p.nomeServico||'-'}</span>
-              ${p.link ? `<div style="font-size:11px;margin-top:3px;"><a href="${p.link}" target="_blank" style="color:var(--muted);text-decoration:none;">🔗 ${p.link.length>50?p.link.slice(0,50)+'...':p.link}</a></div>` : ''}
+              ${p.idFornecedor?`<span style="font-size:11px;color:var(--accent);font-family:monospace;margin-left:6px;">(cód: ${p.idFornecedor})</span>`:''}
+              ${p.link?`<div style="font-size:11px;margin-top:3px;"><a href="${p.link}" target="_blank" style="color:var(--muted);text-decoration:none;">🔗 ${p.link.length>50?p.link.slice(0,50)+'...':p.link}</a></div>`:''}
             </div>
             <div style="text-align:right;">
               <div style="font-size:13px;font-weight:700;">R$ ${Number(p.valorTotal).toFixed(2)}</div>
               <div style="font-size:11px;color:var(--muted);">${p.status} · ${new Date(p.criadoEm).toLocaleDateString('pt-BR')}</div>
             </div>
           </div>`).join('');
-    }catch(e){
-      $('modal-pedidos-lista').innerHTML = '<p style="color:#ff8b8b;font-size:13px;">Erro ao carregar pedidos.</p>';
-    }
-
-    // recargas do cliente
+    }catch(e){ $('modal-pedidos-lista').innerHTML='<p style="color:#ff8b8b;font-size:13px;">Erro ao carregar pedidos.</p>'; }
     try{
-      const r2 = await fetch(`https://smm-panel-e762e-default-rtdb.firebaseio.com/depositos.json`);
-      const deps = await r2.json() || {};
-      const minhasRecargas = Object.entries(deps)
-        .filter(([,d]) => d && d.clienteId === clienteId)
-        .sort(([,a],[,b]) => b.criadoEm - a.criadoEm);
-
-      // busca saldo atual
-      const r3 = await fetch(`${API_BASE}/api/carteira?clienteId=${encodeURIComponent(clienteId)}`);
-      const saldoData = await r3.json();
-      $('modal-saldo-atual').textContent = `R$ ${Number(saldoData.saldo||0).toFixed(2)}`;
-
-      $('modal-recargas-lista').innerHTML = minhasRecargas.length === 0
-        ? '<p style="color:var(--muted);font-size:13px;">Nenhuma recarga via PIX registrada.</p>'
-        : minhasRecargas.map(([id,d])=>`
+      const r2=await fetch(`https://smm-panel-e762e-default-rtdb.firebaseio.com/depositos.json`);
+      const deps=await r2.json()||{};
+      const minhasRecargas=Object.entries(deps).filter(([,d])=>d&&d.clienteId===clienteId).sort(([,a],[,b])=>b.criadoEm-a.criadoEm);
+      const r3=await fetch(`${API_BASE}/api/carteira?clienteId=${encodeURIComponent(clienteId)}`);
+      const saldoData=await r3.json();
+      $('modal-saldo-atual').textContent=`R$ ${Number(saldoData.saldo||0).toFixed(2)}`;
+      $('modal-recargas-lista').innerHTML=minhasRecargas.length===0
+        ?'<p style="color:var(--muted);font-size:13px;">Nenhuma recarga via PIX registrada.</p>'
+        :minhasRecargas.map(([id,d])=>`
           <div style="border-bottom:1px solid var(--line);padding:8px 0;display:flex;justify-content:space-between;">
             <div style="font-size:13px;">💰 Recarga PIX</div>
             <div style="text-align:right;">
@@ -1008,14 +735,11 @@
               <div style="font-size:11px;color:var(--muted);">${d.status} · ${new Date(d.criadoEm).toLocaleDateString('pt-BR')}</div>
             </div>
           </div>`).join('');
-    }catch(e){
-      $('modal-recargas-lista').innerHTML = '<p style="color:#ff8b8b;font-size:13px;">Erro ao carregar recargas.</p>';
-    }
+    }catch(e){ $('modal-recargas-lista').innerHTML='<p style="color:#ff8b8b;font-size:13px;">Erro ao carregar recargas.</p>'; }
   }
 
-  // delega o clique no btn-historico (funciona mesmo após rerenderização)
-  document.addEventListener('click', e => {
-    const btn = e.target.closest('.btn-historico');
+  document.addEventListener('click', e=>{
+    const btn=e.target.closest('.btn-historico');
     if(btn) abrirHistorico(btn.dataset.id, btn.dataset.nome);
   });
 
