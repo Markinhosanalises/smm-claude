@@ -113,6 +113,7 @@
     <!-- Ações -->
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
       <button id="sync-btn">🔄 Sincronizar fornecedor</button>
+      <button class="secundario" id="detectar-redes-btn">🔧 Detectar redes automaticamente</button>
       <button class="secundario filtro-estado-btn" id="btn-todos" data-estado="">Todos</button>
       <button class="secundario filtro-estado-btn" id="btn-ativos" data-estado="ativos">✅ Ativos</button>
       <button class="secundario filtro-estado-btn" id="btn-indisponiveis" data-estado="indisponiveis">⚠️ Indisponíveis</button>
@@ -412,6 +413,28 @@
     const data = await r.json();
     if(r.ok){ $('sync-msg').textContent = `${data.totalServicos} serviços sincronizados.`; $('sync-msg').className = 'msg ok'; carregarServicos(); }
     else { $('sync-msg').textContent = data.erro || 'Erro ao sincronizar'; $('sync-msg').className = 'msg erro'; }
+  });
+
+  $('detectar-redes-btn').addEventListener('click', async () => {
+    $('sync-msg').textContent = 'Detectando redes automaticamente... (pode demorar alguns segundos)';
+    $('sync-msg').className = 'msg';
+    $('detectar-redes-btn').disabled = true;
+    try{
+      const r = await fetch(`${API_BASE}/api/sync-services`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pin: PIN, action: 'detectar' }) });
+      const data = await r.json();
+      if(r.ok){
+        $('sync-msg').textContent = `✅ ${data.atualizados} serviços atualizados de ${data.total} total.`;
+        $('sync-msg').className = 'msg ok';
+        carregarServicos();
+      } else {
+        $('sync-msg').textContent = data.erro || 'Erro';
+        $('sync-msg').className = 'msg erro';
+      }
+    }catch(e){
+      $('sync-msg').textContent = 'Erro de conexão.';
+      $('sync-msg').className = 'msg erro';
+    }
+    $('detectar-redes-btn').disabled = false;
   });
 
   async function carregarServicos(termo, somenteAtivos, somenteIndisponiveis){
