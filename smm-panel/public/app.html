@@ -1,4 +1,4 @@
-<!-- public/index.html -->
+<!-- public/app.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -11,42 +11,64 @@
 <link rel="manifest" href="/manifest.json">
 <title>Engaja aí</title>
 <style>
-  :root{
-    --bg:#0b0d10; --card:#15181c; --line:#23272d;
-    --text:#eef1f4; --muted:#8b929b; --accent:#7CFFB2; --accent-dim:#1f3a2c;
-  }
+  :root{--bg:#0b0d10;--card:#15181c;--line:#23272d;--text:#eef1f4;--muted:#8b929b;--accent:#7CFFB2;--accent-dim:#1f3a2c;}
   *{box-sizing:border-box;}
-  body{
-    margin:0;background:var(--bg);color:var(--text);
-    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
-    padding:0 0 100px;
-  }
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;padding:0 0 100px;}
   .container{width:100%;max-width:460px;margin:0 auto;padding:0 16px;}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;margin-bottom:20px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;margin-bottom:16px;}
   .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 6px;font-weight:600;}
-  .title{font-size:22px;font-weight:700;margin:0 0 4px;line-height:1.25;}
-  .sub{font-size:13.5px;color:var(--muted);margin:0 0 24px;}
+  .title{font-size:20px;font-weight:700;margin:0 0 4px;line-height:1.25;}
+  .sub{font-size:13px;color:var(--muted);margin:0 0 20px;}
   .label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;}
-  .input, .select{
-    width:100%;background:#0e1013;border:1px solid var(--line);color:var(--text);
-    padding:12px 14px;border-radius:10px;font-size:14.5px;outline:none;margin-bottom:14px;
-    transition:border-color .15s ease;
-  }
-  .input:focus, .select:focus{border-color:var(--accent);}
-  .input:disabled, .select:disabled{opacity:.4;cursor:not-allowed;}
-  .btn{
-    width:100%;background:var(--accent);color:#08110c;border:none;padding:14px;
-    border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:filter .15s ease;
-  }
+  .input,.select{width:100%;background:#0e1013;border:1px solid var(--line);color:var(--text);padding:12px 14px;border-radius:10px;font-size:14.5px;outline:none;margin-bottom:14px;transition:border-color .15s;}
+  .input:focus,.select:focus{border-color:var(--accent);}
+  .input:disabled,.select:disabled{opacity:.4;cursor:not-allowed;}
+  .btn{width:100%;background:var(--accent);color:#08110c;border:none;padding:14px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:filter .15s;}
   .btn:hover{filter:brightness(1.08);}
   .btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;}
   .btn-sec{background:transparent;border:1px solid var(--line);color:var(--text);width:100%;padding:12px;border-radius:10px;font-size:13.5px;cursor:pointer;margin-top:8px;}
   .msg{font-size:12.5px;color:var(--muted);margin-top:10px;min-height:16px;}
   .msg.erro{color:#ff8b8b;}
   .msg.ok{color:var(--accent);}
-  .tabs{display:flex;gap:8px;margin-bottom:18px;}
-  .tab{flex:1;text-align:center;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:var(--card);border:1px solid var(--line);color:var(--muted);}
+
+  /* ===== TABS PRINCIPAIS ===== */
+  .tabs{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px;}
+  .tabs::-webkit-scrollbar{height:2px;}
+  .tabs::-webkit-scrollbar-thumb{background:var(--line);}
+  .tab{flex-shrink:0;text-align:center;padding:9px 14px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:var(--card);border:1px solid var(--line);color:var(--muted);white-space:nowrap;}
   .tab.ativa{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
+
+  /* ===== ABAS DE REDE SOCIAL ===== */
+  .redes-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+  .rede-tab{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:24px;font-size:13.5px;font-weight:700;cursor:pointer;background:var(--card);border:1px solid var(--line);color:var(--muted);transition:all .15s;white-space:nowrap;}
+  .rede-tab.ativa{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
+  .rede-tab:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* ===== CHIPS DE TIPO ===== */
+  .tipos-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+  .tipo-chip{padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:600;cursor:pointer;background:var(--card);border:1px solid var(--line);color:var(--muted);transition:all .15s;}
+  .tipo-chip.ativo{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
+
+  /* ===== CARDS DE SERVIÇO ===== */
+  .servicos-lista{display:flex;flex-direction:column;gap:10px;}
+  .servico-card{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .15s;}
+  .servico-card:hover,.servico-card.selecionado{border-color:var(--accent);}
+  .servico-card.selecionado{background:var(--accent-dim);}
+  .servico-card-top{display:flex;justify-content:space-between;align-items:center;}
+  .servico-card-nome{font-size:13.5px;font-weight:600;}
+  .servico-card-preco{font-size:13px;color:var(--accent);font-weight:700;}
+  .servico-card-info{font-size:11.5px;color:var(--muted);margin-top:3px;}
+
+  /* ===== VITRINE ===== */
+  .vitrine-card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:16px;}
+  .vitrine-img{width:100%;height:180px;object-fit:cover;}
+  .vitrine-body{padding:16px;}
+  .vitrine-nome{font-size:16px;font-weight:700;margin-bottom:4px;}
+  .vitrine-desc{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .vitrine-preco{font-size:20px;font-weight:800;color:var(--accent);margin-bottom:14px;}
+  .vitrine-btn{display:block;text-align:center;background:var(--accent);color:#08110c;border:none;padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;}
+
+  /* ===== OUTROS ===== */
   .preco-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;}
   .preco-label{font-size:13px;color:var(--muted);}
   .preco{font-size:28px;font-weight:700;color:var(--accent);}
@@ -58,168 +80,53 @@
   .status-pill.executando{background:#3a2f1f;color:#ffc97c;}
   .status-pill.concluido{background:var(--accent-dim);color:var(--accent);}
   .status-pill.aguardando_pagamento{background:#23272d;color:var(--muted);}
-  .status-pill.cancelado, .status-pill.erro_fornecedor{background:#3a1f1f;color:#ff8b8b;}
-  .float-whats{
-    position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;
-    background:#25D366;display:flex;align-items:center;justify-content:center;
-    font-size:26px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.4);text-decoration:none;
-    z-index:1000;
-  }
-  #btn-instalar-app{
-    position:fixed;bottom:84px;right:14px;display:none;
-    background:var(--accent);color:#08110c;border:none;border-radius:24px;
-    padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;
-    box-shadow:0 4px 14px rgba(124,255,178,.3);align-items:center;gap:6px;
-    z-index:999;
-  }
+  .status-pill.cancelado,.status-pill.erro_fornecedor{background:#3a1f1f;color:#ff8b8b;}
+  .float-whats{position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.4);text-decoration:none;z-index:1000;}
+  #btn-instalar-app{position:fixed;bottom:84px;right:14px;display:none;background:var(--accent);color:#08110c;border:none;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(124,255,178,.3);align-items:center;gap:6px;z-index:999;}
   .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px;color:var(--muted);padding-top:16px;}
   .top-bar button{background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;}
   .hidden{display:none !important;}
-
-  /* ===== FUNDO ANIMADO (login e área logada) ===== */
-  .area-logada-bg{
-    position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
-    background:linear-gradient(135deg,#0b0d10 0%,#0d1a12 50%,#0b0d10 100%);
-  }
-  .area-logada-bg::before{
-    content:'';position:absolute;inset:0;pointer-events:none;
-    background:radial-gradient(ellipse at 20% 50%,rgba(124,255,178,.05) 0%,transparent 60%),
-               radial-gradient(ellipse at 80% 20%,rgba(124,255,178,.04) 0%,transparent 50%);
-  }
+  .area-logada-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:linear-gradient(135deg,#0b0d10 0%,#0d1a12 50%,#0b0d10 100%);}
+  .area-logada-bg::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 20% 50%,rgba(124,255,178,.05) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(124,255,178,.04) 0%,transparent 50%);}
   #area-logada{position:relative;z-index:2;}
   #area-logada .container{position:relative;z-index:2;}
-
-  /* ===== HERO DE LOGIN ===== */
-  .auth-hero{
-    position:relative;
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    overflow:hidden;
-    padding:32px 16px;
-    background: linear-gradient(135deg, #0b0d10 0%, #0d1a12 50%, #0b0d10 100%);
-  }
-  .auth-hero::before{
-    content:'';
-    position:absolute;
-    inset:0;
-    background: radial-gradient(ellipse at 20% 50%, rgba(124,255,178,.07) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 20%, rgba(124,255,178,.05) 0%, transparent 50%);
-    pointer-events:none;
-  }
-  /* ícones flutuantes no fundo */
-  .floating-icons{
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    overflow:hidden;
-  }
-  .fi{
-    position:absolute;
-    font-size:32px;
-    opacity:.06;
-    animation: floatUp linear infinite;
-    user-select:none;
-  }
-  @keyframes floatUp{
-    0%  { transform: translateY(110vh) rotate(0deg);   opacity:0;   }
-    5%  { opacity:.08; }
-    95% { opacity:.08; }
-    100%{ transform: translateY(-20vh) rotate(360deg); opacity:0;   }
-  }
-  /* card de login flutuante */
-  .auth-card{
-    position:relative;
-    z-index:2;
-    width:100%;
-    max-width:380px;
-    background:rgba(21,24,28,.92);
-    border:1px solid rgba(124,255,178,.15);
-    border-radius:24px;
-    padding:36px 32px;
-    backdrop-filter:blur(12px);
-    box-shadow:0 24px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(124,255,178,.05);
-  }
-  .auth-logo{
-    text-align:center;
-    margin-bottom:24px;
-  }
-  .auth-logo .logo-circle{
-    width:64px;height:64px;border-radius:50%;
-    background:linear-gradient(135deg, #7CFFB2, #00c97a);
-    display:inline-flex;align-items:center;justify-content:center;
-    font-size:28px;margin-bottom:12px;
-    box-shadow:0 8px 24px rgba(124,255,178,.3);
-  }
-  .auth-logo h1{
-    font-size:20px;font-weight:800;margin:0 0 4px;
-    background:linear-gradient(135deg,#7CFFB2,#fff);
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  }
+  .auth-hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:32px 16px;background:linear-gradient(135deg,#0b0d10 0%,#0d1a12 50%,#0b0d10 100%);}
+  .auth-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(124,255,178,.07) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(124,255,178,.05) 0%,transparent 50%);pointer-events:none;}
+  .floating-icons{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+  .fi{position:absolute;font-size:32px;opacity:.06;animation:floatUp linear infinite;user-select:none;}
+  @keyframes floatUp{0%{transform:translateY(110vh) rotate(0deg);opacity:0;}5%{opacity:.08;}95%{opacity:.08;}100%{transform:translateY(-20vh) rotate(360deg);opacity:0;}}
+  .auth-card{position:relative;z-index:2;width:100%;max-width:380px;background:rgba(21,24,28,.92);border:1px solid rgba(124,255,178,.15);border-radius:24px;padding:36px 32px;backdrop-filter:blur(12px);box-shadow:0 24px 60px rgba(0,0,0,.5);}
+  .auth-logo{text-align:center;margin-bottom:24px;}
+  .auth-logo .logo-circle{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#7CFFB2,#00c97a);display:inline-flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px;box-shadow:0 8px 24px rgba(124,255,178,.3);}
+  .auth-logo h1{font-size:20px;font-weight:800;margin:0 0 4px;background:linear-gradient(135deg,#7CFFB2,#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
   .auth-logo p{font-size:12.5px;color:var(--muted);margin:0;}
-  .auth-divider{
-    display:flex;align-items:center;gap:10px;margin:18px 0;
-  }
+  .auth-divider{display:flex;align-items:center;gap:10px;margin:18px 0;}
   .auth-divider span{font-size:11px;color:var(--muted);white-space:nowrap;}
-  .auth-divider::before,.auth-divider::after{
-    content:'';flex:1;height:1px;background:var(--line);
-  }
-  .auth-input{
-    width:100%;background:rgba(14,16,19,.8);border:1px solid var(--line);
-    color:var(--text);padding:13px 16px;border-radius:12px;font-size:14px;
-    outline:none;margin-bottom:12px;transition:border-color .2s,box-shadow .2s;
-  }
-  .auth-input:focus{
-    border-color:var(--accent);
-    box-shadow:0 0 0 3px rgba(124,255,178,.1);
-  }
-  .auth-btn{
-    width:100%;background:linear-gradient(135deg,#7CFFB2,#00c97a);
-    color:#061409;border:none;padding:14px;border-radius:12px;
-    font-size:15px;font-weight:800;cursor:pointer;
-    transition:filter .15s,transform .1s;
-    letter-spacing:.02em;
-  }
+  .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--line);}
+  .auth-input{width:100%;background:rgba(14,16,19,.8);border:1px solid var(--line);color:var(--text);padding:13px 16px;border-radius:12px;font-size:14px;outline:none;margin-bottom:12px;transition:border-color .2s,box-shadow .2s;}
+  .auth-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,255,178,.1);}
+  .auth-btn{width:100%;background:linear-gradient(135deg,#7CFFB2,#00c97a);color:#061409;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;transition:filter .15s,transform .1s;}
   .auth-btn:hover{filter:brightness(1.08);}
-  .auth-btn:active{transform:scale(.98);}
-  .auth-toggle{
-    text-align:center;margin-top:16px;font-size:13px;color:var(--muted);
-  }
-  .auth-toggle button{
-    background:none;border:none;color:var(--accent);
-    font-size:13px;font-weight:700;cursor:pointer;padding:0;
-  }
+  .auth-toggle{text-align:center;margin-top:16px;font-size:13px;color:var(--muted);}
+  .auth-toggle button{background:none;border:none;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;padding:0;}
   .auth-msg{font-size:12.5px;margin-top:10px;min-height:16px;text-align:center;}
   .auth-msg.erro{color:#ff8b8b;}
   .auth-msg.ok{color:var(--accent);}
-  .redes-badges{
-    display:flex;justify-content:center;gap:10px;margin-bottom:22px;flex-wrap:wrap;
-  }
-  .rede-badge{
-    display:flex;align-items:center;gap:5px;
-    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
-    border-radius:20px;padding:5px 12px;font-size:12px;color:var(--muted);
-  }
+  .redes-badges{display:flex;justify-content:center;gap:10px;margin-bottom:22px;flex-wrap:wrap;}
+  .rede-badge{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--muted);}
 </style>
 </head>
 <body>
 
 <!-- HERO DE LOGIN -->
 <div class="auth-hero" id="auth-hero">
-
-  <!-- ícones flutuando no fundo -->
   <div class="floating-icons" id="floating-icons"></div>
-
-  <!-- card central -->
   <div class="auth-card" id="auth-card">
-
     <div class="auth-logo">
       <div class="logo-circle">🚀</div>
       <h1>Engaja aí</h1>
       <p>Impulsione seu perfil nas redes sociais</p>
     </div>
-
     <div class="redes-badges">
       <div class="rede-badge">📸 Instagram</div>
       <div class="rede-badge">🎵 TikTok</div>
@@ -227,19 +134,13 @@
       <div class="rede-badge">𝕏 Twitter</div>
       <div class="rede-badge">📘 Facebook</div>
     </div>
-
-    <!-- LOGIN -->
     <div id="bloco-login">
       <div class="auth-divider"><span>Acesse sua conta</span></div>
       <input class="auth-input" id="auth-login-id" placeholder="👤 Usuário ou 📱 WhatsApp" autocomplete="username">
       <input class="auth-input" id="auth-senha" placeholder="🔒 Senha" type="password">
       <button class="auth-btn" id="btn-login">Entrar</button>
-      <div class="auth-toggle">
-        <button id="btn-toggle-cadastro">Não tenho conta — criar uma</button>
-      </div>
+      <div class="auth-toggle"><button id="btn-toggle-cadastro">Não tenho conta — criar uma</button></div>
     </div>
-
-    <!-- CADASTRO -->
     <div id="bloco-cadastro" class="hidden">
       <div class="auth-divider"><span>Criar conta</span></div>
       <input class="auth-input" id="auth-nome" placeholder="👤 Seu nome completo">
@@ -257,16 +158,13 @@
         <option value="outros">💬 Outros</option>
       </select>
       <button class="auth-btn" id="btn-cadastrar">Criar conta</button>
-      <div class="auth-toggle">
-        <button id="btn-toggle-login">Já tenho conta — entrar</button>
-      </div>
+      <div class="auth-toggle"><button id="btn-toggle-login">Já tenho conta — entrar</button></div>
     </div>
-
     <p class="auth-msg" id="auth-msg"></p>
   </div>
 </div>
 
-<!-- ÁREA LOGADO -->
+<!-- ÁREA LOGADA -->
 <div class="hidden" id="area-logada">
 <div class="area-logada-bg"><div class="floating-icons" id="floating-icons-logado"></div></div>
 <div class="container">
@@ -278,59 +176,89 @@
     </div>
   </div>
 
-  <!-- ABAS -->
+  <!-- ABAS PRINCIPAIS -->
   <div class="tabs hidden" id="tabs">
     <div class="tab ativa" id="tab-engajar">🚀 Engajar</div>
+    <div class="tab" id="tab-vitrine">🛍️ Vitrine</div>
     <div class="tab" id="tab-pedidos">📦 Pedidos</div>
     <div class="tab" id="tab-carteira">💰 Carteira</div>
     <div class="tab" id="tab-suporte">🎧 Suporte</div>
     <div class="tab" id="tab-api">🔑 API</div>
   </div>
 
-  <!-- WIDGET DE ENGAJAMENTO -->
+  <!-- WIDGET DE ENGAJAMENTO - NOVO VISUAL -->
   <div id="painel-engajar" class="hidden">
     <div class="card">
       <p class="eyebrow">Disponível agora</p>
-      <h2 class="title">Chegou a hora de engajar o seu perfil</h2>
-      <p class="sub">Escolha a rede, o serviço e cole o link — em poucos segundos você vê o valor.</p>
-
-      <label class="label">Rede social</label>
-      <select class="select" id="eng-rede"><option value="">Carregando...</option></select>
-
-      <label class="label">Tipo de serviço</label>
-      <select class="select" id="eng-tipo" disabled><option value="">Selecione a rede social primeiro</option></select>
-
-      <label class="label">Opção</label>
-      <select class="select" id="eng-opcao" disabled><option value="">Selecione o tipo de serviço</option></select>
-
-      <label class="label">Link do perfil ou post</label>
-      <div id="eng-instrucao" class="hidden" style="background:#1a2a1a;border:1px solid rgba(124,255,178,.2);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12.5px;color:#a8e6c0;line-height:1.6;"></div>
-      <input class="input" id="eng-link" type="url" placeholder="https://instagram.com/seuperfil" disabled>
-
-      <label class="label">Quantidade</label>
-      <input class="input" id="eng-qtd" type="number" placeholder="Ex: 500" disabled>
-
-      <!-- Campo de comentários — só aparece pra serviços de comentário personalizado -->
-      <div id="eng-comments-wrap" class="hidden">
-        <label class="label">Seus comentários (um por linha)</label>
-        <textarea class="input" id="eng-comments" rows="4" placeholder="Que foto incrível!&#10;Adorei demais!&#10;Simplesmente perfeito!" style="resize:vertical;height:100px;"></textarea>
-        <p style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:14px;">Digite um comentário por linha. O sistema vai distribuir entre as publicações.</p>
+      <h2 class="title">Escolha a rede social</h2>
+      <p class="sub">Selecione abaixo e veja os serviços disponíveis</p>
+      <!-- Botões de rede social -->
+      <div class="redes-tabs" id="redes-tabs">
+        <div style="color:var(--muted);font-size:13px;">Carregando redes...</div>
       </div>
-
-      <div id="eng-resultado" class="hidden">
-        <div class="preco-row">
-          <span class="preco-label">Valor total</span>
-          <span class="preco" id="eng-preco">R$ 0,00</span>
-        </div>
-        <!-- Opções de pagamento -->
-        <div id="opcoes-pagamento" style="display:flex;gap:8px;margin-bottom:14px;">
-          <button class="btn" id="eng-pagar-saldo" style="flex:1;background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);">💰 Pagar com saldo</button>
-          <button class="btn" id="eng-pagar-pix" style="flex:1;">📱 Gerar PIX</button>
-        </div>
-      </div>
-
-      <p class="msg" id="eng-msg"></p>
     </div>
+
+    <!-- Tipos de serviço (aparece após selecionar rede) -->
+    <div id="painel-tipos" class="hidden">
+      <div class="card">
+        <p class="eyebrow" id="rede-selecionada-label">Instagram</p>
+        <h2 class="title" style="font-size:16px;">Tipo de serviço</h2>
+        <div class="tipos-chips" id="tipos-chips"></div>
+      </div>
+    </div>
+
+    <!-- Lista de serviços (aparece após selecionar tipo) -->
+    <div id="painel-servicos-lista" class="hidden">
+      <div class="card">
+        <p class="eyebrow" id="tipo-selecionado-label">Seguidores</p>
+        <h2 class="title" style="font-size:16px;">Escolha o serviço</h2>
+        <div class="servicos-lista" id="servicos-lista"></div>
+      </div>
+    </div>
+
+    <!-- Formulário de pedido (aparece após selecionar serviço) -->
+    <div id="painel-form-pedido" class="hidden">
+      <div class="card">
+        <div id="servico-selecionado-info" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+          <div style="font-size:13px;font-weight:700;" id="servico-nome-display"></div>
+          <div style="font-size:12px;color:var(--muted);" id="servico-info-display"></div>
+        </div>
+
+        <div id="eng-instrucao" style="display:none;background:#1a2a1a;border:1px solid rgba(124,255,178,.2);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12.5px;color:#a8e6c0;line-height:1.6;"></div>
+
+        <label class="label">Link do perfil ou post</label>
+        <input class="input" id="eng-link" type="url" placeholder="https://instagram.com/seuperfil">
+
+        <label class="label">Quantidade</label>
+        <input class="input" id="eng-qtd" type="number" placeholder="Ex: 500">
+
+        <div id="eng-comments-wrap" class="hidden">
+          <label class="label">Seus comentários (um por linha)</label>
+          <textarea class="input" id="eng-comments" rows="4" placeholder="Que foto incrível!&#10;Adorei demais!" style="resize:vertical;height:100px;"></textarea>
+          <p style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:14px;">Um comentário por linha.</p>
+        </div>
+
+        <div id="eng-resultado" class="hidden">
+          <div class="preco-row">
+            <span class="preco-label">Valor total</span>
+            <span class="preco" id="eng-preco">R$ 0,00</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <button class="btn" id="eng-pagar-saldo" style="flex:1;background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);">💰 Pagar com saldo</button>
+            <button class="btn" id="eng-pagar-pix" style="flex:1;">📱 Gerar PIX</button>
+          </div>
+        </div>
+        <p class="msg" id="eng-msg"></p>
+
+        <button class="btn-sec" id="btn-voltar-servicos" style="margin-top:8px;">← Voltar aos serviços</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VITRINE -->
+  <div id="painel-vitrine" class="hidden">
+    <div id="vitrine-conteudo"></div>
+    <p class="msg" id="vitrine-msg" style="text-align:center;padding:20px;"></p>
   </div>
 
   <!-- MEUS PEDIDOS -->
@@ -339,8 +267,8 @@
       <p class="eyebrow">Histórico</p>
       <h2 class="title">Meus pedidos</h2>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <p style="font-size:12px;color:var(--muted);margin:0;">Atualiza automaticamente a cada 30 segundos</p>
-        <button class="btn-sec" id="btn-atualizar-pedidos" style="width:auto;padding:8px 14px;font-size:12.5px;">🔄 Atualizar agora</button>
+        <p style="font-size:12px;color:var(--muted);margin:0;">Atualiza a cada 30 segundos</p>
+        <button class="btn-sec" id="btn-atualizar-pedidos" style="width:auto;padding:8px 14px;font-size:12.5px;">🔄 Atualizar</button>
       </div>
       <div id="lista-pedidos"></div>
       <p class="msg" id="pedidos-msg"></p>
@@ -356,8 +284,8 @@
         <div style="font-size:42px;font-weight:800;color:var(--accent);" id="saldo-carteira">R$ 0,00</div>
         <p style="font-size:12.5px;color:var(--muted);margin-top:8px;">Use seu saldo pra pagar pedidos instantaneamente</p>
       </div>
-      <label class="label">Valor do depósito (mínimo R$ 5,00)</label>
-      <input class="input" id="deposito-valor" type="number" min="5" placeholder="Ex: 50.00">
+      <label class="label">Valor do depósito</label>
+      <input class="input" id="deposito-valor" type="number" min="5" placeholder="Mínimo R$ 5,00">
       <button class="btn" id="deposito-btn">Gerar PIX pra recarregar</button>
       <div id="deposito-qr" style="display:none;margin-top:16px;text-align:center;"></div>
       <p class="msg" id="deposito-msg"></p>
@@ -369,8 +297,8 @@
     <div class="card">
       <p class="eyebrow">Para desenvolvedores</p>
       <h2 class="title">🔑 Chave de API</h2>
-      <p style="font-size:13.5px;color:var(--muted);margin-bottom:16px;">Integre o Fênix Social no seu sistema usando nossa API. <a href="/api-docs.html" target="_blank" style="color:var(--accent);">Ver documentação →</a></p>
-      <div id="api-key-display" style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px;font-family:monospace;font-size:13px;color:var(--green);word-break:break-all;">Nenhuma chave gerada</div>
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:16px;">Integre o Fênix Social no seu sistema. <a href="/api-docs.html" target="_blank" style="color:var(--accent);">Ver documentação →</a></p>
+      <div id="api-key-display" style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px;font-family:monospace;font-size:13px;color:var(--accent);word-break:break-all;">Nenhuma chave gerada</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn" id="btn-gerar-chave" style="flex:1;">🔑 Gerar nova chave</button>
         <button class="btn-sec" id="btn-copiar-chave">📋 Copiar</button>
@@ -378,11 +306,8 @@
       </div>
       <p class="msg" id="api-key-msg"></p>
     </div>
-
     <div class="card">
-      <p class="eyebrow">Como usar</p>
-      <h2 class="title" style="font-size:16px;">Exemplo rápido</h2>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Liste os serviços disponíveis:</p>
+      <p class="eyebrow">Exemplo rápido</p>
       <div style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:14px;font-family:monospace;font-size:12px;color:var(--muted);line-height:1.7;">
         curl "https://fenixsocial.site/api/public-api?action=services" \<br>
         &nbsp;&nbsp;-H "Authorization: Bearer <span style="color:var(--accent);">fsx_sua_chave</span>"
@@ -410,7 +335,7 @@
 
   <!-- PAINEL REVENDEDOR -->
   <div id="painel-revendedor" class="hidden">
-    <div class="card" style="margin-bottom:16px;">
+    <div class="card">
       <p class="eyebrow">Painel Revendedor</p>
       <h2 class="title" style="font-size:18px;" id="rev-saudacao">Bem-vindo!</h2>
       <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;">
@@ -420,59 +345,47 @@
         </div>
         <div style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:14px 18px;flex:1;min-width:120px;">
           <div style="font-size:11px;color:var(--muted);">Clientes</div>
-          <div style="font-size:22px;font-weight:800;color:var(--text);" id="rev-total-clientes">0</div>
+          <div style="font-size:22px;font-weight:800;" id="rev-total-clientes">0</div>
         </div>
         <div style="background:#0e1013;border:1px solid var(--line);border-radius:10px;padding:14px 18px;flex:1;min-width:120px;">
-          <div style="font-size:11px;color:var(--muted);">Seu desconto</div>
+          <div style="font-size:11px;color:var(--muted);">Desconto</div>
           <div style="font-size:22px;font-weight:800;color:var(--accent);" id="rev-desconto">0%</div>
         </div>
       </div>
     </div>
-
     <div class="tabs" style="display:flex;margin-bottom:16px;">
       <div class="tab ativa" id="tab-rev-clientes" style="cursor:pointer;">👥 Clientes</div>
       <div class="tab" id="tab-rev-pedidos" style="cursor:pointer;">📦 Pedidos</div>
       <div class="tab" id="tab-rev-novo" style="cursor:pointer;">➕ Novo cliente</div>
     </div>
-
     <div id="painel-rev-clientes" class="card">
       <p class="eyebrow">Seus clientes</p>
       <div id="lista-rev-clientes" style="margin-top:12px;"></div>
       <p class="msg" id="rev-clientes-msg"></p>
     </div>
-
     <div id="painel-rev-pedidos" class="card hidden">
       <p class="eyebrow">Pedidos dos clientes</p>
       <div style="overflow-x:auto;margin-top:12px;">
         <table style="width:100%;border-collapse:collapse;font-size:13px;">
           <thead><tr style="color:var(--muted);font-size:11px;">
-            <th style="text-align:left;padding:6px;">Nº</th>
-            <th style="text-align:left;padding:6px;">Cliente</th>
-            <th style="text-align:left;padding:6px;">Serviço</th>
-            <th style="text-align:left;padding:6px;">Qtd</th>
-            <th style="text-align:left;padding:6px;">Valor</th>
-            <th style="text-align:left;padding:6px;">Status</th>
+            <th style="text-align:left;padding:6px;">Nº</th><th style="text-align:left;padding:6px;">Cliente</th>
+            <th style="text-align:left;padding:6px;">Serviço</th><th style="text-align:left;padding:6px;">Qtd</th>
+            <th style="text-align:left;padding:6px;">Valor</th><th style="text-align:left;padding:6px;">Status</th>
           </tr></thead>
           <tbody id="tabela-rev-pedidos"></tbody>
         </table>
       </div>
       <p class="msg" id="rev-pedidos-msg"></p>
     </div>
-
     <div id="painel-rev-novo" class="card hidden">
       <p class="eyebrow">Cadastrar cliente</p>
-      <label class="label">Nome completo</label>
-      <input class="input" id="rev-nc-nome" placeholder="Nome do cliente">
-      <label class="label">WhatsApp (com DDD)</label>
-      <input class="input" id="rev-nc-whats" placeholder="21999999999" type="tel">
-      <label class="label">Usuário</label>
-      <input class="input" id="rev-nc-usuario" placeholder="cliente123">
-      <label class="label">Senha</label>
-      <input class="input" id="rev-nc-senha" placeholder="Senha do cliente" type="password">
+      <label class="label">Nome completo</label><input class="input" id="rev-nc-nome" placeholder="Nome do cliente">
+      <label class="label">WhatsApp (com DDD)</label><input class="input" id="rev-nc-whats" placeholder="21999999999" type="tel">
+      <label class="label">Usuário</label><input class="input" id="rev-nc-usuario" placeholder="cliente123">
+      <label class="label">Senha</label><input class="input" id="rev-nc-senha" placeholder="Senha do cliente" type="password">
       <button class="btn" id="rev-nc-btn">Cadastrar cliente</button>
       <p class="msg" id="rev-nc-msg"></p>
     </div>
-
     <button class="btn-sec" id="rev-sair-btn" style="margin-top:16px;width:100%;">Sair da conta</button>
   </div>
 
@@ -486,21 +399,20 @@
 (function(){
   const API_BASE = '';
   const $ = (id) => document.getElementById(id);
-
   let clienteId = localStorage.getItem('eng_clienteId') || null;
   let clienteNome = localStorage.getItem('eng_clienteNome') || '';
   let isRevendedor = localStorage.getItem('eng_isRevendedor') === 'true';
   let revendedorSenha = localStorage.getItem('eng_revSenha') || '';
   let whatsappSuporte = '';
+  let ordemServicos = 'padrao';
 
+  // ===== TOP BAR =====
   function atualizarTopBar(){
     if(clienteId){
       $('auth-hero').classList.add('hidden');
       $('area-logada').classList.remove('hidden');
       $('saudacao').textContent = clienteNome ? `Olá, ${clienteNome}` : 'Logado';
-
       if(isRevendedor){
-        // mostra painel do revendedor
         $('tabs').classList.add('hidden');
         $('painel-engajar').classList.add('hidden');
         $('painel-revendedor').classList.remove('hidden');
@@ -515,134 +427,68 @@
     } else {
       $('auth-hero').classList.remove('hidden');
       $('area-logada').classList.add('hidden');
-      $('painel-pedidos').classList.add('hidden');
-      $('painel-carteira').classList.add('hidden');
-      $('painel-suporte').classList.add('hidden');
-      $('painel-api').classList.add('hidden');
-      $('painel-revendedor').classList.add('hidden');
+      ['pedidos','carteira','suporte','api','vitrine','revendedor'].forEach(p => $(`painel-${p}`)?.classList.add('hidden'));
     }
   }
 
   $('btn-login-logout').addEventListener('click', () => {
-    localStorage.removeItem('eng_clienteId');
-    localStorage.removeItem('eng_clienteNome');
-    clienteId = null; clienteNome = '';
+    localStorage.removeItem('eng_clienteId'); localStorage.removeItem('eng_clienteNome');
+    clienteId = null; clienteNome = ''; isRevendedor = false;
     atualizarTopBar();
   });
 
-  $('btn-toggle-cadastro').addEventListener('click', () => {
-    $('bloco-login').classList.add('hidden');
-    $('bloco-cadastro').classList.remove('hidden');
-    $('auth-msg').textContent = '';
-  });
-
-  $('btn-toggle-login').addEventListener('click', () => {
-    $('bloco-cadastro').classList.add('hidden');
-    $('bloco-login').classList.remove('hidden');
-    $('auth-msg').textContent = '';
-  });
+  // ===== AUTH =====
+  $('btn-toggle-cadastro').addEventListener('click', () => { $('bloco-login').classList.add('hidden'); $('bloco-cadastro').classList.remove('hidden'); $('auth-msg').textContent=''; });
+  $('btn-toggle-login').addEventListener('click', () => { $('bloco-cadastro').classList.add('hidden'); $('bloco-login').classList.remove('hidden'); $('auth-msg').textContent=''; });
 
   $('btn-login').addEventListener('click', async () => {
     const loginId = $('auth-login-id').value.trim();
     const senha = $('auth-senha').value;
-    if(!loginId || !senha){ msgAuth('Preenche usuário/WhatsApp e senha', 'erro'); return; }
-
-    // tenta primeiro como revendedor
-    const idNumerico = loginId.replace(/\D/g, '');
+    if(!loginId || !senha){ msgAuth('Preenche usuário/WhatsApp e senha','erro'); return; }
+    const idNumerico = loginId.replace(/\D/g,'');
     const rRev = await fetch(`${API_BASE}/api/revendedor?revendedorId=${encodeURIComponent(idNumerico)}&senha=${encodeURIComponent(senha)}`);
     if(rRev.ok){
       const dataRev = await rRev.json();
-      clienteId = idNumerico;
-      clienteNome = dataRev.nome || '';
-      isRevendedor = true;
-      revendedorSenha = senha;
-      localStorage.setItem('eng_clienteId', clienteId);
-      localStorage.setItem('eng_clienteNome', clienteNome);
-      localStorage.setItem('eng_isRevendedor', 'true');
-      localStorage.setItem('eng_revSenha', senha);
-      atualizarTopBar();
-      return;
+      clienteId = idNumerico; clienteNome = dataRev.nome||''; isRevendedor = true; revendedorSenha = senha;
+      localStorage.setItem('eng_clienteId',clienteId); localStorage.setItem('eng_clienteNome',clienteNome);
+      localStorage.setItem('eng_isRevendedor','true'); localStorage.setItem('eng_revSenha',senha);
+      atualizarTopBar(); return;
     }
-
-    // tenta como cliente normal
-    const isWhats = /^\d+$/.test(loginId.replace(/[\s\-\(\)]/g, ''));
-    const payload = isWhats
-      ? { acao: 'login', whatsapp: loginId, senha }
-      : { acao: 'login', usuario: loginId.toLowerCase(), senha };
-
+    const isWhats = /^\d+$/.test(loginId.replace(/[\s\-\(\)]/g,''));
+    const payload = isWhats ? {acao:'login',whatsapp:loginId,senha} : {acao:'login',usuario:loginId.toLowerCase(),senha};
     try{
-      const r = await fetch(`${API_BASE}/api/auth-cliente`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(payload)
-      });
+      const r = await fetch(`${API_BASE}/api/auth-cliente`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const data = await r.json();
-      if(!r.ok){ msgAuth(data.erro || 'Usuário/WhatsApp ou senha incorretos', 'erro'); return; }
-      clienteId = data.clienteId;
-      clienteNome = data.nome || '';
-      isRevendedor = false;
-      localStorage.setItem('eng_clienteId', clienteId);
-      localStorage.setItem('eng_clienteNome', clienteNome);
-      localStorage.setItem('eng_isRevendedor', 'false');
-      localStorage.removeItem('eng_revSenha');
+      if(!r.ok){ msgAuth(data.erro||'Usuário/WhatsApp ou senha incorretos','erro'); return; }
+      clienteId=data.clienteId; clienteNome=data.nome||''; isRevendedor=false;
+      localStorage.setItem('eng_clienteId',clienteId); localStorage.setItem('eng_clienteNome',clienteNome);
+      localStorage.setItem('eng_isRevendedor','false'); localStorage.removeItem('eng_revSenha');
       atualizarTopBar();
-    }catch(e){
-      msgAuth('Erro de conexão', 'erro');
-    }
+    }catch(e){ msgAuth('Erro de conexão','erro'); }
   });
 
   $('btn-cadastrar').addEventListener('click', async () => {
-    const nome = $('auth-nome').value.trim();
-    const usuario = $('auth-usuario').value.trim().toLowerCase().replace(/[^a-z0-9_\.]/g, '');
-    const whatsapp = $('auth-whats').value.trim();
-    const senha = $('auth-senha-cad').value;
-    const origem = $('auth-origem').value || 'nao_informado';
-
-    if(!nome){ msgAuth('Informe seu nome', 'erro'); return; }
-    if(!usuario || usuario.length < 3){ msgAuth('Usuário deve ter pelo menos 3 caracteres (letras, números, _ ou .)', 'erro'); return; }
-    if(!whatsapp){ msgAuth('Informe seu WhatsApp', 'erro'); return; }
-    if(!senha || senha.length < 6){ msgAuth('Senha deve ter pelo menos 6 caracteres', 'erro'); return; }
-
+    const nome=$('auth-nome').value.trim(), usuario=$('auth-usuario').value.trim().toLowerCase().replace(/[^a-z0-9_\.]/g,'');
+    const whatsapp=$('auth-whats').value.trim(), senha=$('auth-senha-cad').value, origem=$('auth-origem').value||'nao_informado';
+    if(!nome){ msgAuth('Informe seu nome','erro'); return; }
+    if(!usuario||usuario.length<3){ msgAuth('Usuário deve ter pelo menos 3 caracteres','erro'); return; }
+    if(!whatsapp){ msgAuth('Informe seu WhatsApp','erro'); return; }
+    if(!senha||senha.length<6){ msgAuth('Senha deve ter pelo menos 6 caracteres','erro'); return; }
     try{
-      const r = await fetch(`${API_BASE}/api/auth-cliente`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ acao: 'cadastro', nome, usuario, whatsapp, senha, origem })
-      });
+      const r = await fetch(`${API_BASE}/api/auth-cliente`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'cadastro',nome,usuario,whatsapp,senha,origem})});
       const data = await r.json();
-      if(!r.ok){ msgAuth(data.erro || 'Erro ao criar conta', 'erro'); return; }
-      clienteId = data.clienteId;
-      clienteNome = data.nome || '';
-      localStorage.setItem('eng_clienteId', clienteId);
-      localStorage.setItem('eng_clienteNome', clienteNome);
+      if(!r.ok){ msgAuth(data.erro||'Erro ao criar conta','erro'); return; }
+      clienteId=data.clienteId; clienteNome=data.nome||'';
+      localStorage.setItem('eng_clienteId',clienteId); localStorage.setItem('eng_clienteNome',clienteNome);
       atualizarTopBar();
-    }catch(e){
-      msgAuth('Erro de conexão', 'erro');
-    }
+    }catch(e){ msgAuth('Erro de conexão','erro'); }
   });
 
-  function msgAuth(texto, tipo){
-    $('auth-msg').textContent = texto;
-    $('auth-msg').className = 'msg' + (tipo ? ' ' + tipo : '');
-  }
+  function msgAuth(texto,tipo){ $('auth-msg').textContent=texto; $('auth-msg').className='auth-msg'+(tipo?' '+tipo:''); }
 
-  // ===== Abas =====
-  $('tab-engajar').addEventListener('click', () => {
-    ativarAba('engajar');
-  });
-  $('tab-pedidos').addEventListener('click', () => {
-    ativarAba('pedidos');
-    carregarMeusPedidos();
-  });
-  $('tab-carteira').addEventListener('click', () => {
-    ativarAba('carteira');
-    carregarSaldo();
-  });
-  $('saldo-display').addEventListener('click', () => {
-    ativarAba('carteira');
-    carregarSaldo();
-  });
-
+  // ===== ABAS =====
   function ativarAba(aba){
-    ['engajar','pedidos','carteira','suporte','api'].forEach(a => {
+    ['engajar','pedidos','carteira','suporte','api','vitrine'].forEach(a=>{
       $(`tab-${a}`)?.classList.remove('ativa');
       $(`painel-${a}`)?.classList.add('hidden');
     });
@@ -650,677 +496,479 @@
     $(`painel-${aba}`)?.classList.remove('hidden');
   }
 
-  $('tab-api').addEventListener('click', () => {
-    ativarAba('api');
-  });
+  $('tab-engajar').addEventListener('click',()=>ativarAba('engajar'));
+  $('tab-pedidos').addEventListener('click',()=>{ ativarAba('pedidos'); carregarMeusPedidos(); });
+  $('tab-carteira').addEventListener('click',()=>{ ativarAba('carteira'); carregarSaldo(); });
+  $('tab-suporte').addEventListener('click',()=>{ ativarAba('suporte'); carregarTicketsCliente(); });
+  $('tab-api').addEventListener('click',()=>ativarAba('api'));
+  $('tab-vitrine').addEventListener('click',()=>{ ativarAba('vitrine'); carregarVitrine(); });
+  $('saldo-display').addEventListener('click',()=>{ ativarAba('carteira'); carregarSaldo(); });
 
-  $('tab-suporte').addEventListener('click', () => {
-    ativarAba('suporte');
-    carregarTicketsCliente();
-  });
-
-  let intervaloPedidos = null;
-
-  async function carregarMeusPedidos(){
-    if(!clienteId) return;
-    try{
-      const r = await fetch(`${API_BASE}/api/pedidos?clienteId=${encodeURIComponent(clienteId)}`);
-      const data = await r.json();
-      const lista = $('lista-pedidos');
-      lista.innerHTML = '';
-      if(!data.pedidos || data.pedidos.length === 0){
-        $('pedidos-msg').textContent = 'Você ainda não fez nenhum pedido.';
-        return;
-      }
-      $('pedidos-msg').textContent = '';
-
-      // sincroniza status dos pedidos em andamento com o fornecedor
-      const emAndamento = (data.pedidos || []).filter(p => p.status === 'executando' && p.orderIdFornecedor);
-      await Promise.all(emAndamento.map(p =>
-        fetch(`${API_BASE}/api/pedidos?pedidoId=${encodeURIComponent(p.id)}`).catch(() => {})
-      ));
-
-      // recarrega após sincronizar
-      const r2 = await fetch(`${API_BASE}/api/pedidos?clienteId=${encodeURIComponent(clienteId)}`);
-      const data2 = await r2.json();
-      const pedidos = data2.pedidos || data.pedidos;
-
-      pedidos.forEach((p) => {
-        const progresso = p.startCount && p.quantidade
-          ? Math.min(100, Math.round(((p.quantidade - (p.restam || p.quantidade)) / p.quantidade) * 100))
-          : (p.status === 'concluido' ? 100 : p.status === 'executando' ? 50 : 0);
-
-        const corStatus = {
-          aguardando_pagamento: '#8b929b',
-          executando: '#ffc97c',
-          concluido: '#7CFFB2',
-          cancelado: '#ff8b8b',
-          erro_fornecedor: '#ff8b8b',
-        };
-        const cor = corStatus[p.status] || '#8b929b';
-
-        const div = document.createElement('div');
-        div.className = 'pedido-item';
-        div.innerHTML = `
-          <div class="pedido-top">
-            <span>${p.nomeServico || 'Serviço'}</span>
-            <span class="status-pill ${p.status}">${formatarStatus(p.status)}</span>
-          </div>
-          <div class="pedido-sub">
-            ${p.numeroPedido ? `<strong style="color:var(--accent)">${p.numeroPedido}</strong> · ` : ''}Qtd: ${p.quantidade} · R$ ${Number(p.valorTotal).toFixed(2)} · ${new Date(p.criadoEm).toLocaleDateString('pt-BR')}
-            ${p.pagamento === 'saldo' ? ' · 💰 Saldo' : ''}
-          </div>
-          ${p.link ? `<div style="font-size:11.5px;margin-top:4px;"><a href="${p.link}" target="_blank" style="color:var(--muted);text-decoration:none;">🔗 ${p.link.length>50?p.link.slice(0,50)+'...':p.link}</a></div>` : ''}
-          ${p.status === 'executando' || p.status === 'concluido' ? `
-          <div style="margin-top:8px;">
-            <div style="height:4px;background:var(--line);border-radius:4px;overflow:hidden;">
-              <div style="height:100%;width:${progresso}%;background:${cor};border-radius:4px;transition:width .5s;"></div>
-            </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px;">${progresso}% concluído${p.restam ? ` · ${p.restam} restando` : ''}</div>
-          </div>` : ''}
-        `;
-        lista.appendChild(div);
-      });
-    }catch(e){
-      $('pedidos-msg').textContent = 'Erro ao carregar pedidos.';
-    }
-  }
-
-  // atualização automática a cada 30s quando estiver na aba de pedidos
-  function iniciarAtualizacaoPedidos(){
-    if(intervaloPedidos) clearInterval(intervaloPedidos);
-    intervaloPedidos = setInterval(() => {
-      if(!$('painel-pedidos').classList.contains('hidden')){
-        carregarMeusPedidos();
-      }
-    }, 30000);
-  }
-
-  $('btn-atualizar-pedidos').addEventListener('click', () => {
-    $('btn-atualizar-pedidos').textContent = '⏳ Atualizando...';
-    $('btn-atualizar-pedidos').disabled = true;
-    carregarMeusPedidos().then(() => {
-      $('btn-atualizar-pedidos').textContent = '🔄 Atualizar agora';
-      $('btn-atualizar-pedidos').disabled = false;
-    });
-  });
-
-  function formatarStatus(s){
-    const mapa = {
-      aguardando_pagamento: 'Aguardando pagamento',
-      executando: 'Em andamento',
-      concluido: 'Concluído',
-      cancelado: 'Cancelado',
-      erro_fornecedor: 'Erro - contate o suporte',
-    };
-    return mapa[s] || s;
-  }
-
-  // ===== Widget de engajamento =====
-  const elRede = $('eng-rede');
-  const elTipo = $('eng-tipo');
-  const elOpcao = $('eng-opcao');
-  const elLink = $('eng-link');
-  const elQtd = $('eng-qtd');
-  const elResultado = $('eng-resultado');
-  const elPreco = $('eng-preco');
-
-  let servicosDoTipo = [];
+  // ===== WIDGET DE ENGAJAMENTO — NOVO VISUAL =====
+  let todosServicos = [];
+  let redeSelecionada = '';
+  let tipoSelecionado = '';
   let servicoSelecionado = null;
 
-  function msgEng(texto, tipo){
-    $('eng-msg').textContent = texto || '';
-    $('eng-msg').className = 'msg' + (tipo ? ' ' + tipo : '');
-  }
+  const iconeRede = {instagram:'📸',tiktok:'🎵',youtube:'▶️',facebook:'📘',twitter:'𝕏',spotify:'🎵',telegram:'✈️'};
 
-  function capitalizar(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+  function capitalizar(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+
+  function ordenarServicos(lista){
+    if(ordemServicos==='preco_asc') return [...lista].sort((a,b)=>a.precoPorMil-b.precoPorMil);
+    if(ordemServicos==='preco_desc') return [...lista].sort((a,b)=>b.precoPorMil-a.precoPorMil);
+    if(ordemServicos==='destaque') return [...lista].sort((a,b)=>(b.destaque?1:0)-(a.destaque?1:0));
+    return lista;
+  }
 
   async function carregarFiltrosIniciais(){
     try{
       const r = await fetch(`${API_BASE}/api/services`);
       const data = await r.json();
-      elRede.innerHTML = '<option value="">Selecione</option>' +
-        (data.redesSociais || []).map(r => `<option value="${r}">${capitalizar(r)}</option>`).join('');
-    }catch(e){ msgEng('Não foi possível carregar as redes sociais.', 'erro'); }
+      const redesTabs = $('redes-tabs');
+      redesTabs.innerHTML = '';
+      (data.redesSociais||[]).forEach(rede=>{
+        const btn = document.createElement('button');
+        btn.className = 'rede-tab';
+        btn.textContent = (iconeRede[rede.toLowerCase()]||'🌐') + ' ' + capitalizar(rede);
+        btn.dataset.rede = rede;
+        btn.addEventListener('click',()=>selecionarRede(rede));
+        redesTabs.appendChild(btn);
+      });
+    }catch(e){ $('redes-tabs').innerHTML='<p style="color:var(--muted);font-size:13px;">Erro ao carregar redes.</p>'; }
   }
 
-  elRede.addEventListener('change', async () => {
-    resetDe('tipo');
-    if(!elRede.value) return;
-    const r = await fetch(`${API_BASE}/api/services?redeSocial=${encodeURIComponent(elRede.value)}`);
-    const data = await r.json();
-    const tipos = [...new Set((data.servicos || []).map(s => s.servicoTipo))].filter(Boolean);
-    elTipo.innerHTML = '<option value="">Selecione</option>' +
-      tipos.map(t => `<option value="${t}">${capitalizar(t)}</option>`).join('');
-    elTipo.disabled = false;
-  });
+  async function selecionarRede(rede){
+    redeSelecionada = rede; tipoSelecionado = ''; servicoSelecionado = null;
+    // destaca o botão
+    document.querySelectorAll('.rede-tab').forEach(b=>b.classList.toggle('ativa',b.dataset.rede===rede));
+    // mostra spinner
+    $('painel-tipos').classList.remove('hidden');
+    $('painel-servicos-lista').classList.add('hidden');
+    $('painel-form-pedido').classList.add('hidden');
+    $('rede-selecionada-label').textContent = (iconeRede[rede.toLowerCase()]||'🌐') + ' ' + capitalizar(rede);
+    $('tipos-chips').innerHTML = '<span style="color:var(--muted);font-size:13px;">Carregando...</span>';
 
-  elTipo.addEventListener('change', async () => {
-    resetDe('opcao');
-    if(!elTipo.value) return;
-    const r = await fetch(`${API_BASE}/api/services?redeSocial=${encodeURIComponent(elRede.value)}&servicoTipo=${encodeURIComponent(elTipo.value)}`);
-    const data = await r.json();
-    servicosDoTipo = data.servicos || [];
-    elOpcao.innerHTML = '<option value="">Selecione</option>' +
-      servicosDoTipo.map(s => `<option value="${s.id}">${s.icone ? s.icone + ' ' : ''}${s.nome} (R$ ${s.precoPorMil.toFixed(2)}/1000)</option>`).join('');
-    elOpcao.disabled = false;
-  });
+    try{
+      const r = await fetch(`${API_BASE}/api/services?redeSocial=${encodeURIComponent(rede)}`);
+      const data = await r.json();
+      todosServicos = data.servicos||[];
+      const tipos = [...new Set(todosServicos.map(s=>s.servicoTipo).filter(Boolean))];
+      $('tipos-chips').innerHTML = '';
+      tipos.forEach(tipo=>{
+        const chip = document.createElement('button');
+        chip.className = 'tipo-chip';
+        chip.textContent = capitalizar(tipo);
+        chip.dataset.tipo = tipo;
+        chip.addEventListener('click',()=>selecionarTipo(tipo));
+        $('tipos-chips').appendChild(chip);
+      });
+    }catch(e){ $('tipos-chips').innerHTML='<span style="color:#ff8b8b;font-size:13px;">Erro ao carregar tipos.</span>'; }
+  }
 
-  elOpcao.addEventListener('change', () => {
-    servicoSelecionado = servicosDoTipo.find(s => String(s.id) === elOpcao.value) || null;
-    elLink.disabled = !servicoSelecionado;
-    elQtd.disabled = !servicoSelecionado;
-    if(servicoSelecionado) elQtd.placeholder = `Entre ${servicoSelecionado.min} e ${servicoSelecionado.max}`;
-    elResultado.classList.add('hidden');
+  function selecionarTipo(tipo){
+    tipoSelecionado = tipo; servicoSelecionado = null;
+    document.querySelectorAll('.tipo-chip').forEach(c=>c.classList.toggle('ativo',c.dataset.tipo===tipo));
+    $('tipo-selecionado-label').textContent = capitalizar(tipo);
+    const filtrados = ordenarServicos(todosServicos.filter(s=>(s.servicoTipo||'').toLowerCase()===tipo.toLowerCase()));
+    const lista = $('servicos-lista');
+    lista.innerHTML = '';
+    filtrados.forEach(s=>{
+      const card = document.createElement('div');
+      card.className = 'servico-card';
+      card.dataset.id = s.id;
+      card.innerHTML = `
+        <div class="servico-card-top">
+          <span class="servico-card-nome">${s.icone?s.icone+' ':''}${s.nome}</span>
+          <span class="servico-card-preco">R$ ${(s.precoPorMil/1000).toFixed(4).replace(/\.?0+$/,'')}/un</span>
+        </div>
+        <div class="servico-card-info">Min: ${s.min} · Max: ${s.max.toLocaleString('pt-BR')}${s.refill?' · ♻️ Refill':''}</div>
+      `;
+      card.addEventListener('click',()=>selecionarServico(s));
+      lista.appendChild(card);
+    });
+    $('painel-servicos-lista').classList.remove('hidden');
+    $('painel-form-pedido').classList.add('hidden');
+  }
 
-    // instrução dinâmica baseada no tipo de serviço
-    const instrucaoEl = $('eng-instrucao');
-    if(servicoSelecionado){
-      const tipo = (servicoSelecionado.servicoTipo || '').toLowerCase();
-      const nome = (servicoSelecionado.nome || '').toLowerCase();
-      let instrucao = '';
-
-      if(tipo.includes('seguidor') || nome.includes('seguidor') || tipo.includes('subscriber') || nome.includes('subscriber')){
-        instrucao = `👤 <strong>Cole o link do seu perfil</strong> (ex: instagram.com/seuperfil)<br>
-        ⚠️ <strong>Seu perfil deve estar PÚBLICO.</strong> Perfis privados não aceitam o serviço e não há reembolso.<br>
-        ✅ Verifique nas configurações da rede social se seu perfil está aberto ao público antes de finalizar o pedido.`;
-        elLink.placeholder = 'https://instagram.com/seuperfil';
-      } else if(tipo.includes('curtida') || nome.includes('curtida') || nome.includes('like')){
-        instrucao = `❤️ <strong>Cole o link da postagem</strong> que deseja receber curtidas.<br>
-        ⚠️ A postagem deve estar <strong>pública e visível</strong> para que o serviço seja executado.<br>
-        ✅ Ex: instagram.com/p/ABC123xyz`;
-        elLink.placeholder = 'https://instagram.com/p/seu-post';
-      } else if(tipo.includes('visuali') || nome.includes('view') || nome.includes('visuali')){
-        instrucao = `▶️ <strong>Cole o link do vídeo ou reels</strong> que deseja receber visualizações.<br>
-        ⚠️ O conteúdo deve estar <strong>público</strong> para funcionar.<br>
-        ✅ Ex: instagram.com/reel/ABC123xyz`;
-        elLink.placeholder = 'https://instagram.com/reel/seu-video';
-      } else if(tipo.includes('comentário') || tipo.includes('comentario') || nome.includes('comment')){
-        instrucao = `💬 <strong>Cole o link da postagem</strong> onde deseja receber comentários.<br>
-        ⚠️ A postagem deve estar <strong>pública</strong>.<br>
-        ✅ Ex: instagram.com/p/ABC123xyz`;
-        elLink.placeholder = 'https://instagram.com/p/seu-post';
-      } else {
-        instrucao = `🔗 <strong>Cole o link correto</strong> para o serviço selecionado.<br>
-        ⚠️ O perfil ou postagem deve estar <strong>público</strong> para que o serviço seja executado.<br>
-        ✅ Verifique as configurações de privacidade antes de finalizar.`;
-        elLink.placeholder = 'https://...';
-      }
-
-      instrucaoEl.innerHTML = instrucao;
-      instrucaoEl.classList.remove('hidden');
+  function selecionarServico(s){
+    servicoSelecionado = s;
+    document.querySelectorAll('.servico-card').forEach(c=>c.classList.toggle('selecionado',String(c.dataset.id)===String(s.id)));
+    $('servico-nome-display').textContent = (s.icone?s.icone+' ':'')+s.nome;
+    $('servico-info-display').textContent = `Min: ${s.min} · Max: ${s.max.toLocaleString('pt-BR')} · R$ ${s.precoPorMil.toFixed(2)}/1000`;
+    // instrução
+    const instrEl = $('eng-instrucao');
+    const tipo = (s.servicoTipo||'').toLowerCase();
+    const nome = (s.nome||'').toLowerCase();
+    let instrucao='', placeholder='https://...';
+    if(tipo.includes('seguidor')||nome.includes('seguidor')){
+      instrucao=`👤 <strong>Cole o link do seu perfil</strong><br>⚠️ <strong>Seu perfil deve estar PÚBLICO.</strong> Perfis privados não têm reembolso.`;
+      placeholder='https://instagram.com/seuperfil';
+    } else if(tipo.includes('curtida')||nome.includes('curtida')||nome.includes('like')){
+      instrucao=`❤️ <strong>Cole o link da postagem</strong> que deseja receber curtidas.<br>⚠️ Postagem deve estar <strong>pública</strong>.`;
+      placeholder='https://instagram.com/p/seu-post';
+    } else if(tipo.includes('visuali')||nome.includes('view')){
+      instrucao=`▶️ <strong>Cole o link do vídeo/reels</strong><br>⚠️ Conteúdo deve estar <strong>público</strong>.`;
+      placeholder='https://instagram.com/reel/seu-video';
+    } else if(tipo.includes('comentar')||nome.includes('comment')){
+      instrucao=`💬 <strong>Cole o link da postagem</strong> onde deseja comentários.<br>⚠️ Postagem deve estar <strong>pública</strong>.`;
+      placeholder='https://instagram.com/p/seu-post';
     } else {
-      instrucaoEl.classList.add('hidden');
+      instrucao=`🔗 <strong>Cole o link correto</strong> para o serviço.<br>⚠️ O perfil ou postagem deve estar <strong>público</strong>.`;
     }
+    instrEl.innerHTML = instrucao;
+    instrEl.style.display = 'block';
+    $('eng-link').placeholder = placeholder;
+    $('eng-link').value=''; $('eng-qtd').value='';
+    $('eng-resultado').classList.add('hidden');
+    $('eng-msg').textContent='';
+    const isCustom = s.tipo?.toLowerCase().includes('custom')||nome.includes('personaliz')||nome.includes('custom');
+    $('eng-comments-wrap').classList.toggle('hidden',!isCustom);
+    if(!isCustom) $('eng-comments').value='';
+    $('painel-form-pedido').classList.remove('hidden');
+    $('painel-form-pedido').scrollIntoView({behavior:'smooth',block:'start'});
+  }
 
-    // mostra o campo de comentários só pra serviços do tipo Custom Comments
-    const isCustom = servicoSelecionado && (
-      servicoSelecionado.tipo?.toLowerCase().includes('custom') ||
-      servicoSelecionado.nome?.toLowerCase().includes('personaliz') ||
-      servicoSelecionado.nome?.toLowerCase().includes('custom')
-    );
-    $('eng-comments-wrap').classList.toggle('hidden', !isCustom);
-    if(!isCustom) $('eng-comments').value = '';
+  $('btn-voltar-servicos').addEventListener('click',()=>{
+    $('painel-form-pedido').classList.add('hidden');
+    $('painel-servicos-lista').scrollIntoView({behavior:'smooth',block:'start'});
   });
-
-  elQtd.addEventListener('input', atualizarPreco);
-  elLink.addEventListener('input', atualizarPreco);
 
   function atualizarPreco(){
-    if(!servicoSelecionado || !elLink.value || !elQtd.value){ elResultado.classList.add('hidden'); return; }
-    const qtd = Number(elQtd.value);
-    if(qtd < servicoSelecionado.min || qtd > servicoSelecionado.max){ elResultado.classList.add('hidden'); return; }
-    const total = (servicoSelecionado.precoPorMil * qtd) / 1000;
-    elPreco.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
-    elResultado.classList.remove('hidden');
+    if(!servicoSelecionado||!$('eng-link').value||!$('eng-qtd').value){ $('eng-resultado').classList.add('hidden'); return; }
+    const qtd=Number($('eng-qtd').value);
+    if(qtd<servicoSelecionado.min||qtd>servicoSelecionado.max){ $('eng-resultado').classList.add('hidden'); return; }
+    const total=(servicoSelecionado.precoPorMil*qtd)/1000;
+    $('eng-preco').textContent='R$ '+total.toFixed(2).replace('.',',');
+    $('eng-resultado').classList.remove('hidden');
   }
 
-  function resetDe(nivel){
-    if(nivel === 'tipo'){
-      elTipo.innerHTML = '<option value="">Selecione a rede social primeiro</option>';
-      elTipo.disabled = true;
-    }
-    elOpcao.innerHTML = '<option value="">Selecione o tipo de serviço</option>';
-    elOpcao.disabled = true;
-    elLink.value = ''; elLink.disabled = true;
-    elQtd.value = ''; elQtd.disabled = true;
-    elResultado.classList.add('hidden');
-    servicoSelecionado = null;
-  }
+  $('eng-link').addEventListener('input',atualizarPreco);
+  $('eng-qtd').addEventListener('input',atualizarPreco);
 
-  // ===== Saldo / Carteira =====
-  let saldoAtual = 0;
+  function msgEng(texto,tipo){ $('eng-msg').textContent=texto||''; $('eng-msg').className='msg'+(tipo?' '+tipo:''); }
+
+  // ===== PAGAMENTOS =====
+  let saldoAtual=0;
 
   async function carregarSaldo(){
     if(!clienteId) return;
     try{
-      const r = await fetch(`${API_BASE}/api/carteira?clienteId=${encodeURIComponent(clienteId)}`);
-      const data = await r.json();
-      saldoAtual = Number(data.saldo || 0);
-      $('saldo-display').textContent = `💰 R$ ${saldoAtual.toFixed(2)}`;
-      if($('saldo-carteira')) $('saldo-carteira').textContent = `R$ ${saldoAtual.toFixed(2)}`;
+      const r=await fetch(`${API_BASE}/api/carteira?clienteId=${encodeURIComponent(clienteId)}`);
+      const data=await r.json();
+      saldoAtual=Number(data.saldo||0);
+      $('saldo-display').textContent=`💰 R$ ${saldoAtual.toFixed(2)}`;
+      if($('saldo-carteira')) $('saldo-carteira').textContent=`R$ ${saldoAtual.toFixed(2)}`;
     }catch(e){}
   }
 
-  $('deposito-btn').addEventListener('click', async () => {
-    const valor = Number($('deposito-valor').value);
-    if(!valor || valor < 5){ $('deposito-msg').textContent = 'Valor mínimo é R$ 5,00'; $('deposito-msg').className = 'msg erro'; return; }
-    $('deposito-btn').disabled = true;
-    $('deposito-msg').textContent = 'Gerando PIX...';
+  $('deposito-btn').addEventListener('click', async()=>{
+    const valor=Number($('deposito-valor').value);
+    if(!valor||valor<5){ $('deposito-msg').textContent='Valor mínimo é R$ 5,00'; $('deposito-msg').className='msg erro'; return; }
+    $('deposito-btn').disabled=true; $('deposito-msg').textContent='Gerando PIX...';
     try{
-      const r = await fetch(`${API_BASE}/api/carteira`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ clienteId, valor }),
-      });
-      const data = await r.json();
-      if(!r.ok){ $('deposito-msg').textContent = data.erro || 'Erro'; $('deposito-msg').className = 'msg erro'; $('deposito-btn').disabled = false; return; }
-      const qrDiv = $('deposito-qr');
-      qrDiv.innerHTML = `
-        <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">Escaneie ou copie o código PIX</p>
-        ${data.qrCodeBase64 ? `<img src="data:image/png;base64,${data.qrCodeBase64}" style="width:180px;height:180px;border-radius:12px;margin-bottom:12px;display:block;margin:0 auto 12px;">` : ''}
-        ${data.qrCode ? `<textarea style="width:100%;background:#0e1013;border:1px solid var(--line);color:var(--accent);padding:10px;border-radius:8px;font-size:11px;resize:none;height:60px;" readonly>${data.qrCode}</textarea>
-        <button class="btn" style="margin-top:8px;" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado ✓'" data-code="${data.qrCode}">📋 Copiar código PIX</button>` : ''}
-        <p style="font-size:12px;color:var(--muted);margin-top:12px;">Valor: <strong style="color:var(--accent)">R$ ${Number(data.valor).toFixed(2)}</strong></p>
-        <p style="font-size:11px;color:var(--muted);">Após o pagamento, seu saldo será atualizado automaticamente.</p>
-      `;
-      qrDiv.style.display = 'block';
-      $('deposito-msg').textContent = 'PIX gerado!';
-      $('deposito-msg').className = 'msg ok';
-    }catch(e){
-      $('deposito-msg').textContent = 'Erro de conexão.';
-      $('deposito-msg').className = 'msg erro';
-    }
-    $('deposito-btn').disabled = false;
+      const r=await fetch(`${API_BASE}/api/carteira`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clienteId,valor})});
+      const data=await r.json();
+      if(!r.ok){ $('deposito-msg').textContent=data.erro||'Erro'; $('deposito-msg').className='msg erro'; $('deposito-btn').disabled=false; return; }
+      const qrDiv=$('deposito-qr');
+      qrDiv.innerHTML=`<p style="font-size:13px;color:var(--muted);margin:0 0 12px;">Escaneie ou copie o código PIX</p>
+        ${data.qrCodeBase64?`<img src="data:image/png;base64,${data.qrCodeBase64}" style="width:180px;height:180px;border-radius:12px;margin-bottom:12px;display:block;margin:0 auto 12px;">`:''}
+        ${data.qrCode?`<textarea style="width:100%;background:#0e1013;border:1px solid var(--line);color:var(--accent);padding:10px;border-radius:8px;font-size:11px;resize:none;height:60px;" readonly>${data.qrCode}</textarea>
+        <button class="btn" style="margin-top:8px;" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado ✓'" data-code="${data.qrCode}">📋 Copiar código PIX</button>`:''}
+        <p style="font-size:12px;color:var(--muted);margin-top:12px;">Valor: <strong style="color:var(--accent)">R$ ${Number(data.valor).toFixed(2)}</strong></p>`;
+      qrDiv.style.display='block';
+      $('deposito-msg').textContent='PIX gerado!'; $('deposito-msg').className='msg ok';
+    }catch(e){ $('deposito-msg').textContent='Erro de conexão.'; $('deposito-msg').className='msg erro'; }
+    $('deposito-btn').disabled=false;
   });
 
-  $('eng-pagar-saldo').addEventListener('click', async () => {
-    if(!servicoSelecionado || !clienteId) return;
-    const qtd = Number($('eng-qtd').value);
-    const valorTotal = (servicoSelecionado.precoPorMil * qtd) / 1000;
-
-    // busca saldo atualizado antes de processar
+  $('eng-pagar-saldo').addEventListener('click', async()=>{
+    if(!servicoSelecionado||!clienteId) return;
+    const qtd=Number($('eng-qtd').value);
+    const valorTotal=(servicoSelecionado.precoPorMil*qtd)/1000;
+    try{ const rS=await fetch(`${API_BASE}/api/carteira?clienteId=${encodeURIComponent(clienteId)}`); const dS=await rS.json(); saldoAtual=Number(dS.saldo||0); $('saldo-display').textContent=`💰 R$ ${saldoAtual.toFixed(2)}`; }catch(e){}
+    if(saldoAtual<valorTotal){ msgEng(`Saldo insuficiente (R$ ${saldoAtual.toFixed(2)}). Recarregue na aba Carteira.`,'erro'); return; }
+    $('eng-pagar-saldo').disabled=true; msgEng('Processando com saldo...');
     try{
-      const rSaldo = await fetch(`${API_BASE}/api/carteira?clienteId=${encodeURIComponent(clienteId)}`);
-      const dataSaldo = await rSaldo.json();
-      saldoAtual = Number(dataSaldo.saldo || 0);
-      $('saldo-display').textContent = `💰 R$ ${saldoAtual.toFixed(2)}`;
-    }catch(e){}
-
-    if(saldoAtual < valorTotal){
-      msgEng(`Saldo insuficiente (R$ ${saldoAtual.toFixed(2)}). Recarregue na aba Carteira.`, 'erro');
-      return;
-    }
-    $('eng-pagar-saldo').disabled = true;
-    msgEng('Processando com saldo...');
-    try{
-      const r = await fetch(`${API_BASE}/api/order`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ idFornecedor: servicoSelecionado.id, link: elLink.value, quantidade: qtd, clienteId, pagarComSaldo: true, comments: $('eng-comments').value || null }),
-      });
-      const data = await r.json();
-      if(!r.ok){ msgEng(data.erro || 'Erro', 'erro'); $('eng-pagar-saldo').disabled = false; return; }
-      saldoAtual = data.novoSaldo || 0;
-      $('saldo-display').textContent = `💰 R$ ${saldoAtual.toFixed(2)}`;
-      msgEng(`✅ Pedido enviado! Novo saldo: R$ ${saldoAtual.toFixed(2)}`, 'ok');
-    }catch(e){ msgEng('Erro de conexão.', 'erro'); }
-    $('eng-pagar-saldo').disabled = false;
+      const r=await fetch(`${API_BASE}/api/order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idFornecedor:servicoSelecionado.id,link:$('eng-link').value,quantidade:qtd,clienteId,pagarComSaldo:true,comments:$('eng-comments').value||null})});
+      const data=await r.json();
+      if(!r.ok){ msgEng(data.erro||'Erro','erro'); $('eng-pagar-saldo').disabled=false; return; }
+      saldoAtual=data.novoSaldo||0; $('saldo-display').textContent=`💰 R$ ${saldoAtual.toFixed(2)}`;
+      msgEng(`✅ Pedido enviado! Novo saldo: R$ ${saldoAtual.toFixed(2)}`,'ok');
+    }catch(e){ msgEng('Erro de conexão.','erro'); }
+    $('eng-pagar-saldo').disabled=false;
   });
 
-  $('eng-pagar-pix').addEventListener('click', async () => {
-    if(!servicoSelecionado || !clienteId){ msgEng('Faça login pra continuar.', 'erro'); return; }
-    $('eng-pagar-pix').disabled = true;
-    msgEng('Criando pedido...');
+  $('eng-pagar-pix').addEventListener('click', async()=>{
+    if(!servicoSelecionado||!clienteId){ msgEng('Faça login pra continuar.','erro'); return; }
+    $('eng-pagar-pix').disabled=true; msgEng('Criando pedido...');
     try{
-      const r = await fetch(`${API_BASE}/api/order`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ idFornecedor: servicoSelecionado.id, link: elLink.value, quantidade: Number($('eng-qtd').value), clienteId, pagarComSaldo: false, comments: $('eng-comments').value || null }),
-      });
-      const data = await r.json();
-      if(!r.ok){ msgEng(data.erro || 'Erro ao criar pedido', 'erro'); $('eng-pagar-pix').disabled = false; return; }
+      const r=await fetch(`${API_BASE}/api/order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idFornecedor:servicoSelecionado.id,link:$('eng-link').value,quantidade:Number($('eng-qtd').value),clienteId,pagarComSaldo:false,comments:$('eng-comments').value||null})});
+      const data=await r.json();
+      if(!r.ok){ msgEng(data.erro||'Erro ao criar pedido','erro'); $('eng-pagar-pix').disabled=false; return; }
       msgEng('Gerando PIX...');
-      const rPix = await fetch(`${API_BASE}/api/pagamento`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ pedidoId: data.pedidoId }),
-      });
-      const pix = await rPix.json();
-      if(!rPix.ok){ msgEng(pix.erro || 'Erro ao gerar PIX.', 'erro'); $('eng-pagar-pix').disabled = false; return; }
-      let qrHtml = `<div style="text-align:center;padding:20px 0;border-top:1px solid var(--line);margin-top:16px;">
-        <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">📱 Escaneie o QR Code ou copie o código PIX</p>`;
-      if(pix.qrCodeBase64) qrHtml += `<img src="data:image/png;base64,${pix.qrCodeBase64}" style="width:180px;height:180px;border-radius:12px;margin-bottom:12px;display:block;margin:0 auto 12px;">`;
-      if(pix.qrCode) qrHtml += `<textarea style="width:100%;background:#0e1013;border:1px solid var(--line);color:var(--accent);padding:10px;border-radius:8px;font-size:11px;resize:none;height:60px;" readonly>${pix.qrCode}</textarea>
-        <button class="btn" style="margin-top:8px;" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado ✓'" data-code="${pix.qrCode}">📋 Copiar código PIX</button>`;
-      qrHtml += `<p style="font-size:12px;color:var(--muted);margin-top:12px;">Valor: <strong style="color:var(--accent)">R$ ${Number(data.valorTotal).toFixed(2)}</strong></p>
-        <p style="font-size:11px;color:var(--muted);">Após o pagamento, seu pedido é processado automaticamente.</p></div>`;
-      let qrContainer = document.getElementById('pix-qr-container');
-      if(!qrContainer){ qrContainer = document.createElement('div'); qrContainer.id = 'pix-qr-container'; $('eng-pagar-pix').closest('.card').appendChild(qrContainer); }
-      qrContainer.innerHTML = qrHtml;
-      msgEng('PIX gerado! Escaneie o QR Code abaixo.', 'ok');
-    }catch(e){ msgEng('Erro de conexão.', 'erro'); }
-    $('eng-pagar-pix').disabled = false;
+      const rP=await fetch(`${API_BASE}/api/pagamento`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pedidoId:data.pedidoId})});
+      const pix=await rP.json();
+      if(!rP.ok){ msgEng(pix.erro||'Erro ao gerar PIX.','erro'); $('eng-pagar-pix').disabled=false; return; }
+      let qrHtml=`<div style="text-align:center;padding:20px 0;border-top:1px solid var(--line);margin-top:16px;"><p style="font-size:13px;color:var(--muted);margin:0 0 12px;">📱 Escaneie o QR Code ou copie o PIX</p>`;
+      if(pix.qrCodeBase64) qrHtml+=`<img src="data:image/png;base64,${pix.qrCodeBase64}" style="width:180px;height:180px;border-radius:12px;margin-bottom:12px;display:block;margin:0 auto 12px;">`;
+      if(pix.qrCode) qrHtml+=`<textarea style="width:100%;background:#0e1013;border:1px solid var(--line);color:var(--accent);padding:10px;border-radius:8px;font-size:11px;resize:none;height:60px;" readonly>${pix.qrCode}</textarea><button class="btn" style="margin-top:8px;" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado ✓'" data-code="${pix.qrCode}">📋 Copiar código PIX</button>`;
+      qrHtml+=`<p style="font-size:12px;color:var(--muted);margin-top:12px;">Valor: <strong style="color:var(--accent)">R$ ${Number(data.valorTotal).toFixed(2)}</strong></p></div>`;
+      let qrC=document.getElementById('pix-qr-container');
+      if(!qrC){ qrC=document.createElement('div'); qrC.id='pix-qr-container'; $('eng-pagar-pix').closest('.card').appendChild(qrC); }
+      qrC.innerHTML=qrHtml;
+      msgEng('PIX gerado!','ok');
+    }catch(e){ msgEng('Erro de conexão.','erro'); }
+    $('eng-pagar-pix').disabled=false;
   });
 
-  // ===== Ticket de suporte =====
-  $('ticket-enviar').addEventListener('click', async () => {
-    const mensagem = $('ticket-mensagem').value;
-    if(!mensagem){ return; }
+  // ===== VITRINE =====
+  async function carregarVitrine(){
+    $('vitrine-msg').textContent='Carregando...';
     try{
-      const r = await fetch(`${API_BASE}/api/tickets`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ clienteId, nome: clienteNome, mensagem })
-      });
-      if(r.ok){
-        $('ticket-msg').textContent = 'Mensagem enviada! Vamos te responder em breve.';
-        $('ticket-msg').className = 'msg ok';
-        $('ticket-mensagem').value = '';
-      } else {
-        $('ticket-msg').textContent = 'Erro ao enviar. Tente o WhatsApp abaixo.';
-        $('ticket-msg').className = 'msg erro';
-      }
-    }catch(e){
-      $('ticket-msg').textContent = 'Erro de conexão.';
-      $('ticket-msg').className = 'msg erro';
-    }
-  });
-
-  // ===== WhatsApp flutuante =====
-  // ===== Chave de API =====
-  $('btn-gerar-chave')?.addEventListener('click', async () => {
-    $('btn-gerar-chave').disabled = true;
-    $('api-key-msg').textContent = 'Gerando...';
-    try{
-      const senha = prompt('Digite sua senha para confirmar:');
-      if(!senha){ $('btn-gerar-chave').disabled = false; return; }
-      const r = await fetch(`${API_BASE}/api/auth-cliente`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ acao:'gerar-chave', clienteId, senha })
-      });
-      const data = await r.json();
-      if(r.ok && data.chave){
-        localStorage.setItem('eng_apiKey', data.chave);
-        $('api-key-display').textContent = data.chave;
-        $('api-key-msg').textContent = '✅ Chave gerada! Guarde em local seguro.';
-        $('api-key-msg').className = 'msg ok';
-      } else {
-        $('api-key-msg').textContent = data.erro || 'Senha incorreta ou erro ao gerar chave';
-        $('api-key-msg').className = 'msg erro';
-      }
-    }catch(e){ $('api-key-msg').textContent = 'Erro de conexão'; $('api-key-msg').className = 'msg erro'; }
-    $('btn-gerar-chave').disabled = false;
-  });
-
-  $('btn-revogar-chave')?.addEventListener('click', async () => {
-    if(!confirm('Revogar a chave vai invalidar todas as integrações que a usam. Confirma?')) return;
-    const senha = prompt('Digite sua senha:');
-    if(!senha) return;
-    const r = await fetch(`${API_BASE}/api/auth-cliente`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ acao:'revogar-chave', clienteId, senha })
-    });
-    if(r.ok){
-      localStorage.removeItem('eng_apiKey');
-      $('api-key-display').textContent = 'Nenhuma chave gerada';
-      $('api-key-msg').textContent = '🗑️ Chave revogada.';
-      $('api-key-msg').className = 'msg';
-    }
-  });
-
-  $('btn-copiar-chave')?.addEventListener('click', () => {
-    const chave = $('api-key-display').textContent;
-    if(chave && chave !== 'Nenhuma chave gerada'){
-      navigator.clipboard.writeText(chave);
-      $('api-key-msg').textContent = '📋 Copiado!';
-      $('api-key-msg').className = 'msg ok';
-      setTimeout(()=>{ if($('api-key-msg')) $('api-key-msg').textContent=''; }, 2000);
-    }
-  });
-
-  // recupera chave salva no localStorage
-  const chaveSalva = localStorage.getItem('eng_apiKey');
-  if(chaveSalva && $('api-key-display')) $('api-key-display').textContent = chaveSalva;
-
-  async function carregarSuporte(){
-    try{
-      const r = await fetch(`${API_BASE}/api/config`);
-      const data = await r.json();
-      if(data.whatsappSuporte){
-        whatsappSuporte = data.whatsappSuporte;
-        const el = $('float-whats');
-        if(el){
-          el.href = `https://wa.me/${whatsappSuporte}`;
-          el.style.display = 'flex';
-          el.style.visibility = 'visible';
-          el.style.opacity = '1';
-        }
-      }
-    }catch(e){}
-  }
-
-  // ===== Tickets do cliente =====
-  async function carregarTicketsCliente(){
-    if(!clienteId) return;
-    $('tickets-cliente-msg').textContent = 'Carregando...';
-    try{
-      const r = await fetch(`${API_BASE}/api/tickets?clienteId=${encodeURIComponent(clienteId)}`);
-      const data = await r.json();
-      const lista = $('lista-tickets');
-      lista.innerHTML = '';
-      if(!data.tickets || data.tickets.length === 0){
-        $('tickets-cliente-msg').textContent = 'Nenhum ticket enviado ainda.';
+      const r=await fetch(`${API_BASE}/api/config?action=vitrine`);
+      const data=await r.json();
+      $('vitrine-msg').textContent='';
+      const cont=$('vitrine-conteudo');
+      cont.innerHTML='';
+      if(!data.produtos||data.produtos.length===0){
+        $('vitrine-msg').textContent='Nenhum produto disponível no momento.';
         return;
       }
-      $('tickets-cliente-msg').textContent = '';
-      data.tickets.forEach((t) => {
-        const div = document.createElement('div');
-        div.className = 'pedido-item';
-        div.innerHTML = `
-          <div class="pedido-top">
-            <span style="font-size:12.5px;">${t.mensagem}</span>
-            <span class="status-pill ${t.status === 'resolvido' ? 'concluido' : 'executando'}">${t.status === 'resolvido' ? 'Resolvido' : 'Aberto'}</span>
-          </div>
-          <div class="pedido-sub">${new Date(t.criadoEm).toLocaleDateString('pt-BR')}</div>
-          ${t.resposta ? `
-          <div style="margin-top:10px;background:#0e1013;border-left:3px solid var(--accent);padding:10px 12px;border-radius:0 8px 8px 0;">
-            <div style="font-size:11px;color:var(--accent);margin-bottom:4px;">💬 Resposta do suporte</div>
-            <div style="font-size:13px;">${t.resposta}</div>
-          </div>` : '<div style="font-size:11px;color:var(--muted);margin-top:6px;">⏳ Aguardando resposta</div>'}
-        `;
+      data.produtos.forEach(p=>{
+        const div=document.createElement('div');
+        div.className='vitrine-card';
+        div.innerHTML=`
+          ${p.imagemUrl?`<img class="vitrine-img" src="${p.imagemUrl}" alt="${p.nome}" onerror="this.style.display='none'">`:''}
+          <div class="vitrine-body">
+            <div class="vitrine-nome">${p.nome||''}</div>
+            <div class="vitrine-desc">${p.descricao||''}</div>
+            <div class="vitrine-preco">${p.preco||''}</div>
+            ${p.linkContato?`<a class="vitrine-btn" href="${p.linkContato}" target="_blank">📲 Quero esse</a>`:''}
+          </div>`;
+        cont.appendChild(div);
+      });
+    }catch(e){ $('vitrine-msg').textContent='Erro ao carregar vitrine.'; }
+  }
+
+  // ===== PEDIDOS =====
+  let intervaloPedidos=null;
+
+  async function carregarMeusPedidos(){
+    if(!clienteId) return;
+    try{
+      const r=await fetch(`${API_BASE}/api/pedidos?clienteId=${encodeURIComponent(clienteId)}`);
+      const data=await r.json();
+      const lista=$('lista-pedidos'); lista.innerHTML='';
+      if(!data.pedidos||data.pedidos.length===0){ $('pedidos-msg').textContent='Você ainda não fez nenhum pedido.'; return; }
+      $('pedidos-msg').textContent='';
+      const emAndamento=(data.pedidos||[]).filter(p=>p.status==='executando'&&p.orderIdFornecedor);
+      await Promise.all(emAndamento.map(p=>fetch(`${API_BASE}/api/pedidos?pedidoId=${encodeURIComponent(p.id)}`).catch(()=>{})));
+      const r2=await fetch(`${API_BASE}/api/pedidos?clienteId=${encodeURIComponent(clienteId)}`);
+      const data2=await r2.json();
+      (data2.pedidos||data.pedidos).forEach(p=>{
+        const progresso=p.startCount&&p.quantidade?Math.min(100,Math.round(((p.quantidade-(p.restam||p.quantidade))/p.quantidade)*100)):(p.status==='concluido'?100:p.status==='executando'?50:0);
+        const corStatus={aguardando_pagamento:'#8b929b',executando:'#ffc97c',concluido:'#7CFFB2',cancelado:'#ff8b8b',erro_fornecedor:'#ff8b8b'};
+        const cor=corStatus[p.status]||'#8b929b';
+        const div=document.createElement('div'); div.className='pedido-item';
+        div.innerHTML=`
+          <div class="pedido-top"><span>${p.nomeServico||'Serviço'}</span><span class="status-pill ${p.status}">${formatarStatus(p.status)}</span></div>
+          <div class="pedido-sub">${p.numeroPedido?`<strong style="color:var(--accent)">${p.numeroPedido}</strong> · `:''}Qtd: ${p.quantidade} · R$ ${Number(p.valorTotal).toFixed(2)} · ${new Date(p.criadoEm).toLocaleDateString('pt-BR')}${p.pagamento==='saldo'?' · 💰 Saldo':''}</div>
+          ${p.link?`<div style="font-size:11.5px;margin-top:4px;"><a href="${p.link}" target="_blank" style="color:var(--muted);text-decoration:none;">🔗 ${p.link.length>50?p.link.slice(0,50)+'...':p.link}</a></div>`:''}
+          ${p.status==='executando'||p.status==='concluido'?`<div style="margin-top:8px;"><div style="height:4px;background:var(--line);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${progresso}%;background:${cor};border-radius:4px;transition:width .5s;"></div></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">${progresso}% concluído${p.restam?` · ${p.restam} restando`:''}</div></div>`:''}`;
         lista.appendChild(div);
       });
-    }catch(e){
-      $('tickets-cliente-msg').textContent = 'Erro ao carregar tickets.';
-    }
+    }catch(e){ $('pedidos-msg').textContent='Erro ao carregar pedidos.'; }
   }
 
-  // ===== Ícones flutuantes na área logada =====
-  function gerarIconesFlutuantesLogado(){
-    const container = $('floating-icons-logado');
-    if(!container || container.children.length > 0) return;
-    const icones = ['📸','❤️','👥','💬','▶️','⭐','🔥','📊','🚀','✨','🎯','📱','🎵','📈'];
-    for(let i = 0; i < 15; i++){
-      const el = document.createElement('div');
-      el.className = 'fi';
-      el.textContent = icones[Math.floor(Math.random() * icones.length)];
-      el.style.left = Math.random() * 100 + 'vw';
-      el.style.animationDuration = (15 + Math.random() * 25) + 's';
-      el.style.animationDelay = (Math.random() * 25) + 's';
-      el.style.fontSize = (14 + Math.random() * 18) + 'px';
-      container.appendChild(el);
-    }
+  function iniciarAtualizacaoPedidos(){
+    if(intervaloPedidos) clearInterval(intervaloPedidos);
+    intervaloPedidos=setInterval(()=>{ if(!$('painel-pedidos').classList.contains('hidden')) carregarMeusPedidos(); },30000);
   }
 
-  // ===== Valor mínimo de recarga =====
-  let minRecarga = 5;
-  async function carregarMinRecarga(){
+  $('btn-atualizar-pedidos').addEventListener('click',()=>{
+    $('btn-atualizar-pedidos').textContent='⏳ Atualizando...'; $('btn-atualizar-pedidos').disabled=true;
+    carregarMeusPedidos().then(()=>{ $('btn-atualizar-pedidos').textContent='🔄 Atualizar'; $('btn-atualizar-pedidos').disabled=false; });
+  });
+
+  function formatarStatus(s){ return {aguardando_pagamento:'Aguardando pagamento',executando:'Em andamento',concluido:'Concluído',cancelado:'Cancelado',erro_fornecedor:'Erro - suporte'}[s]||s; }
+
+  // ===== SUPORTE =====
+  $('ticket-enviar').addEventListener('click', async()=>{
+    const mensagem=$('ticket-mensagem').value;
+    if(!mensagem) return;
     try{
-      const r = await fetch(`${API_BASE}/api/config`);
-      const data = await r.json();
-      minRecarga = Number(data.minRecarga || 5);
-      const inputDeposito = $('deposito-valor');
-      if(inputDeposito){
-        inputDeposito.min = minRecarga;
-        inputDeposito.placeholder = `Mínimo R$ ${minRecarga.toFixed(2)}`;
-      }
+      const r=await fetch(`${API_BASE}/api/tickets`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clienteId,nome:clienteNome,mensagem})});
+      if(r.ok){ $('ticket-msg').textContent='Mensagem enviada!'; $('ticket-msg').className='msg ok'; $('ticket-mensagem').value=''; }
+      else { $('ticket-msg').textContent='Erro ao enviar.'; $('ticket-msg').className='msg erro'; }
+    }catch(e){ $('ticket-msg').textContent='Erro de conexão.'; $('ticket-msg').className='msg erro'; }
+  });
+
+  async function carregarTicketsCliente(){
+    if(!clienteId) return;
+    try{
+      const r=await fetch(`${API_BASE}/api/tickets?clienteId=${encodeURIComponent(clienteId)}`);
+      const data=await r.json();
+      const lista=$('lista-tickets'); lista.innerHTML='';
+      if(!data.tickets||data.tickets.length===0){ $('tickets-cliente-msg').textContent='Nenhum ticket ainda.'; return; }
+      $('tickets-cliente-msg').textContent='';
+      data.tickets.forEach(t=>{
+        const div=document.createElement('div'); div.className='pedido-item';
+        div.innerHTML=`<div class="pedido-top"><span style="font-size:12.5px;">${t.mensagem}</span><span class="status-pill ${t.status==='resolvido'?'concluido':'executando'}">${t.status==='resolvido'?'Resolvido':'Aberto'}</span></div>
+          <div class="pedido-sub">${new Date(t.criadoEm).toLocaleDateString('pt-BR')}</div>
+          ${t.resposta?`<div style="margin-top:10px;background:#0e1013;border-left:3px solid var(--accent);padding:10px 12px;border-radius:0 8px 8px 0;"><div style="font-size:11px;color:var(--accent);margin-bottom:4px;">💬 Resposta do suporte</div><div style="font-size:13px;">${t.resposta}</div></div>`:'<div style="font-size:11px;color:var(--muted);margin-top:6px;">⏳ Aguardando resposta</div>'}`;
+        lista.appendChild(div);
+      });
+    }catch(e){ $('tickets-cliente-msg').textContent='Erro ao carregar tickets.'; }
+  }
+
+  // ===== API KEY =====
+  $('btn-gerar-chave')?.addEventListener('click', async()=>{
+    $('btn-gerar-chave').disabled=true; $('api-key-msg').textContent='Gerando...';
+    try{
+      const senha=prompt('Digite sua senha para confirmar:');
+      if(!senha){ $('btn-gerar-chave').disabled=false; return; }
+      const r=await fetch(`${API_BASE}/api/auth-cliente`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'gerar-chave',clienteId,senha})});
+      const data=await r.json();
+      if(r.ok&&data.chave){ localStorage.setItem('eng_apiKey',data.chave); $('api-key-display').textContent=data.chave; $('api-key-msg').textContent='✅ Chave gerada!'; $('api-key-msg').className='msg ok'; }
+      else { $('api-key-msg').textContent=data.erro||'Erro'; $('api-key-msg').className='msg erro'; }
+    }catch(e){ $('api-key-msg').textContent='Erro de conexão'; $('api-key-msg').className='msg erro'; }
+    $('btn-gerar-chave').disabled=false;
+  });
+
+  $('btn-revogar-chave')?.addEventListener('click', async()=>{
+    if(!confirm('Revogar a chave vai invalidar todas as integrações. Confirma?')) return;
+    const senha=prompt('Digite sua senha:'); if(!senha) return;
+    const r=await fetch(`${API_BASE}/api/auth-cliente`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'revogar-chave',clienteId,senha})});
+    if(r.ok){ localStorage.removeItem('eng_apiKey'); $('api-key-display').textContent='Nenhuma chave gerada'; $('api-key-msg').textContent='🗑️ Chave revogada.'; }
+  });
+
+  $('btn-copiar-chave')?.addEventListener('click',()=>{
+    const chave=$('api-key-display').textContent;
+    if(chave&&chave!=='Nenhuma chave gerada'){ navigator.clipboard.writeText(chave); $('api-key-msg').textContent='📋 Copiado!'; $('api-key-msg').className='msg ok'; setTimeout(()=>$('api-key-msg').textContent='',2000); }
+  });
+
+  const chaveSalva=localStorage.getItem('eng_apiKey');
+  if(chaveSalva&&$('api-key-display')) $('api-key-display').textContent=chaveSalva;
+
+  // ===== SUPORTE WHATSAPP =====
+  async function carregarSuporte(){
+    try{
+      const r=await fetch(`${API_BASE}/api/config`);
+      const data=await r.json();
+      ordemServicos=data.ordemServicos||'padrao';
+      if(data.whatsappSuporte){ const el=$('float-whats'); if(el){ el.href=`https://wa.me/${data.whatsappSuporte}`; el.style.display='flex'; } }
     }catch(e){}
   }
 
-  // ===== PAINEL DO REVENDEDOR =====
+  // ===== REVENDEDOR =====
   async function carregarPainelRevendedor(){
     try{
-      const r = await fetch(`${API_BASE}/api/revendedor?revendedorId=${encodeURIComponent(clienteId)}&senha=${encodeURIComponent(revendedorSenha)}`);
-      const data = await r.json();
-      if($('rev-saudacao')) $('rev-saudacao').textContent = `Olá, ${data.nome}!`;
-      if($('rev-saldo')) $('rev-saldo').textContent = `R$ ${Number(data.saldo||0).toFixed(2)}`;
-      if($('rev-desconto')) $('rev-desconto').textContent = `${data.desconto||0}%`;
+      const r=await fetch(`${API_BASE}/api/revendedor?revendedorId=${encodeURIComponent(clienteId)}&senha=${encodeURIComponent(revendedorSenha)}`);
+      const data=await r.json();
+      if($('rev-saudacao')) $('rev-saudacao').textContent=`Olá, ${data.nome}!`;
+      if($('rev-saldo')) $('rev-saldo').textContent=`R$ ${Number(data.saldo||0).toFixed(2)}`;
+      if($('rev-desconto')) $('rev-desconto').textContent=`${data.desconto||0}%`;
     }catch(e){}
     carregarClientesRevendedor();
   }
 
   async function carregarClientesRevendedor(){
     try{
-      const r = await fetch(`${API_BASE}/api/revendedor?pin=${encodeURIComponent('rev')}&acao=clientes&id=${clienteId}`);
-      // endpoint público pra revendedor ver seus clientes
-      const rr = await fetch(`${API_BASE}/api/pedidos?revendedorId=${encodeURIComponent(clienteId)}`);
-      const dadosPedidos = await rr.json();
-
-      const lista = $('lista-rev-clientes');
-      if(!lista) return;
-
-      const pedidosPorCliente = {};
-      (dadosPedidos.pedidos || []).forEach(p => {
-        if(!pedidosPorCliente[p.clienteId]) pedidosPorCliente[p.clienteId] = 0;
-        pedidosPorCliente[p.clienteId]++;
-      });
-
-      // busca clientes via endpoint de pedidos (traz clienteIds únicos)
-      const clientesUnicos = [...new Set((dadosPedidos.pedidos||[]).map(p=>p.clienteId).filter(Boolean))];
-      if($('rev-total-clientes')) $('rev-total-clientes').textContent = clientesUnicos.length;
-
-      lista.innerHTML = clientesUnicos.length === 0
-        ? '<p style="color:var(--muted);font-size:13px;">Nenhum cliente com pedidos ainda.</p>'
-        : clientesUnicos.map(cid => `
-          <div style="border-bottom:1px solid var(--line);padding:10px 0;">
-            <div style="font-weight:600;font-size:13.5px;">${cid}</div>
-            <div style="font-size:12px;color:var(--muted);">${pedidosPorCliente[cid]||0} pedido(s)</div>
-          </div>`).join('');
-    }catch(e){
-      if($('rev-clientes-msg')) $('rev-clientes-msg').textContent = 'Erro ao carregar clientes.';
-    }
+      const rr=await fetch(`${API_BASE}/api/pedidos?revendedorId=${encodeURIComponent(clienteId)}`);
+      const dadosPedidos=await rr.json();
+      const lista=$('lista-rev-clientes'); if(!lista) return;
+      const pedidosPorCliente={};
+      (dadosPedidos.pedidos||[]).forEach(p=>{ if(!pedidosPorCliente[p.clienteId]) pedidosPorCliente[p.clienteId]=0; pedidosPorCliente[p.clienteId]++; });
+      const clientesUnicos=[...new Set((dadosPedidos.pedidos||[]).map(p=>p.clienteId).filter(Boolean))];
+      if($('rev-total-clientes')) $('rev-total-clientes').textContent=clientesUnicos.length;
+      lista.innerHTML=clientesUnicos.length===0?'<p style="color:var(--muted);font-size:13px;">Nenhum cliente ainda.</p>':clientesUnicos.map(cid=>`<div style="border-bottom:1px solid var(--line);padding:10px 0;"><div style="font-weight:600;font-size:13.5px;">${cid}</div><div style="font-size:12px;color:var(--muted);">${pedidosPorCliente[cid]||0} pedido(s)</div></div>`).join('');
+    }catch(e){}
   }
 
   async function carregarPedidosRevendedor(){
     try{
-      const r = await fetch(`${API_BASE}/api/pedidos?revendedorId=${encodeURIComponent(clienteId)}`);
-      const data = await r.json();
-      const tbody = $('tabela-rev-pedidos');
-      if(!tbody) return;
-      tbody.innerHTML = '';
-      (data.pedidos||[]).forEach(p => {
-        const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid var(--line)';
-        tr.innerHTML = `
-          <td style="padding:8px 6px;color:var(--accent);font-weight:700;">${p.numeroPedido||'-'}</td>
-          <td style="padding:8px 6px;font-size:12px;">${p.clienteId||'-'}</td>
-          <td style="padding:8px 6px;font-size:12px;">${p.nomeServico||'-'}</td>
-          <td style="padding:8px 6px;">${p.quantidade}</td>
-          <td style="padding:8px 6px;">R$ ${Number(p.valorTotal).toFixed(2)}</td>
-          <td style="padding:8px 6px;"><span class="status-pill ${p.status}">${formatarStatus(p.status)}</span></td>
-        `;
+      const r=await fetch(`${API_BASE}/api/pedidos?revendedorId=${encodeURIComponent(clienteId)}`);
+      const data=await r.json();
+      const tbody=$('tabela-rev-pedidos'); if(!tbody) return;
+      tbody.innerHTML='';
+      (data.pedidos||[]).forEach(p=>{
+        const tr=document.createElement('tr'); tr.style.borderBottom='1px solid var(--line)';
+        tr.innerHTML=`<td style="padding:8px 6px;color:var(--accent);font-weight:700;">${p.numeroPedido||'-'}</td><td style="padding:8px 6px;font-size:12px;">${p.clienteId||'-'}</td><td style="padding:8px 6px;font-size:12px;">${p.nomeServico||'-'}</td><td style="padding:8px 6px;">${p.quantidade}</td><td style="padding:8px 6px;">R$ ${Number(p.valorTotal).toFixed(2)}</td><td style="padding:8px 6px;"><span class="status-pill ${p.status}">${formatarStatus(p.status)}</span></td>`;
         tbody.appendChild(tr);
       });
-      if(!data.pedidos?.length) $('rev-pedidos-msg').textContent = 'Nenhum pedido ainda.';
+      if(!data.pedidos?.length) $('rev-pedidos-msg').textContent='Nenhum pedido ainda.';
     }catch(e){}
   }
 
-  // abas do revendedor
-  ['clientes','pedidos','novo'].forEach(aba => {
-    const tab = $(`tab-rev-${aba}`);
-    if(!tab) return;
-    tab.addEventListener('click', () => {
-      ['clientes','pedidos','novo'].forEach(a => {
-        $(`tab-rev-${a}`)?.classList.remove('ativa');
-        $(`painel-rev-${a}`)?.classList.add('hidden');
-      });
-      tab.classList.add('ativa');
-      $(`painel-rev-${aba}`)?.classList.remove('hidden');
-      if(aba === 'pedidos') carregarPedidosRevendedor();
+  ['clientes','pedidos','novo'].forEach(aba=>{
+    const tab=$(`tab-rev-${aba}`); if(!tab) return;
+    tab.addEventListener('click',()=>{
+      ['clientes','pedidos','novo'].forEach(a=>{ $(`tab-rev-${a}`)?.classList.remove('ativa'); $(`painel-rev-${a}`)?.classList.add('hidden'); });
+      tab.classList.add('ativa'); $(`painel-rev-${aba}`)?.classList.remove('hidden');
+      if(aba==='pedidos') carregarPedidosRevendedor();
     });
   });
 
-  // cadastrar cliente pelo revendedor
-  $('rev-nc-btn')?.addEventListener('click', async () => {
-    const nome = $('rev-nc-nome').value;
-    const whats = $('rev-nc-whats').value;
-    const usuario = $('rev-nc-usuario').value;
-    const senha = $('rev-nc-senha').value;
+  $('rev-nc-btn')?.addEventListener('click', async()=>{
+    const nome=$('rev-nc-nome').value, whats=$('rev-nc-whats').value, usuario=$('rev-nc-usuario').value, senha=$('rev-nc-senha').value;
     if(!nome||!whats||!senha){ $('rev-nc-msg').textContent='Preencha todos os campos'; $('rev-nc-msg').className='msg erro'; return; }
-    $('rev-nc-btn').disabled = true;
+    $('rev-nc-btn').disabled=true;
     try{
-      const r = await fetch(`${API_BASE}/api/revendedor`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ revendedorId: clienteId, senha: revendedorSenha, acao:'criar-cliente', nomeCliente: nome, whatsappCliente: whats, usuarioCliente: usuario, senhaCliente: senha })
-      });
-      const data = await r.json();
-      if(r.ok){
-        $('rev-nc-msg').textContent = `✅ Cliente cadastrado! ID: ${data.clienteId}`;
-        $('rev-nc-msg').className = 'msg ok';
-        $('rev-nc-nome').value = ''; $('rev-nc-whats').value = ''; $('rev-nc-usuario').value = ''; $('rev-nc-senha').value = '';
-      } else {
-        $('rev-nc-msg').textContent = data.erro || 'Erro';
-        $('rev-nc-msg').className = 'msg erro';
-      }
+      const r=await fetch(`${API_BASE}/api/revendedor`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revendedorId:clienteId,senha:revendedorSenha,acao:'criar-cliente',nomeCliente:nome,whatsappCliente:whats,usuarioCliente:usuario,senhaCliente:senha})});
+      const data=await r.json();
+      if(r.ok){ $('rev-nc-msg').textContent=`✅ Cliente cadastrado! ID: ${data.clienteId}`; $('rev-nc-msg').className='msg ok'; $('rev-nc-nome').value=''; $('rev-nc-whats').value=''; $('rev-nc-usuario').value=''; $('rev-nc-senha').value=''; }
+      else { $('rev-nc-msg').textContent=data.erro||'Erro'; $('rev-nc-msg').className='msg erro'; }
     }catch(e){ $('rev-nc-msg').textContent='Erro de conexão'; $('rev-nc-msg').className='msg erro'; }
-    $('rev-nc-btn').disabled = false;
+    $('rev-nc-btn').disabled=false;
   });
 
-  // sair (revendedor)
-  $('rev-sair-btn')?.addEventListener('click', () => {
-    localStorage.clear();
-    clienteId = null; clienteNome = ''; isRevendedor = false; revendedorSenha = '';
-    atualizarTopBar();
-  });
+  $('rev-sair-btn')?.addEventListener('click',()=>{ localStorage.clear(); clienteId=null; clienteNome=''; isRevendedor=false; revendedorSenha=''; atualizarTopBar(); });
+
+  // ===== ÍCONES FLUTUANTES =====
   function gerarIconesFlutuantes(){
-    const container = $('floating-icons');
-    if(!container) return;
-    const icones = ['📸','❤️','👥','💬','▶️','⭐','🔥','📊','🚀','✨','🎯','📱','🎵','𝕏','📘'];
-    for(let i = 0; i < 30; i++){
-      const el = document.createElement('div');
-      el.className = 'fi';
-      el.textContent = icones[Math.floor(Math.random() * icones.length)];
-      el.style.left = Math.random() * 100 + 'vw';
-      el.style.animationDuration = (12 + Math.random() * 20) + 's';
-      el.style.animationDelay = (Math.random() * 20) + 's';
-      el.style.fontSize = (20 + Math.random() * 28) + 'px';
+    const container=$('floating-icons'); if(!container) return;
+    const icones=['📸','❤️','👥','💬','▶️','⭐','🔥','📊','🚀','✨','🎯','📱','🎵','𝕏','📘'];
+    for(let i=0;i<30;i++){
+      const el=document.createElement('div'); el.className='fi';
+      el.textContent=icones[Math.floor(Math.random()*icones.length)];
+      el.style.left=Math.random()*100+'vw'; el.style.animationDuration=(12+Math.random()*20)+'s';
+      el.style.animationDelay=(Math.random()*20)+'s'; el.style.fontSize=(20+Math.random()*28)+'px';
       container.appendChild(el);
     }
   }
 
-  // ===== PWA — botão de instalar =====
-  let deferredPrompt = null;
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    const btn = document.getElementById('btn-instalar-app');
-    if(btn) btn.style.display = 'flex';
-  });
-
-  window.addEventListener('appinstalled', () => {
-    const btn = document.getElementById('btn-instalar-app');
-    if(btn) btn.style.display = 'none';
-    deferredPrompt = null;
-  });
-
-  document.getElementById('btn-instalar-app')?.addEventListener('click', async () => {
-    if(!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-  });
-
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  function gerarIconesFlutuantesLogado(){
+    const container=$('floating-icons-logado'); if(!container||container.children.length>0) return;
+    const icones=['📸','❤️','👥','💬','▶️','⭐','🔥','📊','🚀','✨','🎯','📱','🎵','📈'];
+    for(let i=0;i<15;i++){
+      const el=document.createElement('div'); el.className='fi';
+      el.textContent=icones[Math.floor(Math.random()*icones.length)];
+      el.style.left=Math.random()*100+'vw'; el.style.animationDuration=(15+Math.random()*25)+'s';
+      el.style.animationDelay=(Math.random()*25)+'s'; el.style.fontSize=(14+Math.random()*18)+'px';
+      container.appendChild(el);
+    }
   }
 
+  // ===== PWA =====
+  let deferredPrompt=null;
+  window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredPrompt=e; const btn=$('btn-instalar-app'); if(btn) btn.style.display='flex'; });
+  window.addEventListener('appinstalled',()=>{ const btn=$('btn-instalar-app'); if(btn) btn.style.display='none'; deferredPrompt=null; });
+  document.getElementById('btn-instalar-app')?.addEventListener('click',async()=>{ if(!deferredPrompt) return; deferredPrompt.prompt(); deferredPrompt=null; });
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+
+  // ===== VALOR MÍNIMO RECARGA =====
+  async function carregarMinRecarga(){
+    try{
+      const r=await fetch(`${API_BASE}/api/config`);
+      const data=await r.json();
+      const min=Number(data.minRecarga||5);
+      const inp=$('deposito-valor');
+      if(inp){ inp.min=min; inp.placeholder=`Mínimo R$ ${min.toFixed(2)}`; }
+    }catch(e){}
+  }
+
+  // ===== INIT =====
   atualizarTopBar();
   carregarFiltrosIniciais();
   carregarSuporte();
@@ -1329,6 +977,5 @@
   carregarMinRecarga();
 })();
 </script>
-
 </body>
 </html>
