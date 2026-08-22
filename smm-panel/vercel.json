@@ -2,7 +2,7 @@
   "version": 2,
   "crons": [
     {
-      "path": "/api/cron-sync",
+      "path": "/api/sync-services",
       "schedule": "0 6 * * *"
     }
   ]
