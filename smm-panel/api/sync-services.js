@@ -102,11 +102,37 @@ module.exports = async (req, res) => {
     }
   }
 
-  // ===== POST — sincronização manual (admin) =====
+  // ===== POST action=detectar — redetecta rede/tipo em todos os serviços sem rede =====
   if (req.method === 'POST') {
-    const { pin } = req.body || {};
+    const { pin, action } = req.body || {};
     if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
 
+    if (action === 'detectar') {
+      try {
+        const catalogo = (await fbGet('catalogo')) || {};
+        let atualizados = 0;
+
+        for (const [id, s] of Object.entries(catalogo)) {
+          if (!s) continue;
+          // força redetecção em TODOS (não só os vazios)
+          const rede = detectarRede(s.categoriaOriginal || '', s.nomeOriginal || s.nomeCustomizado || '');
+          const tipo = detectarTipo(s.categoriaOriginal || '', s.nomeOriginal || s.nomeCustomizado || '');
+          const update = {};
+          if (rede && rede !== s.redeSocial) { update.redeSocial = rede; }
+          if (tipo && tipo !== s.servicoTipo) { update.servicoTipo = tipo; }
+          if (Object.keys(update).length > 0) {
+            await fbPatch(`catalogo/${id}`, update);
+            atualizados++;
+          }
+        }
+
+        return res.status(200).json({ ok: true, atualizados, total: Object.keys(catalogo).length });
+      } catch (err) {
+        return res.status(500).json({ erro: err.message });
+      }
+    }
+
+    // ===== POST normal — sincronização manual =====
     try {
       const servicosFornecedor = await listarServicos();
       if (!Array.isArray(servicosFornecedor)) {
