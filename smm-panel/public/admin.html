@@ -57,6 +57,7 @@
     <button class="admin-tab" data-tab="pedidos">🛒 Pedidos</button>
     <button class="admin-tab" data-tab="tickets">💬 Suporte</button>
     <button class="admin-tab" data-tab="clientes">👥 Clientes</button>
+    <button class="admin-tab" data-tab="vitrine">🛍️ Vitrine</button>
     <button class="admin-tab" data-tab="revendedores">🤝 Revendedores</button>
     <button class="admin-tab" data-tab="integracoes">🔌 Integrações</button>
   </div>
@@ -78,7 +79,15 @@
     </div>
     <div class="row">
       <div><label>Valor mínimo de recarga (R$)</label><input id="cfg-min-recarga" type="number" min="1" step="0.01" placeholder="Ex: 10.00"></div>
-      <div></div>
+      <div>
+        <label>Ordenação dos serviços no site do cliente</label>
+        <select id="cfg-ordem-servicos">
+          <option value="padrao">Padrão (ordem do fornecedor)</option>
+          <option value="preco_asc">Mais barato primeiro</option>
+          <option value="preco_desc">Mais caro primeiro</option>
+          <option value="destaque">Destaques primeiro</option>
+        </select>
+      </div>
     </div>
     <button id="cfg-salvar">Salvar configuração</button>
     <button class="secundario" id="cfg-saldo-btn">Atualizar saldo</button>
@@ -293,6 +302,48 @@
     </div>
   </div>
   </div><!-- /tab-revendedores -->
+
+  <div class="admin-section" id="tab-vitrine">
+  <div class="card">
+    <h2>🛍️ Vitrine — Cadastrar produto</h2>
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:16px;">
+      Divulgue qualquer produto ou serviço externo aqui. Aparece como cards no site do cliente.<br>
+      <strong style="color:var(--accent);">Dimensão recomendada do banner: 800 × 400px (proporção 2:1)</strong> — ideal para celular e desktop.
+    </p>
+    <input type="hidden" id="vitrine-edit-id">
+    <div class="row">
+      <div><label>Nome do produto</label><input id="vitrine-nome" placeholder="Ex: Carteirinha de Estudante"></div>
+      <div><label>Preço (texto livre)</label><input id="vitrine-preco" placeholder="Ex: R$ 49,90"></div>
+    </div>
+    <label>Descrição curta</label>
+    <input id="vitrine-desc" placeholder="Ex: Carteirinha válida nacional, entrega digital em 24h">
+    <label>URL da imagem do banner <span style="color:var(--muted);font-size:11px;">(800×400px recomendado)</span></label>
+    <input id="vitrine-img" placeholder="https://i.imgur.com/sua-imagem.jpg" type="url">
+    <label>Link de contato (WhatsApp ou URL)</label>
+    <input id="vitrine-link" placeholder="https://wa.me/5521999999999?text=Quero+a+carteirinha">
+    <div class="row">
+      <div>
+        <label>Ordem de exibição (menor = primeiro)</label>
+        <input id="vitrine-ordem" type="number" placeholder="1" min="0">
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding-top:20px;">
+        <input type="checkbox" id="vitrine-ativo" checked style="width:auto;margin:0;">
+        <label for="vitrine-ativo" style="margin:0;">Produto ativo (visível no site)</label>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button id="vitrine-salvar-btn">💾 Salvar produto</button>
+      <button class="secundario" id="vitrine-limpar-btn">✕ Limpar</button>
+    </div>
+    <p class="msg" id="vitrine-msg"></p>
+  </div>
+
+  <div class="card">
+    <h2>Produtos cadastrados</h2>
+    <button class="secundario" id="vitrine-listar-btn">🔄 Atualizar lista</button>
+    <div id="vitrine-lista" style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+  </div>
+  </div><!-- /tab-vitrine -->
 </div>
 
 <script>
@@ -315,7 +366,7 @@
     $('login-gate').style.display = 'none';
     $('painel').style.display = 'block';
     carregarConfig(); carregarServicos(); carregarPedidos();
-    carregarTickets(); carregarClientes(); carregarIntegracoes();
+    carregarTickets(); carregarClientes(); carregarIntegracoes(); carregarVitrine();
   }
 
   const pinSalvo = localStorage.getItem('admin_pin');
@@ -334,12 +385,13 @@
     $('cfg-cotacao').value = data.cotacaoUSDBRL || '';
     $('cfg-whats').value = data.whatsappSuporte || '';
     $('cfg-min-recarga').value = data.minRecarga || '';
+    $('cfg-ordem-servicos').value = data.ordemServicos || 'padrao';
     lucroGlobalAtual = Number(data.lucroPercentualGlobal ?? 30);
     cotacaoAtual = Number(data.cotacaoUSDBRL || 0);
   }
 
   $('cfg-salvar').addEventListener('click', async () => {
-    const body = { pin: PIN, lucroPercentualGlobal: $('cfg-lucro').value, cotacaoUSDBRL: $('cfg-cotacao').value, whatsappSuporte: $('cfg-whats').value, minRecarga: $('cfg-min-recarga').value ? Number($('cfg-min-recarga').value) : null };
+    const body = { pin: PIN, lucroPercentualGlobal: $('cfg-lucro').value, cotacaoUSDBRL: $('cfg-cotacao').value, whatsappSuporte: $('cfg-whats').value, minRecarga: $('cfg-min-recarga').value ? Number($('cfg-min-recarga').value) : null, ordemServicos: $('cfg-ordem-servicos').value };
     if($('cfg-url').value && $('cfg-key').value){ body.url = $('cfg-url').value; body.key = $('cfg-key').value; }
     const r = await fetch(`${API_BASE}/api/config`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     const data = await r.json();
@@ -910,6 +962,101 @@
     return (custoConvertido*(1+lucro/100)).toFixed(4);
   }
 
+
+  // ===== Vitrine =====
+  async function carregarVitrine(){
+    const r = await fetch(`${API_BASE}/api/config?action=vitrine-admin&pin=${encodeURIComponent(PIN)}`);
+    const data = await r.json();
+    const lista = $('vitrine-lista');
+    lista.innerHTML = '';
+    if(!data.produtos || data.produtos.length === 0){
+      lista.innerHTML = '<p style="color:var(--muted);font-size:13px;">Nenhum produto cadastrado ainda.</p>';
+      return;
+    }
+    data.produtos.forEach(p => {
+      const card = document.createElement('div');
+      card.style.cssText = `background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;`;
+      card.innerHTML = `
+        ${p.imagemUrl ? `<img src="${p.imagemUrl}" style="width:100%;height:160px;object-fit:cover;" onerror="this.style.display='none'">` : `<div style="width:100%;height:100px;background:#1a1f25;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;">Sem imagem (800×400px)</div>`}
+        <div style="padding:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+            <strong style="font-size:14px;">${p.nome||'Sem nome'}</strong>
+            <span style="color:var(--accent);font-weight:700;font-size:14px;">${p.preco||''}</span>
+          </div>
+          <p style="font-size:12.5px;color:var(--muted);margin:0 0 10px;">${p.descricao||''}</p>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span class="tag ${p.ativo?'ativo':'inativo'}">${p.ativo?'Ativo':'Inativo'}</span>
+            <button class="secundario" onclick="editarProduto('${p.id}')" style="font-size:12px;padding:4px 10px;">✏️ Editar</button>
+            <button class="secundario" onclick="removerProduto('${p.id}')" style="font-size:12px;padding:4px 10px;color:#ff8b8b;">🗑️</button>
+          </div>
+        </div>
+      `;
+      lista.appendChild(card);
+    });
+    window._vitrineData = data.produtos;
+  }
+
+  window.editarProduto = function(id){
+    const p = (window._vitrineData||[]).find(x=>x.id===id);
+    if(!p) return;
+    $('vitrine-edit-id').value = p.id;
+    $('vitrine-nome').value = p.nome||'';
+    $('vitrine-preco').value = p.preco||'';
+    $('vitrine-desc').value = p.descricao||'';
+    $('vitrine-img').value = p.imagemUrl||'';
+    $('vitrine-link').value = p.linkContato||'';
+    $('vitrine-ordem').value = p.ordem||0;
+    $('vitrine-ativo').checked = p.ativo !== false;
+    $('vitrine-nome').focus();
+    // scroll pro formulário
+    $('tab-vitrine').scrollIntoView({behavior:'smooth'});
+  };
+
+  window.removerProduto = async function(id){
+    if(!confirm('Remover este produto da vitrine?')) return;
+    const r = await fetch(`${API_BASE}/api/config`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ pin: PIN, action:'vitrine-remover', id })
+    });
+    if(r.ok){ carregarVitrine(); }
+  };
+
+  $('vitrine-salvar-btn').addEventListener('click', async () => {
+    const nome = $('vitrine-nome').value.trim();
+    if(!nome){ $('vitrine-msg').textContent='Informe o nome do produto'; $('vitrine-msg').className='msg erro'; return; }
+    $('vitrine-salvar-btn').disabled = true;
+    const body = {
+      pin: PIN, action: 'vitrine-salvar',
+      id: $('vitrine-edit-id').value || null,
+      nome, preco: $('vitrine-preco').value,
+      descricao: $('vitrine-desc').value,
+      imagemUrl: $('vitrine-img').value,
+      linkContato: $('vitrine-link').value,
+      ordem: Number($('vitrine-ordem').value||0),
+      ativo: $('vitrine-ativo').checked,
+    };
+    const r = await fetch(`${API_BASE}/api/config`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await r.json();
+    if(r.ok){
+      $('vitrine-msg').textContent = '✅ Produto salvo!'; $('vitrine-msg').className = 'msg ok';
+      $('vitrine-edit-id').value = '';
+      $('vitrine-nome').value=''; $('vitrine-preco').value=''; $('vitrine-desc').value='';
+      $('vitrine-img').value=''; $('vitrine-link').value=''; $('vitrine-ordem').value='';
+      $('vitrine-ativo').checked = true;
+      carregarVitrine();
+    } else {
+      $('vitrine-msg').textContent = data.erro||'Erro'; $('vitrine-msg').className = 'msg erro';
+    }
+    $('vitrine-salvar-btn').disabled = false;
+  });
+
+  $('vitrine-limpar-btn').addEventListener('click', () => {
+    $('vitrine-edit-id').value=''; $('vitrine-nome').value=''; $('vitrine-preco').value='';
+    $('vitrine-desc').value=''; $('vitrine-img').value=''; $('vitrine-link').value='';
+    $('vitrine-ordem').value=''; $('vitrine-ativo').checked=true; $('vitrine-msg').textContent='';
+  });
+
+  $('vitrine-listar-btn').addEventListener('click', carregarVitrine);
 
   // ===== Histórico do cliente =====
   async function abrirHistorico(clienteId, nomeCliente){
