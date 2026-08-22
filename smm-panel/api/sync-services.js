@@ -86,7 +86,7 @@ module.exports = async (req, res) => {
           max: Number(s.máximo ?? s.max ?? 0),
           refill: !!(s.reabastecer ?? s.refill),
           cancel: !!(s.cancelar ?? s.cancel),
-          ativo: existente.ativo ?? false,
+          ativo: existente.ativo ?? true,
           redeSocial: existente.redeSocial ?? '',
           servicoTipo: existente.servicoTipo ?? '',
           icone: existente.icone || '',
