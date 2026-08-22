@@ -102,7 +102,9 @@
     <h2>Catálogo de serviços</h2>
     <button id="sync-btn">Sincronizar com o fornecedor</button>
     <button class="secundario" id="ver-ativos-btn">Ver somente ativos</button>
+    <button class="secundario" id="ver-indisponiveis-btn">⚠️ Ver indisponíveis</button>
     <p class="msg" id="sync-msg"></p>
+    <p id="ultima-verificacao" style="font-size:12px;color:var(--muted);margin-top:4px;"></p>
     <div style="margin-top:14px;">
       <label>Buscar por nome, categoria, rede ou ID</label>
       <div class="row">
@@ -119,7 +121,7 @@
       <table id="tabela-servicos">
         <thead>
           <tr>
-            <th>Ativo</th><th>Ícone</th><th>Nome</th><th>Categoria orig.</th><th>Rede social</th>
+            <th>Ativo</th><th>Ícone</th><th>Cód.</th><th>Nome</th><th>Categoria orig.</th><th>Rede social</th>
             <th>Tipo</th><th>Custo /1000</th><th>Lucro % (vazio=global)</th><th>Preço final /1000</th><th></th>
           </tr>
         </thead>
@@ -329,25 +331,38 @@
     else { $('sync-msg').textContent = data.erro || 'Erro ao sincronizar'; $('sync-msg').className = 'msg erro'; }
   });
 
-  async function carregarServicos(termo, somenteAtivos){
+  async function carregarServicos(termo, somenteAtivos, somenteIndisponiveis){
     const q = termo ? `&busca=${encodeURIComponent(termo)}` : '';
     const qAtivos = somenteAtivos ? `&somenteAtivos=1` : '';
+    const qIndisp = somenteIndisponiveis ? `&somenteIndisponiveis=1` : '';
     const ordem = $('ordenar-servico').value;
     const qOrdem = ordem ? `&ordenar=${ordem}` : '';
     let data;
     try {
-      const r = await fetch(`${API_BASE}/api/admin-services?pin=${encodeURIComponent(PIN)}${q}${qAtivos}${qOrdem}`);
+      const r = await fetch(`${API_BASE}/api/admin-services?pin=${encodeURIComponent(PIN)}${q}${qAtivos}${qIndisp}${qOrdem}`);
       data = await r.json();
       if(!r.ok){ $('servicos-msg').textContent = data.erro || `Erro ${r.status}`; $('servicos-msg').className = 'msg erro'; return; }
     } catch(e) { $('servicos-msg').textContent = 'Falha na busca. Tente novamente.'; $('servicos-msg').className = 'msg erro'; return; }
 
+    // mostra última verificação automática
+    try{
+      const rc = await fetch(`${API_BASE}/api/config?pin=${encodeURIComponent(PIN)}`);
+      const dc = await rc.json();
+      if(dc.ultimaVerificacaoFornecedor){
+        const dt = new Date(dc.ultimaVerificacaoFornecedor).toLocaleString('pt-BR');
+        const res = dc.ultimaVerificacaoResultado || {};
+        $('ultima-verificacao').textContent = `🕐 Última verificação automática: ${dt} · ${res.desativados||0} desativados · ${res.reativados||0} reativados`;
+      }
+    }catch(e){}
+
     const tbody = $('tabela-servicos-body');
     tbody.innerHTML = '';
-    if(!termo){ $('servicos-msg').textContent = `${data.total} serviços no catálogo. Digite algo na busca pra filtrar.`; $('servicos-msg').className = 'msg'; }
+    if(!termo && !somenteIndisponiveis){ $('servicos-msg').textContent = `${data.total} serviços no catálogo. Digite algo na busca pra filtrar.`; $('servicos-msg').className = 'msg'; }
     else { $('servicos-msg').textContent = data.limitado ? `${data.total} resultados — mostrando os primeiros 200.` : `${data.total} resultado(s).`; $('servicos-msg').className = 'msg'; }
 
     (data.servicos || []).forEach((s) => {
       const tr = document.createElement('tr');
+      if(s.indisponivel) tr.style.background = 'rgba(255,80,80,.06)';
       const precoFinalInicial = calcularPrecoFinal(s.taxaCusto, s.lucroPercentual);
       tr.innerHTML = `
         <td><input type="checkbox" ${s.ativo ? 'checked' : ''} data-campo="ativo" data-id="${s.idFornecedor}"></td>
@@ -365,8 +380,9 @@
             <option value="▶️" ${s.icone==='▶️'?'selected':''}>▶️ Visualizações</option>
           </select>
         </td>
+        <td style="font-family:monospace;font-size:12px;color:var(--accent);">${s.idFornecedor}</td>
         <td><input value="${s.nomeCustomizado || ''}" data-campo="nomeCustomizado" data-id="${s.idFornecedor}"></td>
-        <td>${s.categoriaOriginal || ''}</td>
+        <td style="font-size:12px;color:var(--muted);">${s.categoriaOriginal || ''}</td>
         <td><select data-campo="redeSocial" data-id="${s.idFornecedor}" style="margin-bottom:0;padding:6px 8px;font-size:12.5px;">
           <option value="">-- selecione --</option>
           ${redesCadastradas.map(r=>`<option value="${r.nome}" ${s.redeSocial===r.nome?'selected':''}>${r.emoji||''} ${r.nome}</option>`).join('')}
@@ -688,6 +704,7 @@
     buscaTimeout=setTimeout(()=>carregarServicos(valor),500);
   });
   $('ver-ativos-btn').addEventListener('click',()=>{ $('busca-servico').value=''; carregarServicos('',true); });
+  $('ver-indisponiveis-btn').addEventListener('click',()=>{ $('busca-servico').value=''; carregarServicos('',false,true); });
   $('ordenar-servico').addEventListener('change',()=>{ carregarServicos($('busca-servico').value); });
 
   // ===== Histórico do cliente =====
