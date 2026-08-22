@@ -100,34 +100,65 @@
   <div class="admin-section" id="tab-catalogo">
   <div class="card">
     <h2>Catálogo de serviços</h2>
-    <button id="sync-btn">Sincronizar com o fornecedor</button>
-    <button class="secundario" id="ver-ativos-btn">Ver somente ativos</button>
-    <button class="secundario" id="ver-indisponiveis-btn">⚠️ Ver indisponíveis</button>
+
+    <!-- Ações -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button id="sync-btn">🔄 Sincronizar fornecedor</button>
+      <button class="secundario filtro-estado-btn" id="btn-todos" data-estado="">Todos</button>
+      <button class="secundario filtro-estado-btn" id="btn-ativos" data-estado="ativos">✅ Ativos</button>
+      <button class="secundario filtro-estado-btn" id="btn-indisponiveis" data-estado="indisponiveis">⚠️ Indisponíveis</button>
+      <button class="secundario" id="btn-limpar-filtros">✕ Limpar filtros</button>
+    </div>
     <p class="msg" id="sync-msg"></p>
-    <p id="ultima-verificacao" style="font-size:12px;color:var(--muted);margin-top:4px;"></p>
-    <div style="margin-top:14px;">
-      <label>Buscar por nome, categoria, rede ou ID</label>
-      <div class="row">
-        <input id="busca-servico" placeholder="Ex: instagram, seguidores, curtidas...">
-        <select id="ordenar-servico" style="flex:0 0 220px;">
-          <option value="">Ordenar: padrão</option>
-          <option value="preco_asc">Preço: mais barato primeiro</option>
-          <option value="preco_desc">Preço: mais caro primeiro</option>
+    <p id="ultima-verificacao" style="font-size:12px;color:var(--muted);margin-top:4px;margin-bottom:12px;"></p>
+
+    <!-- Filtros combinados -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 180px;gap:10px;margin-bottom:10px;">
+      <div>
+        <label style="font-size:12px;">Buscar por nome, ID, categoria</label>
+        <input id="busca-servico" placeholder="Ex: seguidores, 1234..." style="margin-bottom:0;">
+      </div>
+      <div>
+        <label style="font-size:12px;">Rede social</label>
+        <select id="filtro-rede-servico" style="margin-bottom:0;">
+          <option value="">Todas as redes</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;">Tipo de serviço</label>
+        <select id="filtro-tipo-servico" style="margin-bottom:0;">
+          <option value="">Todos os tipos</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;">Ordenar</label>
+        <select id="ordenar-servico" style="margin-bottom:0;">
+          <option value="">Padrão (ID)</option>
+          <option value="preco_asc">Preço: menor</option>
+          <option value="preco_desc">Preço: maior</option>
         </select>
       </div>
     </div>
+
     <p class="msg" id="servicos-msg"></p>
-    <div style="overflow-x:auto;margin-top:14px;">
+
+    <!-- Paginação topo -->
+    <div id="paginacao-topo" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;"></div>
+
+    <div style="overflow-x:auto;">
       <table id="tabela-servicos">
         <thead>
           <tr>
-            <th>Ativo</th><th>Ícone</th><th>Cód.</th><th>Nome</th><th>Categoria orig.</th><th>Rede social</th>
-            <th>Tipo</th><th>Custo /1000</th><th>Lucro % (vazio=global)</th><th>Preço final /1000</th><th></th>
+            <th>Ativo</th><th>Ícone</th><th>Cód.</th><th>Nome (aceita emoji)</th><th>Categoria orig.</th>
+            <th>Rede social</th><th>Tipo</th><th>Custo /1000</th><th>Lucro %</th><th>Preço /1000</th><th></th>
           </tr>
         </thead>
         <tbody id="tabela-servicos-body"></tbody>
       </table>
     </div>
+
+    <!-- Paginação baixo -->
+    <div id="paginacao-baixo" style="display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;"></div>
   </div>
   </div><!-- /tab-catalogo -->
 
@@ -494,7 +525,189 @@
   $('pedidos-btn').addEventListener('click', carregarPedidos);
   $('busca-pedido')?.addEventListener('input', () => { renderizarPedidos(todosPedidos, window._clientesCache || {}); });
 
-  // ===== Redes sociais =====
+  // ===== Catálogo — estado global dos filtros =====
+  const filtrosCatalogo = { estado: '', rede: '', tipo: '', busca: '', ordem: '', pagina: 1 };
+
+  function destacarBtnEstado(){
+    document.querySelectorAll('.filtro-estado-btn').forEach(b => {
+      b.style.borderColor = b.dataset.estado === filtrosCatalogo.estado ? 'var(--accent)' : '';
+      b.style.color = b.dataset.estado === filtrosCatalogo.estado ? 'var(--accent)' : '';
+    });
+  }
+
+  document.querySelectorAll('.filtro-estado-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filtrosCatalogo.estado = btn.dataset.estado;
+      filtrosCatalogo.pagina = 1;
+      destacarBtnEstado();
+      carregarServicos();
+    });
+  });
+
+  $('btn-limpar-filtros').addEventListener('click', () => {
+    filtrosCatalogo.estado = ''; filtrosCatalogo.rede = ''; filtrosCatalogo.tipo = '';
+    filtrosCatalogo.busca = ''; filtrosCatalogo.ordem = ''; filtrosCatalogo.pagina = 1;
+    $('busca-servico').value = '';
+    $('filtro-rede-servico').value = '';
+    $('filtro-tipo-servico').value = '';
+    $('ordenar-servico').value = '';
+    destacarBtnEstado();
+    carregarServicos();
+  });
+
+  $('filtro-rede-servico').addEventListener('change', () => { filtrosCatalogo.rede = $('filtro-rede-servico').value; filtrosCatalogo.pagina = 1; carregarServicos(); });
+  $('filtro-tipo-servico').addEventListener('change', () => { filtrosCatalogo.tipo = $('filtro-tipo-servico').value; filtrosCatalogo.pagina = 1; carregarServicos(); });
+  $('ordenar-servico').addEventListener('change', () => { filtrosCatalogo.ordem = $('ordenar-servico').value; filtrosCatalogo.pagina = 1; carregarServicos(); });
+
+  let buscaTimeout;
+  $('busca-servico').addEventListener('input', (e) => {
+    clearTimeout(buscaTimeout);
+    if(e.target.value.length > 0 && e.target.value.length < 2) return;
+    buscaTimeout = setTimeout(() => { filtrosCatalogo.busca = e.target.value; filtrosCatalogo.pagina = 1; carregarServicos(); }, 500);
+  });
+
+  function renderizarPaginacao(containerId, pagina, totalPaginas){
+    const el = $(containerId);
+    if(!el || totalPaginas <= 1){ if(el) el.innerHTML = ''; return; }
+    let html = `<span style="font-size:13px;color:var(--muted);">Página ${pagina} de ${totalPaginas}</span>`;
+    if(pagina > 1) html += `<button class="secundario" onclick="irParaPagina(${pagina-1})" style="padding:6px 12px;font-size:12px;">← Anterior</button>`;
+
+    // páginas próximas
+    const inicio = Math.max(1, pagina - 2);
+    const fim = Math.min(totalPaginas, pagina + 2);
+    for(let p = inicio; p <= fim; p++){
+      html += `<button class="${p===pagina?'':'secundario'}" onclick="irParaPagina(${p})" style="padding:6px 10px;font-size:12px;min-width:36px;">${p}</button>`;
+    }
+
+    if(pagina < totalPaginas) html += `<button class="secundario" onclick="irParaPagina(${pagina+1})" style="padding:6px 12px;font-size:12px;">Próxima →</button>`;
+    el.innerHTML = html;
+  }
+
+  window.irParaPagina = function(p){ filtrosCatalogo.pagina = p; carregarServicos(); window.scrollTo(0,300); };
+
+  async function carregarServicos(){
+    const params = new URLSearchParams({
+      pin: PIN,
+      pagina: filtrosCatalogo.pagina,
+    });
+    if(filtrosCatalogo.estado === 'ativos') params.set('somenteAtivos','1');
+    if(filtrosCatalogo.estado === 'indisponiveis') params.set('somenteIndisponiveis','1');
+    if(filtrosCatalogo.rede) params.set('redeSocial', filtrosCatalogo.rede);
+    if(filtrosCatalogo.tipo) params.set('servicoTipo', filtrosCatalogo.tipo);
+    if(filtrosCatalogo.busca) params.set('busca', filtrosCatalogo.busca);
+    if(filtrosCatalogo.ordem) params.set('ordenar', filtrosCatalogo.ordem);
+
+    let data;
+    try {
+      const r = await fetch(`${API_BASE}/api/admin-services?${params}`);
+      data = await r.json();
+      if(!r.ok){ $('servicos-msg').textContent = data.erro || `Erro ${r.status}`; $('servicos-msg').className = 'msg erro'; return; }
+    } catch(e) { $('servicos-msg').textContent = 'Falha na busca.'; $('servicos-msg').className = 'msg erro'; return; }
+
+    // popula selects de rede e tipo com opções reais do catálogo
+    if(data.redesDisponiveis){
+      const redeAtual = $('filtro-rede-servico').value;
+      $('filtro-rede-servico').innerHTML = '<option value="">Todas as redes</option>' +
+        data.redesDisponiveis.map(r=>`<option value="${r}" ${r===redeAtual?'selected':''}>${r}</option>`).join('');
+    }
+    if(data.tiposDisponiveis){
+      const tipoAtual = $('filtro-tipo-servico').value;
+      $('filtro-tipo-servico').innerHTML = '<option value="">Todos os tipos</option>' +
+        data.tiposDisponiveis.map(t=>`<option value="${t}" ${t===tipoAtual?'selected':''}>${t}</option>`).join('');
+    }
+
+    // mostra última verificação automática
+    try{
+      const rc = await fetch(`${API_BASE}/api/config?pin=${encodeURIComponent(PIN)}`);
+      const dc = await rc.json();
+      if(dc.ultimaVerificacaoFornecedor){
+        const dt = new Date(dc.ultimaVerificacaoFornecedor).toLocaleString('pt-BR');
+        const res = dc.ultimaVerificacaoResultado || {};
+        $('ultima-verificacao').textContent = `🕐 Última verificação: ${dt} · ${res.desativados||0} desativados · ${res.reativados||0} reativados`;
+      }
+    }catch(e){}
+
+    const inicio = (data.pagina - 1) * data.porPagina + 1;
+    const fim = Math.min(data.pagina * data.porPagina, data.total);
+    $('servicos-msg').textContent = `Mostrando ${inicio}–${fim} de ${data.total} serviços (página ${data.pagina} de ${data.totalPaginas})`;
+    $('servicos-msg').className = 'msg';
+
+    renderizarPaginacao('paginacao-topo', data.pagina, data.totalPaginas);
+    renderizarPaginacao('paginacao-baixo', data.pagina, data.totalPaginas);
+
+    const tbody = $('tabela-servicos-body');
+    tbody.innerHTML = '';
+
+    (data.servicos || []).forEach((s) => {
+      const tr = document.createElement('tr');
+      if(s.indisponivel) tr.style.background = 'rgba(255,80,80,.06)';
+      const precoFinalInicial = calcularPrecoFinal(s.taxaCusto, s.lucroPercentual);
+      tr.innerHTML = `
+        <td><input type="checkbox" ${s.ativo?'checked':''} data-campo="ativo" data-id="${s.idFornecedor}"></td>
+        <td>
+          <select data-campo="icone" data-id="${s.idFornecedor}" style="margin-bottom:0;padding:4px 6px;font-size:13px;">
+            <option value="" ${!s.icone?'selected':''}>—</option>
+            <option value="🇧🇷" ${s.icone==='🇧🇷'?'selected':''}>🇧🇷</option>
+            <option value="🌍" ${s.icone==='🌍'?'selected':''}>🌍</option>
+            <option value="🇺🇸" ${s.icone==='🇺🇸'?'selected':''}>🇺🇸</option>
+            <option value="⭐" ${s.icone==='⭐'?'selected':''}>⭐</option>
+            <option value="⚡" ${s.icone==='⚡'?'selected':''}>⚡</option>
+            <option value="🔒" ${s.icone==='🔒'?'selected':''}>🔒</option>
+            <option value="👥" ${s.icone==='👥'?'selected':''}>👥</option>
+            <option value="❤️" ${s.icone==='❤️'?'selected':''}>❤️</option>
+            <option value="💬" ${s.icone==='💬'?'selected':''}>💬</option>
+            <option value="▶️" ${s.icone==='▶️'?'selected':''}>▶️</option>
+            <option value="🔥" ${s.icone==='🔥'?'selected':''}>🔥</option>
+            <option value="💎" ${s.icone==='💎'?'selected':''}>💎</option>
+            <option value="🚀" ${s.icone==='🚀'?'selected':''}>🚀</option>
+            <option value="📈" ${s.icone==='📈'?'selected':''}>📈</option>
+            <option value="🎯" ${s.icone==='🎯'?'selected':''}>🎯</option>
+            <option value="🎵" ${s.icone==='🎵'?'selected':''}>🎵</option>
+            <option value="📸" ${s.icone==='📸'?'selected':''}>📸</option>
+            <option value="🏆" ${s.icone==='🏆'?'selected':''}>🏆</option>
+          </select>
+        </td>
+        <td style="font-family:monospace;font-size:12px;color:var(--accent);">${s.idFornecedor}</td>
+        <td><input value="${(s.nomeCustomizado||'').replace(/"/g,'&quot;')}" data-campo="nomeCustomizado" data-id="${s.idFornecedor}" style="font-family:inherit;" placeholder="Nome (aceita emoji 🇧🇷)"></td>
+        <td style="font-size:11px;color:var(--muted);max-width:120px;">${s.categoriaOriginal||''}</td>
+        <td><select data-campo="redeSocial" data-id="${s.idFornecedor}" style="margin-bottom:0;padding:4px 6px;font-size:12px;">
+          <option value="">--</option>
+          ${redesCadastradas.map(r=>`<option value="${r.nome}" ${s.redeSocial===r.nome?'selected':''}>${r.emoji||''} ${r.nome}</option>`).join('')}
+        </select></td>
+        <td><input value="${s.servicoTipo||''}" placeholder="tipo" data-campo="servicoTipo" data-id="${s.idFornecedor}" style="font-size:12px;"></td>
+        <td style="font-size:12px;">${s.taxaCusto}</td>
+        <td><input type="number" value="${s.lucroPercentual??''}" data-campo="lucroPercentual" data-id="${s.idFornecedor}" data-custo="${s.taxaCusto}" style="font-size:12px;"></td>
+        <td class="preco-final" data-id="${s.idFornecedor}" style="font-size:12px;">R$ ${precoFinalInicial}</td>
+        <td><button class="secundario btn-salvar-servico" data-id="${s.idFornecedor}" style="font-size:12px;padding:6px 10px;">Salvar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('input[data-campo="lucroPercentual"]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const custo = Number(input.dataset.custo);
+        const id = input.dataset.id;
+        const celula = document.querySelector(`.preco-final[data-id="${id}"]`);
+        if(celula) celula.textContent = `R$ ${calcularPrecoFinal(custo, input.value)}`;
+      });
+    });
+
+    document.querySelectorAll('.btn-salvar-servico').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const linha = btn.closest('tr');
+        const campos = {};
+        linha.querySelectorAll('[data-campo]').forEach((el) => {
+          campos[el.dataset.campo] = el.type === 'checkbox' ? el.checked : el.value;
+        });
+        const r2 = await fetch(`${API_BASE}/api/admin-services`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pin: PIN, idFornecedor: id, ...campos }) });
+        btn.textContent = r2.ok ? 'Salvo ✓' : 'Erro';
+        setTimeout(() => btn.textContent = 'Salvar', 1500);
+      });
+    });
+  }
+
+  destacarBtnEstado();
   let redesCadastradas = JSON.parse(localStorage.getItem('admin_redes') || '[]');
   if(redesCadastradas.length === 0){
     redesCadastradas = [{nome:'instagram',emoji:'📸'},{nome:'tiktok',emoji:'🎵'},{nome:'youtube',emoji:'▶️'},{nome:'facebook',emoji:'📘'},{nome:'twitter',emoji:'𝕏'}];
@@ -697,15 +910,6 @@
     return (custoConvertido*(1+lucro/100)).toFixed(4);
   }
 
-  let buscaTimeout;
-  $('busca-servico').addEventListener('input',(e)=>{
-    clearTimeout(buscaTimeout); const valor=e.target.value;
-    if(valor.length>0&&valor.length<3) return;
-    buscaTimeout=setTimeout(()=>carregarServicos(valor),500);
-  });
-  $('ver-ativos-btn').addEventListener('click',()=>{ $('busca-servico').value=''; carregarServicos('',true); });
-  $('ver-indisponiveis-btn').addEventListener('click',()=>{ $('busca-servico').value=''; carregarServicos('',false,true); });
-  $('ordenar-servico').addEventListener('change',()=>{ carregarServicos($('busca-servico').value); });
 
   // ===== Histórico do cliente =====
   async function abrirHistorico(clienteId, nomeCliente){
