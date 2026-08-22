@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
 
     const lucroGlobal = config?.lucroPercentualGlobal ?? 30;
     const cotacao = config?.cotacaoUSDBRL || null;
-    const ativos = Object.values(catalogo || {}).filter((s) => s && s.ativo);
+    const ativos = Object.values(catalogo || {}).filter((s) => s && s.ativo && !s.indisponivel);
 
     const { redeSocial, servicoTipo } = req.query;
 
