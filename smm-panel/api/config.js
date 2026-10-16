@@ -1,15 +1,17 @@
 // api/config.js
-const { fbPatch, fbGet, fbPut } = require('../lib/firebase');
+const { fbPatch, fbGet, fbPut, key: validKey } = require('../lib/firebase');
 const { saldoFornecedor } = require('../lib/fornecedor');
-const ADMIN_PIN = process.env.ADMIN_PIN || '891322';
+const { requireAdmin, session } = require('../lib/auth');
+const { endpoint, mutation, number, url: validateUrl, fail } = require('../lib/http');
 
-module.exports = async (req, res) => {
+module.exports = endpoint(async (req, res) => {
+  if (req.method === 'POST') mutation(req);
   if (req.method === 'GET') {
     const { pin, action } = req.query;
 
     // action=balance
     if (action === 'balance') {
-      if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
+      await requireAdmin(req);
       try {
         const data = await saldoFornecedor();
         const saldo = data.saldo ?? data.balance;
@@ -17,7 +19,7 @@ module.exports = async (req, res) => {
         if (saldo === undefined) return res.status(502).json({ erro: 'Resposta inesperada do fornecedor' });
         return res.status(200).json({ saldo, moeda });
       } catch (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: 'Não foi possível concluir a operação.' });
       }
     }
 
@@ -33,7 +35,7 @@ module.exports = async (req, res) => {
 
     // action=vitrine-admin — lista todos (admin)
     if (action === 'vitrine-admin') {
-      if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
+      await requireAdmin(req);
       const vitrine = await fbGet('vitrine').catch(() => null);
       const produtos = Object.entries(vitrine || {})
         .map(([id, p]) => ({ id, ...p }))
@@ -42,7 +44,7 @@ module.exports = async (req, res) => {
     }
 
     // sem PIN: público
-    if (!pin) {
+    if (!await session(req, 'admin', true)) {
       const configPublica = await fbGet('config').catch(() => null);
       return res.status(200).json({
         whatsappSuporte: configPublica?.whatsappSuporte || '',
@@ -51,7 +53,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
+    await requireAdmin(req);
 
     const config = await fbGet('config').catch(() => null);
     return res.status(200).json({
@@ -60,8 +62,9 @@ module.exports = async (req, res) => {
       lucroPercentualGlobal: config?.lucroPercentualGlobal ?? 30,
       cotacaoUSDBRL: config?.cotacaoUSDBRL || '',
       whatsappSuporte: config?.whatsappSuporte || '',
-      mpConfigurado: !!(config?.mercadopago?.accessToken),
-      appUrl: config?.appUrl || '',
+      mpConfigurado: !!(process.env.MP_ACCESS_TOKEN || config?.mercadopago?.accessToken),
+      appUrl: process.env.APP_URL || '',
+      webhookConfigurado: !!process.env.MP_WEBHOOK_SECRET,
       minRecarga: config?.minRecarga || 5,
       ordemServicos: config?.ordemServicos || 'padrao',
       ultimaVerificacaoFornecedor: config?.ultimaVerificacaoFornecedor || null,
@@ -71,12 +74,14 @@ module.exports = async (req, res) => {
 
   if (req.method === 'POST') {
     const { pin, action } = req.body || {};
-    if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
+    await requireAdmin(req);
 
     // action=vitrine-salvar — salva/atualiza produto da vitrine
     if (action === 'vitrine-salvar') {
       const { id, nome, descricao, preco, imagemUrl, linkContato, ativo, ordem } = req.body;
-      const produtoId = id || `prod_${Date.now()}`;
+      const produtoId = id ? validKey(id) : `prod_${Date.now()}`;
+      if (imagemUrl) validateUrl(imagemUrl, 'Imagem');
+      if (linkContato) validateUrl(linkContato, 'Contato');
       await fbPut(`vitrine/${produtoId}`, {
         nome: nome || '',
         descricao: descricao || '',
@@ -94,7 +99,7 @@ module.exports = async (req, res) => {
     if (action === 'vitrine-remover') {
       const { id } = req.body;
       if (!id) return res.status(400).json({ erro: 'id obrigatório' });
-      await fbPut(`vitrine/${id}`, null);
+      await fbPut(`vitrine/${validKey(id)}`, null);
       return res.status(200).json({ ok: true });
     }
 
@@ -103,13 +108,13 @@ module.exports = async (req, res) => {
             mpAccessToken, appUrl, minRecarga, ordemServicos } = req.body;
 
     const update = {};
-    if (url && key) update.fornecedor = { url, key };
-    if (lucroPercentualGlobal !== undefined) update.lucroPercentualGlobal = Number(lucroPercentualGlobal);
-    if (cotacaoUSDBRL !== undefined) update.cotacaoUSDBRL = cotacaoUSDBRL === '' ? null : Number(cotacaoUSDBRL);
+    if (url && key) { require('../lib/fornecedor').validateProviderUrl(url); update.fornecedor = { url, key }; }
+    if (lucroPercentualGlobal !== undefined) update.lucroPercentualGlobal = number(lucroPercentualGlobal, 'Margem', 0, 100000);
+    if (cotacaoUSDBRL !== undefined) update.cotacaoUSDBRL = cotacaoUSDBRL === '' ? null : number(cotacaoUSDBRL, 'Cotação', 0.000001, 100000);
     if (whatsappSuporte !== undefined) update.whatsappSuporte = whatsappSuporte;
-    if (mpAccessToken !== undefined) update.mercadopago = { accessToken: mpAccessToken };
-    if (appUrl !== undefined) update.appUrl = appUrl;
-    if (minRecarga !== undefined) update.minRecarga = minRecarga === null ? 5 : Number(minRecarga);
+    if (mpAccessToken) update.mercadopago = { accessToken: mpAccessToken };
+    if (appUrl && appUrl.replace(/\/$/, '') !== process.env.APP_URL?.replace(/\/$/, '')) fail('URL deve coincidir com APP_URL configurada no servidor');
+    if (minRecarga !== undefined) update.minRecarga = minRecarga === null ? 5 : number(minRecarga, 'Recarga mínima', 0.01, 1000000);
     if (ordemServicos !== undefined) update.ordemServicos = ordemServicos;
 
     await fbPatch('config', update);
@@ -117,4 +122,4 @@ module.exports = async (req, res) => {
   }
 
   return res.status(405).json({ erro: 'Método não permitido' });
-};
+});

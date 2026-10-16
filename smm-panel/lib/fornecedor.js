@@ -5,6 +5,12 @@
 // dentro das funções serverless (rodam no servidor da Vercel).
 
 const { fbGet } = require('./firebase');
+function validateProviderUrl(value) {
+  const u = new URL(value);
+  const hosts = (process.env.FORNECEDOR_ALLOWED_HOSTS || 'measmm.com').split(',').map(s=>s.trim().toLowerCase());
+  if(u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443') || !hosts.includes(u.hostname.toLowerCase())) throw new Error('URL do fornecedor não autorizada');
+  return u.href;
+}
 
 async function getConfigFornecedor() {
   const config = await fbGet('config/fornecedor');
@@ -19,7 +25,9 @@ async function chamarFornecedor(params) {
 
   const body = new URLSearchParams({ key, ...params });
 
-  const resp = await fetch(url, {
+  const resp = await fetch(validateProviderUrl(url), {
+    signal: AbortSignal.timeout(10000),
+    redirect: 'error',
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
@@ -58,9 +66,11 @@ async function saldoFornecedor() {
 }
 
 module.exports = {
+  validateProviderUrl,
   listarServicos,
   criarPedido,
   statusPedido,
   statusPedidos,
   saldoFornecedor,
 };
+

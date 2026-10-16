@@ -1,57 +1,30 @@
-// lib/firebase.js
-// Helper REST para o Firebase Realtime Database.
-// Usa sempre PATCH (nunca PUT) pra updates parciais, seguindo o mesmo
-// padrão dos outros projetos.
-//
-// Configure a variável de ambiente FIREBASE_URL na Vercel, ex:
-// https://seu-projeto-default-rtdb.firebaseio.com
-
-const FIREBASE_URL = process.env.FIREBASE_URL;
-
-function checkUrl() {
-  if (!FIREBASE_URL) {
-    throw new Error('FIREBASE_URL não configurada nas variáveis de ambiente da Vercel.');
+const { getApps, initializeApp, cert, applicationDefault } = require('firebase-admin/app');
+const { getDatabase } = require('firebase-admin/database');
+function db() {
+  if (!getApps().length) {
+    if (!process.env.FIREBASE_URL) throw new Error('FIREBASE_URL não configurada');
+    initializeApp({ databaseURL: process.env.FIREBASE_URL, credential: process.env.FIREBASE_SERVICE_ACCOUNT ? cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)) : applicationDefault() });
   }
+  return getDatabase();
 }
-
-async function fbGet(path) {
-  checkUrl();
-  const resp = await fetch(`${FIREBASE_URL}/${path}.json`);
-  if (!resp.ok) throw new Error(`Firebase GET falhou (${resp.status}) em ${path}`);
-  return resp.json();
+function key(value) {
+  const v = String(value ?? '');
+  if (!v || v.length > 128 || /[.#$\[\]/\u0000-\u001f\u007f]/.test(v)) { const e = new Error('Identificador inválido'); e.status = 400; throw e; }
+  return v;
 }
-
-async function fbPatch(path, data) {
-  checkUrl();
-  const resp = await fetch(`${FIREBASE_URL}/${path}.json`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!resp.ok) throw new Error(`Firebase PATCH falhou (${resp.status}) em ${path}`);
-  return resp.json();
+async function fbGet(path) { return (await db().ref(path).get()).val(); }
+async function fbPatch(path, data) { await db().ref(path).update(data); return data; }
+async function fbPut(path, data) { await db().ref(path).set(data); return data; }
+async function fbPost(path, data) { const ref = db().ref(path).push(); await ref.set(data); return { name: ref.key }; }
+async function fbTransaction(path, update) {
+  const ref = db().ref(path);
+  // Keep a listener until commit so conditionally aborted updates see server data,
+  // including on a cold serverless instance (the initial transaction cache may be null).
+  let listener;
+  await new Promise((resolve, reject) => { listener = ref.on('value', resolve, reject); });
+  try { const r = await ref.transaction(update, undefined, false); return { committed: r.committed, value: r.snapshot.val() }; }
+  finally { ref.off('value', listener); }
 }
+async function fbQuery(path, field, value) { return (await db().ref(path).orderByChild(field).equalTo(value).get()).val(); }
+module.exports = { fbGet, fbPatch, fbPut, fbPost, fbTransaction, fbQuery, key };
 
-async function fbPut(path, data) {
-  checkUrl();
-  const resp = await fetch(`${FIREBASE_URL}/${path}.json`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!resp.ok) throw new Error(`Firebase PUT falhou (${resp.status}) em ${path}`);
-  return resp.json();
-}
-
-async function fbPost(path, data) {
-  checkUrl();
-  const resp = await fetch(`${FIREBASE_URL}/${path}.json`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!resp.ok) throw new Error(`Firebase POST falhou (${resp.status}) em ${path}`);
-  return resp.json(); // { name: "-NxYz..." } -> id gerado
-}
-
-module.exports = { fbGet, fbPatch, fbPut, fbPost };

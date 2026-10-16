@@ -1,99 +1,70 @@
-# Painel de Engajamento (revenda SMM)
+# Fênix Social — painel SMM
 
-Sistema completo: página do cliente com filtros (rede social → tipo de
-serviço → opção específica → link → quantidade → pagamento) e painel
-admin (configurar fornecedor, sincronizar serviços, ativar/desativar,
-editar nomes e lucro, ver pedidos e saldo).
+Frontend estático em `public/`, com HTML e JavaScript separados, API Node.js serverless em `api/` e Firebase Realtime Database acessado exclusivamente pelo Firebase Admin SDK. PIX utiliza a API de pagamentos do Mercado Pago. Node.js 22 ou superior; pnpm 11.25.0.
 
-## Estrutura
+## Instalação e validação
 
-```
-/api          → funções serverless (Vercel) que falam com o fornecedor e o Firebase
-/lib          → helpers reutilizados pelas funções (fornecedor.js, firebase.js)
-/public       → index.html (widget do cliente) e admin.html (painel admin)
+```sh
+pnpm install --frozen-lockfile
+pnpm check
+pnpm test
+pnpm audit --prod
 ```
 
-## Passo a passo pra subir
+O lockfile registra versões exatas. Scripts de instalação de dependências ficam desativados em `.npmrc`; o painel usa as distribuições JavaScript já publicadas. DOMPurify 3.4.17 está versionado em `public/vendor/`, com sua licença, para não depender de CDN. Ao atualizá-lo, substitua também o arquivo vendorizado e execute os testes de frontend.
 
-### 1. Firebase
-Você já tem outros projetos com Firebase Realtime Database — pode usar um
-banco novo ou um node separado dentro de um existente. Só precisa da URL
-(ex: `https://seu-projeto-default-rtdb.firebaseio.com`). As regras podem
-ficar abertas pra leitura/escrita já que toda escrita sensível passa pelas
-funções serverless (que ficam no servidor, não no navegador do cliente).
+Os testes de backend usam um banco em memória com transações serializadas e um fornecedor simulado. Os testes das telas usam jsdom e DOMPurify reais. Eles não criam cobranças nem pedidos externos. Testes de produção, regras efetivamente instaladas e credenciais reais devem ser verificados em homologação antes da liberação.
 
-### 2. Subir no Vercel
-- Crie um repositório no GitHub com essa pasta inteira.
-- Importe o repositório na Vercel (vercel.com/new).
-- Em **Settings > Environment Variables**, adicione:
-  - `FIREBASE_URL` → a URL do seu Firebase
-  - `ADMIN_PIN` → o PIN que você quer usar no painel admin
-- Deploy.
+## Implantação e migração de uma instalação existente
 
-### 3. Configurar o fornecedor
-- Acesse `seu-projeto.vercel.app/admin.html`, entre com o PIN.
-- Cole a URL da API (`https://measmm.com/api/v2`) e a sua key.
-- Clique em **Salvar configuração**.
-- Clique em **Sincronizar com o fornecedor** — isso puxa todos os serviços
-  e salva no Firebase (todos entram **desativados** por padrão).
+Esta versão muda autenticação e acesso ao banco. Faça backup privado do Realtime Database e programe uma janela de manutenção para trocar código e regras juntos. Não publique este código com o banco ainda aberto.
 
-### 4. Organizar os serviços
-Pra cada serviço que você quiser oferecer:
-- Marque **Ativo**.
-- Preencha **Rede social** (ex: `instagram`, `tiktok`) e **Tipo**
-  (ex: `seguidores`, `curtidas`, `comentários`) — é isso que monta os
-  filtros em cascata na página do cliente. Use sempre os mesmos termos
-  (minúsculo, sem acento) pra agrupar corretamente.
-- Opcionalmente, dê um nome customizado e/ou um lucro % específico
-  (se deixar vazio, usa o lucro % global).
+1. Na Vercel, use `smm-panel` como Root Directory e Node.js 22 ou superior. Instale com pnpm usando o lockfile.
+2. Configure as variáveis de `.env.example`: `FIREBASE_URL`, `FIREBASE_SERVICE_ACCOUNT`, `APP_URL`, `ADMIN_PIN`, `CRON_SECRET`, `MP_WEBHOOK_SECRET` e os hosts autorizados do fornecedor. `APP_URL` precisa ser a origem HTTPS canônica, sem caminho. Use segredos aleatórios diferentes; o segredo do administrador deve ter pelo menos 12 caracteres. Nenhum segredo deve ter prefixo público.
+3. Instale o conteúdo de `database.rules.json` nas regras do Realtime Database. As regras negam leitura/escrita direta para todos os navegadores e definem os índices usados pela API. O Admin SDK autentica as operações do servidor. Nunca reabra as regras para fazer o painel funcionar.
+4. Com as mesmas variáveis configuradas em um terminal seguro, execute `node scripts/migrate.js` para uma prévia e `node scripts/migrate.js --apply` para converter as senhas antigas em hash, retirar chaves antigas em texto puro e converter os saldos para centavos. O script não imprime senhas nem tokens. Não mantenha a versão antiga escrevendo no banco durante a migração.
+5. Rotacione o PIN antigo, a chave do fornecedor e o token do Mercado Pago se o banco esteve aberto. O token do Mercado Pago pode ser definido em `MP_ACCESS_TOKEN` ou cadastrado no admin; a variável tem preferência. A configuração antiga no banco continua compatível, mas está protegida pelas novas regras.
+6. No Mercado Pago, configure eventos de **pagamento** para `https://SEU-DOMINIO/api/pagamento?action=webhook` e coloque a assinatura secreta gerada em `MP_WEBHOOK_SECRET`. Há um único webhook para pedidos e recargas. Notificações precisam de `x-signature`, `x-request-id` e `data.id`. O servidor verifica a assinatura, consulta o pagamento oficial e confere ID, referência, moeda e valor antes de creditar ou enviar o pedido.
+7. Publique, faça login novamente no cliente e no admin e gere novas chaves de API. As antigas deixam de autenticar. Confira login, cadastro, catálogo, desconto, recarga, PIX, pedido com saldo, consulta, suporte e revendedores com credenciais de teste. Confira também a rejeição de acessos a outro cliente.
+8. Confira o cron `/api/sync-services` e `CRON_SECRET`. Além de verificar disponibilidade do catálogo, ele recupera envios ainda não iniciados e estornos pendentes. O cron configurado roda diariamente às 06:00 UTC. O admin também pode executar a recuperação pela API descrita abaixo.
 
-### 5. Embutir na área do cliente
-O conteúdo de `public/index.html` é autocontido (HTML+CSS+JS na mesma
-página, sem dependências externas). Você pode:
-- Usar a página como está (iframe), ou
-- Copiar o conteúdo de dentro de `#engajar-widget` direto pro HTML da
-  área de cliente do seu site, ajustando só a constante `API_BASE` no
-  `<script>` pra apontar pro domínio onde as funções da Vercel estão.
+A implantação depende de acesso à Vercel, às regras/credenciais do Firebase e ao painel do Mercado Pago. Alterar arquivos no GitHub não configura esses serviços automaticamente. Reverter somente o código antigo reintroduz as falhas; mantenha regras fechadas e restaure o backup apenas após avaliar os pedidos e movimentos criados desde a migração.
 
-## Pagamento — o que falta
+## Segurança e modelo de dados
 
-O fluxo de pedido tem duas etapas pensadas exatamente pra isso:
-1. `POST /api/order` → cria o pedido com status `aguardando_pagamento`
-   (ainda NÃO manda nada pro fornecedor).
-2. `POST /api/confirm-payment` → só agora o pedido é enviado de verdade
-   pro fornecedor.
+- Cookies de sessão são `HttpOnly`, `Secure` e `SameSite=Strict`. A identidade vem da sessão; `clienteId` enviado pelo navegador nunca autoriza acesso. Admin e cliente têm sessões separadas. Mutação pelo navegador exige JSON e origem compatível.
+- Senhas novas usam scrypt, com salt individual, e têm de 8 a 128 caracteres. O login também migra senhas legadas para permitir uma transição controlada. A migração em lote é necessária para eliminar as senhas de clientes que não voltaram a fazer login.
+- O login administrativo não aceita PIN padrão, credencial na URL nem armazenamento em localStorage. Há limitação de tentativas compartilhada no banco. O header de IP utilizado é o fornecido pela borda confiável da Vercel; se hospedar fora dela, adapte-o ao seu proxy confiável.
+- Chaves de API são armazenadas como SHA-256 e aceitas somente em `Authorization: Bearer`. A autenticação verifica se o hash ainda é o atual do cliente; trocar ou revogar uma chave invalida imediatamente a anterior.
+- Carteiras usam `saldoCentavos` e um registro `movimentos` por operação, alterados na mesma transação. `saldo` é mantido por compatibilidade de leitura. Não edite saldos diretamente no Firebase.
+- Pedidos e recargas exigem `Idempotency-Key`. Repetir a mesma operação não duplica débito ou crédito. A numeração dos pedidos usa transação; pode ter lacunas, mas não depende de leitura/incremento separados.
+- Apenas uma execução pode adquirir o estado de envio ao fornecedor. Uma recusa explícita estorna o saldo ou solicita o estorno PIX. Timeout ou resposta ambígua fica em conferência, sem reenvio nem estorno automáticos. Isso evita pagar duas vezes por uma entrega que pode ter sido aceita.
+- No admin, **Conciliar envio** permite vincular um pedido já encontrado no fornecedor ou registrar que foi conferido e não foi criado, liberando o estorno. A decisão exige justificativa, é gravada no pedido e só fica disponível dois minutos após o início do envio.
+- Tickets e os demais fragmentos HTML passam por DOMPurify; campos de texto do cliente são escapados. A política CSP permite scripts apenas da própria origem, sem scripts ou handlers inline. Os hosts da API do fornecedor têm lista de permissão, timeout e bloqueio de redirects.
+- Serviços novos chegam desativados. Preço, desconto e indisponibilidade são validados pelo servidor tanto na interface quanto na API pública.
 
-Isso existe porque você não vai querer pagar o fornecedor por um pedido
-que o cliente ainda não pagou pra você. Falta plugar o Mercado Pago:
-- Gerar a cobrança PIX logo após o `order` ser criado (usando o
-  `valorTotal` retornado).
-- Configurar o webhook do Mercado Pago pra, quando o pagamento for
-  aprovado, chamar `POST /api/confirm-payment` com `{ pedidoId }`.
+Transações de cadastro usam a raiz do banco para reservar WhatsApp e usuário juntos. Carteiras mantêm o histórico de operações dentro da própria carteira. Essas escolhas priorizam consistência para este painel; em grande volume, planeje separar reservas e migrar o ledger para um banco transacional com índices, paginação e política de retenção. A listagem administrativa ainda carrega a coleção completa; as consultas por cliente usam índices.
 
-Por enquanto, esse endpoint está protegido só por PIN, pra você testar o
-fluxo manualmente direto no painel admin (dá pra criar um botão "marcar
-como pago" temporário se quiser testar o fluxo ponta a ponta antes de
-plugar o Mercado Pago — me chama que eu monto essa parte quando você
-tiver as credenciais).
+## Rotas principais
 
-## Endpoints
+| Rota | Uso |
+|---|---|
+| `/api/auth-cliente` | Login, cadastro, logout, sessão, login/logout administrativo, descontos e chaves |
+| `/api/services` | Catálogo disponível; aplica desconto quando há sessão do cliente |
+| `/api/order` | Criação autenticada de pedido; exige `Idempotency-Key` |
+| `/api/carteira` | Saldo próprio, recarga PIX e crédito administrativo idempotente |
+| `/api/carteira?action=historico` | Histórico autenticado de recargas |
+| `/api/pagamento` | Gerar PIX próprio, receber webhook e verificar pagamento real pelo admin |
+| `/api/confirm-payment` | Compatibilidade administrativa; confere pagamento no Mercado Pago |
+| `/api/pedidos` | Consulta de pedidos autorizados; conciliação/recuperação pelo admin |
+| `/api/tickets` | Suporte próprio e atendimento administrativo |
+| `/api/revendedor` | Rota reescrita para `auth-cliente`, sem criar outra função serverless |
+| `/api/public-api` | API com Bearer token para serviços, saldo, status e pedidos |
 
-| Rota | Método | Quem usa | O que faz |
-|---|---|---|---|
-| `/api/config` | GET/POST | admin | ler/salvar URL+key do fornecedor e lucro global |
-| `/api/sync-services` | POST | admin | puxa serviços do fornecedor pro Firebase |
-| `/api/admin-services` | GET/POST | admin | listar/editar serviços do catálogo |
-| `/api/admin-orders` | GET | admin | listar todos os pedidos |
-| `/api/balance` | GET | admin | saldo no fornecedor |
-| `/api/services` | GET | cliente | lista serviços ativos (com preço final) |
-| `/api/order` | POST | cliente | cria pedido (aguardando pagamento) |
-| `/api/confirm-payment` | POST | admin/webhook | confirma pagamento e envia pro fornecedor |
-| `/api/status` | GET | cliente/admin | consulta status do pedido (sincroniza com fornecedor) |
+Revendedores têm uma aba própria para cadastrar clientes vinculados e acompanhar seus pedidos; também podem comprar e recarregar na área comum. O desconto do revendedor aplica-se às compras da sua própria conta. Criar um cliente vinculado não concede acesso à carteira ou à sessão desse cliente.
 
-## Observação sobre moeda
+Para recuperação administrativa: `POST /api/pedidos` com `{"action":"recuperar"}`, sessão admin e `Content-Type: application/json`. Só pedidos cujo débito está registrado, pagamentos confirmados ou estornos pendentes são retomados. Envios com resultado desconhecido exigem conciliação no admin.
 
-A taxa que vem da API do fornecedor pode estar em USD (o endpoint de
-saldo retorna `moeda: "USD"`). Se for o caso, adicione no Firebase em
-`config/cotacaoUSDBRL` um número (ex: `5.40`) que o `/api/services` e o
-`/api/order` já usam automaticamente pra converter. Se a taxa já vier na
-moeda que você quer cobrar, deixe esse campo de fora.
+Exemplos da API pública ficam em `/api-docs.html`. Nas tentativas de um mesmo pedido, preserve a chave de idempotência; use uma nova apenas para uma compra nova. Status `estornado` significa que houve recusa e devolução; `revisao_fornecedor` exige conferência, não uma nova compra automática.
+
+Referências de implementação: [transações Firebase](https://firebase.google.com/docs/database/admin/save-data), [assinatura dos webhooks Mercado Pago](https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/additional-content/notifications/webhooks), [DOMPurify](https://github.com/cure53/DOMPurify).

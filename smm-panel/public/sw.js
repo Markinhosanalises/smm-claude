@@ -1,5 +1,5 @@
 // public/sw.js — Service Worker básico pro PWA
-const CACHE = 'engaja-v1';
+const CACHE = 'engaja-v2';
 const ARQUIVOS = ['/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -21,3 +21,4 @@ self.addEventListener('fetch', e => {
     fetch(e.request).catch(() => caches.match(e.request))
   );
 });
+

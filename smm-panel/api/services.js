@@ -47,14 +47,12 @@ function traduzirNome(nome) {
   return resultado;
 }
 
-function calcularPreco(servico, lucroGlobal, cotacao) {
-  const lucroPct = servico.lucroPercentual ?? lucroGlobal ?? 30;
-  const custoPorMil = servico.taxaCusto * (cotacao || 1);
-  const precoPorMil = custoPorMil * (1 + lucroPct / 100);
-  return Math.round(precoPorMil * 100) / 100;
-}
+const { rate } = require('../lib/pricing');
+const { session } = require('../lib/auth');
+const { endpoint } = require('../lib/http');
 
-module.exports = async (req, res) => {
+module.exports = endpoint(async (req, res) => {
+  const customer = (await session(req, 'cliente', true))?.cliente || {};
   if (req.method !== 'GET') {
     return res.status(405).json({ erro: 'Método não permitido' });
   }
@@ -114,12 +112,12 @@ module.exports = async (req, res) => {
         min: s.min,
         max: s.max,
         refill: s.refill,
-        precoPorMil: calcularPreco(s, lucroGlobal, cotacao),
+        precoPorMil: rate(s, config || {}, customer),
       };
     });
 
     return res.status(200).json({ servicos: resultado });
   } catch (err) {
-    return res.status(500).json({ erro: err.message });
+    return res.status(500).json({ erro: 'Não foi possível carregar os serviços.' });
   }
-};
+});

@@ -1,177 +1,76 @@
-// api/auth-cliente.js
-// Login por WhatsApp ou usuário + senha.
-// O clienteId continua sendo o WhatsApp (só dígitos) — é a chave primária.
-// O usuário é salvo como campo extra e indexado em /usuarios/{usuario} -> whatsapp
-// pra permitir login por usuário sem varrer todos os clientes.
-
-const { fbGet, fbPut, fbPatch } = require('../lib/firebase');
-
-function normalizarWhats(numero) {
-  return String(numero || '').replace(/\D/g, '');
+const crypto = require('node:crypto');
+const { fbGet, fbPut, fbPatch, fbTransaction, key } = require('../lib/firebase');
+const { endpoint, mutation, fail, text, number } = require('../lib/http');
+const auth = require('../lib/auth');
+function whatsapp(v) { const id = String(v || '').replace(/\D/g, ''); if (!/^\d{8,15}$/.test(id)) fail('WhatsApp inválido'); return id; }
+function usuario(v) { const u = text(v, 'Usuário', 40).toLowerCase(); if (!/^[a-z0-9_]{3,40}$/.test(u)) fail('Usuário deve ter 3 a 40 letras, números ou _'); return u; }
+async function register(body, owner, role = 'cliente', discount = 0) {
+  const id = whatsapp(body.whatsapp), user = usuario(body.usuario);
+  const c = { nome: text(body.nome, 'Nome', 100), whatsapp: id, usuario: user, passwordHash: await auth.hashPassword(body.senha), origem: String(body.origem || 'site').slice(0, 80), criadoEm: Date.now(), role, desconto: discount, ...(owner ? { revendedorId: owner } : {}) };
+  const r = await fbTransaction('', root => {
+    root = root || {};
+    if (root.clientes?.[id] || root.usuarios?.[user]) return;
+    return { ...root, clientes: { ...root.clientes, [id]: c }, usuarios: { ...root.usuarios, [user]: { whatsapp: id } } };
+  });
+  if (!r.committed) fail('WhatsApp ou usuário já cadastrado', 409);
+  return { clienteId: id, nome: c.nome, usuario: user };
 }
-
-function normalizarUsuario(u) {
-  return String(u || '').toLowerCase().replace(/[^a-z0-9_\.]/g, '');
-}
-
-module.exports = async (req, res) => {
-  if (req.method !== 'POST') return res.status(405).json({ erro: 'Método não permitido' });
-
-  const { acao, whatsapp, usuario, senha, nome } = req.body || {};
-
-  if (!senha) {
-    return res.status(400).json({ erro: 'Senha é obrigatória' });
-  }
-
-  try {
-    // ===== CADASTRO =====
-    if (acao === 'cadastro') {
-      const chave = normalizarWhats(whatsapp);
-      const user = normalizarUsuario(usuario);
-
-      if (!chave) return res.status(400).json({ erro: 'WhatsApp é obrigatório' });
-      if (!user || user.length < 3) return res.status(400).json({ erro: 'Usuário deve ter pelo menos 3 caracteres' });
-      if (!nome) return res.status(400).json({ erro: 'Nome é obrigatório' });
-
-      // verifica se WhatsApp já existe
-      const existenteWhats = await fbGet(`clientes/${chave}`).catch(() => null);
-      if (existenteWhats) {
-        return res.status(409).json({ erro: 'Já existe uma conta com esse WhatsApp.' });
-      }
-
-      // verifica se usuário já existe
-      const existenteUser = await fbGet(`usuarios/${user}`).catch(() => null);
-      if (existenteUser) {
-        return res.status(409).json({ erro: 'Esse usuário já está em uso. Escolha outro.' });
-      }
-
-      // salva o cliente
-      await fbPut(`clientes/${chave}`, {
-        nome,
-        whatsapp: chave,
-        usuario: user,
-        senha,
-        origem: req.body?.origem || 'nao_informado',
-        criadoEm: Date.now(),
-      });
-
-      // índice usuario -> whatsapp
-      await fbPut(`usuarios/${user}`, { whatsapp: chave });
-
-      return res.status(200).json({ clienteId: chave, nome, usuario: user });
-    }
-
-    // ===== LOGIN =====
-    if (acao === 'login') {
-      let chave = null;
-
-      if (whatsapp) {
-        // login por WhatsApp
-        chave = normalizarWhats(whatsapp);
-      } else if (usuario) {
-        // login por usuário — busca o WhatsApp no índice
-        const user = normalizarUsuario(usuario);
-        const idx = await fbGet(`usuarios/${user}`).catch(() => null);
-        if (!idx || !idx.whatsapp) {
-          return res.status(401).json({ erro: 'Usuário ou senha incorretos' });
-        }
-        chave = idx.whatsapp;
-      } else {
-        return res.status(400).json({ erro: 'Informe usuário ou WhatsApp' });
-      }
-
-      const cliente = await fbGet(`clientes/${chave}`).catch(() => null);
-      if (!cliente || cliente.senha !== senha) {
-        return res.status(401).json({ erro: 'Usuário/WhatsApp ou senha incorretos' });
-      }
-
-      return res.status(200).json({
-        clienteId: chave,
-        nome: cliente.nome || '',
-        usuario: cliente.usuario || '',
-      });
-    }
-
-    // ===== SET DESCONTO (admin) =====
-    if (acao === 'set-desconto') {
-      const { pin, clienteId: cid, desconto } = req.body || {};
-      if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
-      const id = normalizarWhats(cid) || cid;
-      await fbPatch(`clientes/${id}`, { desconto: Number(desconto || 0) });
-      return res.status(200).json({ ok: true });
-    }
-
-    // ===== GERAR CHAVE DE API =====
-    if (acao === 'gerar-chave') {
-      const { clienteId } = req.body || {};
-      const id = normalizarWhats(clienteId);
-      const cli = await fbGet(`clientes/${id}`).catch(() => null);
-      if (!cli || cli.senha !== senha) return res.status(401).json({ erro: 'Senha incorreta' });
-
-      const crypto = require('crypto');
-      if (cli.apiKey) {
-        await fbPatch(`api_keys/${cli.apiKey}`, { revogada: true }).catch(() => {});
-      }
-      const novaChave = 'fsx_' + crypto.randomBytes(24).toString('hex');
-      await fbPatch(`clientes/${id}`, { apiKey: novaChave });
-      await fbPut(`api_keys/${novaChave}`, { clienteId: id, criadoEm: Date.now() });
-      return res.status(200).json({ chave: novaChave });
-    }
-
-    // ===== REVOGAR CHAVE DE API =====
-    if (acao === 'revogar-chave') {
-      const { clienteId } = req.body || {};
-      const id = normalizarWhats(clienteId);
-      const cli = await fbGet(`clientes/${id}`).catch(() => null);
-      if (!cli || cli.senha !== senha) return res.status(401).json({ erro: 'Senha incorreta' });
-
-      if (cli.apiKey) {
-        await fbPatch(`api_keys/${cli.apiKey}`, { revogada: true }).catch(() => {});
-      }
-      await fbPatch(`clientes/${id}`, { apiKey: null });
-      return res.status(200).json({ ok: true });
-    }
-
-    return res.status(400).json({ erro: 'Ação inválida' });
-  } catch (err) {
-    return res.status(500).json({ erro: err.message });
-  }
-};
-
-// ===== Geração de chave de API (adicionado aqui pra economizar função) =====
-// Exporta como rota separada via module.exports.gerarChave
-const crypto = require('crypto');
-
-async function gerarChaveAPI(req, res) {
-  const { fbGet: fbG, fbPut: fbP, fbPatch: fbPa } = require('../lib/firebase');
-
+module.exports = endpoint(async (req, res) => {
+  if (req.query.route === 'revendedor') return require('../lib/resellers')(req, res);
   if (req.method === 'GET') {
-    const { clienteId, senha } = req.query;
-    if (!clienteId || !senha) return res.status(400).json({ erro: 'clienteId e senha obrigatórios' });
-    const cliente = await fbG(`clientes/${clienteId}`).catch(() => null);
-    if (!cliente || cliente.senha !== senha) return res.status(401).json({ erro: 'Não autorizado' });
-    return res.status(200).json({ chave: cliente.apiKey || null });
+    if (req.query.acao === 'admin-session') { await auth.requireAdmin(req); return res.json({ ok: true }); }
+    const s = await auth.session(req);
+    return res.json({ clienteId: s.clienteId, nome: s.cliente.nome, usuario: s.cliente.usuario, role: s.cliente.role || 'cliente', desconto: s.cliente.desconto || 0 });
   }
-
-  if (req.method === 'POST') {
-    const { clienteId, senha, acao } = req.body || {};
-    if (!clienteId || !senha) return res.status(400).json({ erro: 'clienteId e senha obrigatórios' });
-    const cliente = await fbG(`clientes/${clienteId}`).catch(() => null);
-    if (!cliente || cliente.senha !== senha) return res.status(401).json({ erro: 'Não autorizado' });
-
-    if (acao === 'revogar') {
-      if (cliente.apiKey) await fbPa(`api_keys/${cliente.apiKey}`, { revogada: true }).catch(() => {});
-      await fbPa(`clientes/${clienteId}`, { apiKey: null });
-      return res.status(200).json({ ok: true });
-    }
-
-    if (cliente.apiKey) await fbPa(`api_keys/${cliente.apiKey}`, { revogada: true }).catch(() => {});
-    const novaChave = 'fsx_' + crypto.randomBytes(24).toString('hex');
-    await fbPa(`clientes/${clienteId}`, { apiKey: novaChave });
-    await fbP(`api_keys/${novaChave}`, { clienteId, criadoEm: Date.now() });
-    return res.status(200).json({ chave: novaChave });
+  mutation(req);
+  const b = req.body || {}, acao = b.acao;
+  if (acao === 'admin-login') {
+    await auth.rateLimit(req, 'admin-login', 5);
+    const secret = process.env.ADMIN_PIN;
+    if (!secret || secret.length < 12 || secret.startsWith('SUBSTITUA_')) fail('Configure ADMIN_PIN com pelo menos 12 caracteres', 503);
+    if (typeof b.pin !== 'string' || !auth.equal(b.pin, secret)) fail('Credencial inválida', 401);
+    await auth.createSession(res, 'admin', 'admin');
+    return res.json({ ok: true });
   }
-  return res.status(405).json({ erro: 'Método não permitido' });
-}
+  if (acao === 'logout' || acao === 'admin-logout') {
+    await auth.logout(req, res, acao === 'admin-logout' ? 'admin' : 'cliente');
+    return res.json({ ok: true });
+  }
+  if (acao === 'set-desconto') {
+    await auth.requireAdmin(req);
+    const id = key(b.clienteId), desconto = number(b.desconto, 'Desconto', 0, 90);
+    if (!await fbGet('clientes/' + id)) fail('Cliente não encontrado', 404);
+    await fbPatch('clientes/' + id, { desconto });
+    return res.json({ ok: true });
+  }
+  if (acao === 'cadastro') {
+    await auth.rateLimit(req, 'cadastro', 5);
+    const result = await register(b);
+    await auth.createSession(res, result.clienteId);
+    return res.json({ ...result, role: 'cliente' });
+  }
+  if (acao === 'login') {
+    await auth.rateLimit(req, 'login');
+    let id;
+    if (b.whatsapp) id = whatsapp(b.whatsapp);
+    else { const idx = await fbGet('usuarios/' + usuario(b.usuario)); id = idx?.whatsapp; }
+    if (!id) fail('Usuário ou senha incorretos', 401);
+    const c = await auth.loginPassword(id, b.senha);
+    await auth.createSession(res, id);
+    return res.json({ clienteId: id, nome: c.nome || '', usuario: c.usuario || '', role: c.role || 'cliente' });
+  }
+  if (['gerar-chave', 'revogar-chave'].includes(acao)) {
+    const s = await auth.session(req);
+    await auth.rateLimit(req, 'api-key');
+    await auth.loginPassword(s.clienteId, b.senha);
+    const newKey = acao === 'gerar-chave' ? 'fsx_' + crypto.randomBytes(24).toString('hex') : null;
+    const r = await fbTransaction('clientes/' + s.clienteId, c => c ? { ...c, apiKeyHash: newKey ? auth.digest(newKey) : null, apiKey: null } : undefined);
+    if (!r.committed) fail('Conta indisponível', 409);
+    // Old plain keys may remain in the index, but authentication also checks the current hash.
+    if (newKey) await fbPut('api_keys/' + auth.digest(newKey), { clienteId: s.clienteId, criadoEm: Date.now() });
+    return res.json({ ok: true, ...(newKey ? { chave: newKey } : {}) });
+  }
+  fail('Ação inválida');
+});
+module.exports.register = register;
 
-module.exports.gerarChave = gerarChaveAPI;

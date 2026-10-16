@@ -2,11 +2,12 @@
 // POST { pin } → sincroniza catálogo com o fornecedor (admin)
 // GET  Authorization: Bearer CRON_SECRET → verifica serviços indisponíveis (cron)
 
-const { fbGet, fbPut, fbPatch } = require('../lib/firebase');
+const { fbGet, fbPut, fbPatch, fbTransaction, key } = require('../lib/firebase');
 const { listarServicos } = require('../lib/fornecedor');
 
-const ADMIN_PIN = process.env.ADMIN_PIN || '891322';
-const CRON_SECRET = process.env.CRON_SECRET || 'cron-smm-891322';
+const { requireAdmin, session } = require('../lib/auth');
+const { endpoint, mutation, number, url, fail } = require('../lib/http');
+const CRON_SECRET = process.env.CRON_SECRET;
 
 function detectarRede(categoria, nome){
   const texto = (categoria + ' ' + nome).toLowerCase();
@@ -53,16 +54,18 @@ function detectarTipo(categoria, nome){
   return 'Outros';
 }
 
-module.exports = async (req, res) => {
+module.exports = endpoint(async (req, res) => {
+  if (req.method === 'POST') mutation(req);
 
   // ===== GET — cron de verificação diária =====
   if (req.method === 'GET') {
     const authHeader = req.headers['authorization'] || '';
-    if (authHeader !== `Bearer ${CRON_SECRET}`) {
+    if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
       return res.status(401).json({ erro: 'Não autorizado' });
     }
 
     try {
+      const recuperados = await require('../lib/orders').recover();
       const servicosFornecedor = await listarServicos();
       if (!Array.isArray(servicosFornecedor)) {
         return res.status(502).json({ erro: 'Resposta inválida do fornecedor' });
@@ -96,16 +99,16 @@ module.exports = async (req, res) => {
         ultimaVerificacaoResultado: { desativados, reativados, total: servicosFornecedor.length },
       });
 
-      return res.status(200).json({ ok: true, totalFornecedor: servicosFornecedor.length, desativados, reativados, alteracoes });
+      return res.status(200).json({ ok: true, totalFornecedor: servicosFornecedor.length, desativados, reativados, alteracoes, recuperados });
     } catch (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: 'Não foi possível concluir a operação.' });
     }
   }
 
   // ===== POST action=detectar — redetecta rede/tipo em todos os serviços sem rede =====
   if (req.method === 'POST') {
     const { pin, action } = req.body || {};
-    if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
+    await requireAdmin(req);
 
     if (action === 'detectar') {
       try {
@@ -128,7 +131,7 @@ module.exports = async (req, res) => {
 
         return res.status(200).json({ ok: true, atualizados, total: Object.keys(catalogo).length });
       } catch (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: 'Não foi possível concluir a operação.' });
       }
     }
 
@@ -143,8 +146,9 @@ module.exports = async (req, res) => {
       const novoCatalogo = {};
 
       for (const s of servicosFornecedor) {
-        const id = String(s.serviço ?? s.service ?? s.id);
-        if (!id) continue;
+        const rawId = s.serviço ?? s.service ?? s.id;
+        if (rawId === undefined || rawId === null) continue;
+        const id = key(rawId);
         const existente = catalogoAtual[id] || {};
         const categoriaOrig = s.categoria ?? s.category ?? '';
         const nomeOrig = s.nome ?? s.name ?? '';
@@ -162,7 +166,7 @@ module.exports = async (req, res) => {
           max: Number(s.máximo ?? s.max ?? 0),
           refill: !!(s.reabastecer ?? s.refill),
           cancel: !!(s.cancelar ?? s.cancel),
-          ativo: existente.ativo ?? true,
+          ativo: existente.ativo ?? false,
           redeSocial: redeDetectada,
           servicoTipo: tipoDetectado,
           icone: existente.icone || '',
@@ -172,12 +176,33 @@ module.exports = async (req, res) => {
         };
       }
 
-      await fbPut('catalogo', novoCatalogo);
+      await fbTransaction('catalogo', current => {
+        const merged = { ...(current || {}) };
+        for (const [id, incoming] of Object.entries(novoCatalogo)) {
+          const prior = current?.[id];
+          const next = { ...incoming };
+          // Preserve concurrent administrator edits, including changes made during this fetch.
+          if (prior) for (const field of ['ativo','nomeCustomizado','redeSocial','servicoTipo','icone','lucroPercentual']) {
+            if (prior[field] !== undefined) next[field] = prior[field];
+          }
+          if (!Number.isFinite(next.taxaCusto) || next.taxaCusto <= 0 || !Number.isSafeInteger(next.min) || !Number.isSafeInteger(next.max) || next.min < 1 || next.max < next.min) {
+            next.ativo = false; next.indisponivel = true;
+            if (!Number.isFinite(next.taxaCusto)) next.taxaCusto = 0;
+            if (!Number.isFinite(next.min)) next.min = 0;
+            if (!Number.isFinite(next.max)) next.max = 0;
+          }
+          merged[id] = next;
+        }
+        for (const [id, prior] of Object.entries(current || {})) {
+          if (prior && !novoCatalogo[id]) merged[id] = { ...prior, indisponivel: true };
+        }
+        return merged;
+      });
       return res.status(200).json({ ok: true, totalServicos: Object.keys(novoCatalogo).length });
     } catch (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: 'Não foi possível concluir a operação.' });
     }
   }
 
   return res.status(405).json({ erro: 'Método não permitido' });
-};
+});
