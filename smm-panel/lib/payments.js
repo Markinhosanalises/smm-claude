@@ -74,7 +74,7 @@ async function confirmPayment(paymentId) {
     return { ok: true };
   }
   if (record.pagamento !== 'pix') fail('Pedido não utiliza PIX', 409);
-  await fbTransaction(path, current => current?.status === 'aguardando_pagamento' ? { ...current, status: 'pago', pagoEm: Date.now() } : undefined);
+  await fbTransaction(path, current => current?.status === 'aguardando_pagamento' ? { ...current, status: 'pago', pagoEm: Date.now(), workflowVersion: 2, valorCentavos: current.valorCentavos ?? Math.round(Number(current.valorTotal) * 100) } : undefined);
   await dispatch(ref);
   return { ok: true };
 }

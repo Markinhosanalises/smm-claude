@@ -21,6 +21,9 @@ async function dispatch(id) {
   key(id);
   const before = await fbGet('pedidos/' + id);
   if (!before) fail('Pedido não encontrado', 404);
+  // Legacy error records predate the durable dispatch/ledger protocol. They
+  // require manual review; an old timeout must never trigger an automatic refund.
+  if (before.status === 'erro_fornecedor' && !before.fingerprint && before.workflowVersion !== 2) return before;
   if (['erro_fornecedor', 'estorno_pix_pendente'].includes(before.status)) { await refund(id, before); return fbGet('pedidos/' + id); }
   const claim = await fbTransaction('pedidos/' + id, p => {
     if (!p || p.status !== 'pago') return;
@@ -64,7 +67,7 @@ async function create(customerId, customer, body, operation) {
       nomeServico: s.nomeCustomizado || s.nomeOriginal || '', link, quantidade: price.qtd,
       valorCentavos: price.cents, valorTotal: price.value, status: payment === 'saldo' ? 'processando_saldo' : 'aguardando_pagamento',
       clienteId: customerId, ...(customer.revendedorId ? { revendedorId: customer.revendedorId } : {}),
-      pagamento: payment, comments, fingerprint, criadoEm: Date.now()
+      pagamento: payment, comments, fingerprint, workflowVersion: 2, criadoEm: Date.now()
     };
     const r = await fbTransaction('pedidos/' + id, current => current || candidate);
     p = r.value;
@@ -89,6 +92,7 @@ async function recover() {
   let recovered = 0;
   for (const [id, p] of Object.entries(items || {})) {
     if (!p) continue;
+    if (!p.fingerprint && p.workflowVersion !== 2) continue;
     if (p.status === 'processando_saldo') {
       const w = await fbGet('carteiras/' + key(p.clienteId));
       if (w?.movimentos?.['order_' + id]?.centavos === -p.valorCentavos) {
