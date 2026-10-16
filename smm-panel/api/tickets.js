@@ -1,65 +1,32 @@
-// api/tickets.js
-// Tickets de suporte simples.
-//   POST (público, cliente)  -> abre um novo ticket
-//   GET  (admin, com pin)    -> lista todos os tickets
-//   PATCH-like via POST com "ticketId" + pin -> admin atualiza status/resposta
-
-const { fbGet, fbPost, fbPatch } = require('../lib/firebase');
-
-const ADMIN_PIN = process.env.ADMIN_PIN || '891322';
-
-module.exports = async (req, res) => {
+const { fbGet, fbPost, fbPatch, fbQuery, key } = require('../lib/firebase');
+const { endpoint, mutation, fail, text } = require('../lib/http');
+const { session, requireAdmin, rateLimit } = require('../lib/auth');
+module.exports = endpoint(async (req, res) => {
+  const admin = await session(req, 'admin', true);
   if (req.method === 'GET') {
-    const { pin, clienteId } = req.query;
-
-    // cliente: vê só os próprios tickets
-    if (!pin && clienteId) {
-      const tickets = (await fbGet('tickets')) || {};
-      const lista = Object.entries(tickets)
-        .filter(([, t]) => t && t.clienteId === clienteId)
-        .map(([id, t]) => ({ id, ...t }))
-        .sort((a, b) => b.criadoEm - a.criadoEm);
-      return res.status(200).json({ tickets: lista });
-    }
-
-    // admin: vê todos
-    if (pin !== ADMIN_PIN) return res.status(401).json({ erro: 'PIN inválido' });
-
-    const tickets = (await fbGet('tickets')) || {};
-    const lista = Object.entries(tickets)
-      .map(([id, t]) => ({ id, ...t }))
-      .sort((a, b) => b.criadoEm - a.criadoEm);
-    return res.status(200).json({ tickets: lista });
+    const s = admin || await session(req);
+    if (!admin && req.query.clienteId && req.query.clienteId !== s.clienteId) fail('Acesso negado', 403);
+    const items = admin ? await fbGet('tickets') : await fbQuery('tickets', 'clienteId', s.clienteId);
+    return res.json({ tickets: Object.entries(items || {}).filter(([,t]) => t).map(([id,t]) => ({ id, ...t })).sort((a,b) => b.criadoEm - a.criadoEm) });
   }
-
-  if (req.method === 'POST') {
-    const { pin, ticketId, status, resposta, clienteId, nome, whatsapp, mensagem, pedidoId } = req.body || {};
-
-    // admin atualizando um ticket existente
-    if (pin === ADMIN_PIN && ticketId) {
-      const update = {};
-      if (status !== undefined) update.status = status;
-      if (resposta !== undefined) update.resposta = resposta;
-      update.respondidoEm = Date.now();
-      await fbPatch(`tickets/${ticketId}`, update);
-      return res.status(200).json({ ok: true });
-    }
-
-    // cliente abrindo um ticket novo
-    if (!mensagem) return res.status(400).json({ erro: 'mensagem é obrigatória' });
-
-    const ticket = {
-      clienteId: clienteId || null,
-      nome: nome || 'Não informado',
-      whatsapp: whatsapp || null,
-      mensagem,
-      pedidoId: pedidoId || null,
-      status: 'aberto',
-      criadoEm: Date.now(),
-    };
-    const novo = await fbPost('tickets', ticket);
-    return res.status(200).json({ ticketId: novo.name, ...ticket });
+  mutation(req);
+  const b = req.body || {};
+  if (b.ticketId) {
+    await requireAdmin(req);
+    const id = key(b.ticketId);
+    if (!await fbGet('tickets/' + id)) fail('Ticket não encontrado', 404);
+    const update = { respondidoEm: Date.now() };
+    if (b.status !== undefined) { if (!['aberto','resolvido'].includes(b.status)) fail('Status inválido'); update.status = b.status; }
+    if (b.resposta !== undefined) update.resposta = text(b.resposta, 'Resposta', 5000);
+    await fbPatch('tickets/' + id, update);
+    return res.json({ ok: true });
   }
+  const s = await session(req);
+  await rateLimit(req, 'ticket', 10, 60000);
+  const pedidoId = b.pedidoId ? key(b.pedidoId) : null;
+  if (pedidoId) { const p = await fbGet('pedidos/' + pedidoId); if (!p || p.clienteId !== s.clienteId) fail('Pedido não encontrado',404); }
+  const ticket = { clienteId: s.clienteId, nome: s.cliente.nome, whatsapp: s.cliente.whatsapp, mensagem: text(b.mensagem, 'Mensagem', 5000), pedidoId, status:'aberto', criadoEm: Date.now() };
+  const r = await fbPost('tickets', ticket);
+  return res.json({ ticketId: r.name, ...ticket });
+});
 
-  return res.status(405).json({ erro: 'Método não permitido' });
-};

@@ -1,8 +1,21 @@
 {
   "name": "painel-engajamento",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
+  "scripts": {
+    "test": "node test/core.test.js && node test/frontend.test.js",
+    "check": "node scripts/check.js"
+  },
   "engines": {
-    "node": ">=18.0.0"
-  }
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "acorn": "^8.15.0",
+    "dompurify": "3.4.17",
+    "jsdom": "^27.0.0"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0"
+  },
+  "packageManager": "pnpm@11.25.0"
 }

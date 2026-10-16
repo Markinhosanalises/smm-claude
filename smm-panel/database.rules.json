@@ -1,0 +1,27 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "pedidos": {
+      ".indexOn": [
+        "clienteId",
+        "revendedorId"
+      ]
+    },
+    "tickets": {
+      ".indexOn": [
+        "clienteId"
+      ]
+    },
+    "depositos": {
+      ".indexOn": [
+        "clienteId"
+      ]
+    },
+    "clientes": {
+      ".indexOn": [
+        "revendedorId"
+      ]
+    }
+  }
+}

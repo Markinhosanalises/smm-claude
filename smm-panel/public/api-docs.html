@@ -80,17 +80,17 @@
 
     <h2 id="autenticacao">Autenticação</h2>
     <p>Todas as requisições precisam de uma chave de API. Gere a sua no painel em <strong>Configurações → API</strong>.</p>
-    <p>Passe a chave em toda requisição via header ou query param:</p>
+    <p>Passe a chave em toda requisição pelo cabeçalho Authorization:</p>
 
-    <h3>Via header (recomendado)</h3>
+    <h3>Via cabeçalho</h3>
     <pre>Authorization: Bearer fsx_sua_chave_aqui</pre>
 
-    <h3>Via query param</h3>
-    <pre>https://fenixsocial.site/api/public-api?action=balance&key=fsx_sua_chave_aqui</pre>
+    <p>Chaves na URL não são aceitas. Gere uma nova chave após esta atualização; as antigas deixam de funcionar.</p>
+    <p>Ao criar pedidos, envie também <code>Idempotency-Key</code> com um identificador único de 16 a 100 letras, números, hífens ou sublinhados. Reutilize-o em tentativas do mesmo pedido. Um novo pedido precisa de outra chave.</p>
 
     <h2 id="erros">Erros</h2>
-    <p>Quando algo dá errado, a API retorna um objeto com o campo <code>error</code>:</p>
-    <pre>{"error": "Saldo insuficiente. Disponível: R$ 5.00. Necessário: R$ 10.00"}</pre>
+    <p>Quando algo dá errado, a API retorna um objeto com o campo <code>erro</code>:</p>
+    <pre>{"erro": "Saldo insuficiente. Disponível: R$ 5.00. Necessário: R$ 10.00"}</pre>
     <table>
       <tr><th>Código</th><th>Significado</th></tr>
       <tr><td>200</td><td>Sucesso</td></tr>
@@ -108,7 +108,7 @@
       </div>
       <p>Retorna todos os serviços disponíveis com o preço já calculado para a sua conta (com desconto aplicado se houver).</p>
       <h3>Resposta</h3>
-      <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>[
+      <pre><button class="copy-btn" data-copy-pre>Copiar</button>[
   {
     "service": "1234",
     "name": "Instagram Seguidores Brasileiros",
@@ -139,7 +139,7 @@
       </div>
       <p>Retorna o saldo disponível na carteira da sua conta.</p>
       <h3>Resposta</h3>
-      <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>{
+      <pre><button class="copy-btn" data-copy-pre>Copiar</button>{
   "balance": "47.50",
   "currency": "BRL"
 }</pre>
@@ -162,14 +162,14 @@
         <tr><td>comments</td><td>string</td><td>(opcional) Comentários separados por linha</td></tr>
       </table>
       <h3>Exemplo de requisição</h3>
-      <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>{
+      <pre><button class="copy-btn" data-copy-pre>Copiar</button>{
   "action": "add",
   "service": "1234",
   "link": "https://instagram.com/seuperfil",
   "quantity": 500
 }</pre>
       <h3>Resposta</h3>
-      <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>{
+      <pre><button class="copy-btn" data-copy-pre>Copiar</button>{
   "order": "#00042",
   "status": "executando",
   "charge": "1.25",
@@ -192,7 +192,7 @@
         <tr><td>order</td><td>Número do pedido (ex: #00042)</td></tr>
       </table>
       <h3>Resposta</h3>
-      <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>{
+      <pre><button class="copy-btn" data-copy-pre>Copiar</button>{
   "order": "#00042",
   "status": "executando",
   "charge": "1.25",
@@ -212,19 +212,20 @@
 
     <h2 id="exemplo-curl">Exemplos — cURL</h2>
     <h3>Listar serviços</h3>
-    <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>curl "https://fenixsocial.site/api/public-api?action=services" \
+    <pre><button class="copy-btn" data-copy-pre>Copiar</button>curl "https://fenixsocial.site/api/public-api?action=services" \
   -H "Authorization: Bearer fsx_sua_chave_aqui"</pre>
 
     <h3>Criar pedido</h3>
-    <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>curl -X POST "https://fenixsocial.site/api/public-api?action=add" \
+    <pre><button class="copy-btn" data-copy-pre>Copiar</button>curl -X POST "https://fenixsocial.site/api/public-api?action=add" \
   -H "Authorization: Bearer fsx_sua_chave_aqui" \
   -H "Content-Type: application/json" \
+  -H "Idempotency-Key: pedido_exemplo_0001" \
   -d '{"action":"add","service":"1234","link":"https://instagram.com/seuperfil","quantity":500}'</pre>
 
     <h2 id="exemplo-js">Exemplos — JavaScript</h2>
-    <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>const API_KEY = 'fsx_sua_chave_aqui';
+    <pre><button class="copy-btn" data-copy-pre>Copiar</button>const API_KEY = 'fsx_sua_chave_aqui';
 const BASE = 'https://fenixsocial.site/api/public-api';
-const headers = { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' };
+const headers = { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() };
 
 // Listar serviços
 const services = await fetch(`${BASE}?action=services`, { headers }).then(r => r.json());
@@ -242,11 +243,12 @@ console.log(order); // { order: '#00042', status: 'executando', charge: '1.25', 
 const status = await fetch(`${BASE}?action=status&order=${order.order}`, { headers }).then(r => r.json());</pre>
 
     <h2 id="exemplo-python">Exemplos — Python</h2>
-    <pre><button class="copy-btn" onclick="copiar(this)">Copiar</button>import requests
+    <pre><button class="copy-btn" data-copy-pre>Copiar</button>import requests
+import uuid
 
 API_KEY = 'fsx_sua_chave_aqui'
 BASE = 'https://fenixsocial.site/api/public-api'
-HEADERS = {'Authorization': f'Bearer {API_KEY}', 'Content-Type': 'application/json'}
+HEADERS = {'Authorization': f'Bearer {API_KEY}', 'Idempotency-Key': str(uuid.uuid4()), 'Content-Type': 'application/json'}
 
 # Listar serviços
 services = requests.get(f'{BASE}?action=services', headers=HEADERS).json()
@@ -273,29 +275,7 @@ status = requests.get(f'{BASE}?action=status&order={order["order"]}', headers=HE
   </main>
 </div>
 
-<script>
-  function copiar(btn){
-    const pre = btn.parentElement;
-    const texto = pre.innerText.replace('Copiar','').trim();
-    navigator.clipboard.writeText(texto).then(()=>{
-      btn.textContent = 'Copiado ✓';
-      setTimeout(()=>btn.textContent='Copiar', 2000);
-    });
-  }
-
-  // highlight ativo na sidebar
-  const links = document.querySelectorAll('.sidebar a');
-  window.addEventListener('scroll', ()=>{
-    const pos = window.scrollY + 100;
-    links.forEach(a=>{
-      const id = a.getAttribute('href').slice(1);
-      const el = document.getElementById(id);
-      if(el && el.offsetTop <= pos && el.offsetTop + el.offsetHeight > pos){
-        links.forEach(l=>l.classList.remove('ativa'));
-        a.classList.add('ativa');
-      }
-    });
-  });
-</script>
+<script src="/api-docs.js"></script>
 </body>
 </html>
+

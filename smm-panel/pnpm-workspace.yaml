@@ -1,0 +1,4 @@
+# These packages ship ready-to-use JavaScript; their install scripts are unnecessary.
+allowBuilds:
+  '@firebase/util': false
+  protobufjs: false
