@@ -36,3 +36,40 @@ test('API client reuses idempotency after lost response and rotates after succes
  const w=p.w;w.eval(fs.readFileSync(path.join(base,'api-client.js'),'utf8').replace('const nativeFetch = window.fetch.bind(window);',`const nativeFetch = async (u,o) => { window.testIds.push(o.headers.get('Idempotency-Key')); if(window.testFail)throw new Error('lost');return new window.Response('{}',{status:200}); };`));w.testIds=ids;w.testFail=fail;
  const options={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({valor:10})};await assert.rejects(w.smmFetch('/api/carteira',options));w.testFail=false;await w.smmFetch('/api/carteira',options);await w.smmFetch('/api/carteira',options);assert.equal(ids[0],ids[1]);assert.notEqual(ids[1],ids[2]);}finally{p.dom.window.close();}
 });
+
+test('admin keeps table cells and previews global/custom percentage prices consistently',async()=>{
+ let saved;
+ const services=[{idFornecedor:139,ativo:true,nomeCustomizado:'Serviço "teste"',categoriaOriginal:'Likes',redeSocial:'instagram',servicoTipo:'Curtidas',taxaCusto:0.7469,lucroPercentual:200},{idFornecedor:187,ativo:true,nomeOriginal:'Likes',taxaCusto:2}];
+ const p=await page('admin.html',async(u,o)=>{
+  if(u.pathname==='/api/auth-cliente')return{ok:true};
+  if(u.pathname==='/api/config'){
+   if(o.method==='POST'){saved=JSON.parse(o.body);return{ok:true};}
+   await new Promise(r=>setTimeout(r,50));return{lucroPercentualGlobal:50,cotacaoUSDBRL:5.4};
+  }
+  if(u.pathname==='/api/admin-services')return{servicos:services,pagina:1,totalPaginas:1,porPagina:100,total:2,redesDisponiveis:[],tiposDisponiveis:[]};
+  return common(u);
+ });
+ try{
+  await new Promise(r=>setTimeout(r,100));
+  const rows=p.w.document.querySelectorAll('#tabela-servicos-body tr');
+  assert.equal(rows.length,2);assert.equal(rows[0].cells.length,11);assert.equal(rows[1].cells.length,11);
+  assert.equal(rows[0].querySelector('[data-campo="nomeCustomizado"]').value,'Serviço "teste"');
+  assert.equal(rows[0].querySelector('.preco-final').textContent,'R$ 12.10');
+  assert.equal(rows[1].querySelector('.preco-final').textContent,'R$ 16.20');
+  p.w.document.querySelector('#cfg-lucro').value='0';p.w.document.querySelector('#cfg-salvar').click();await wait();
+  assert.equal(saved.lucroPercentualGlobal,'0');
+  assert.equal(rows[0].querySelector('.preco-final').textContent,'R$ 12.10');
+  assert.equal(rows[1].querySelector('.preco-final').textContent,'R$ 10.80');
+  const margin=rows[0].querySelector('[data-campo="lucroPercentual"]');margin.value='';margin.dispatchEvent(new p.w.Event('input'));
+  assert.equal(rows[0].querySelector('.preco-final').textContent,'R$ 4.03');
+  rows[0].querySelector('.btn-salvar-servico').click();await wait();
+  const save=p.calls.find(c=>c.url.pathname==='/api/admin-services'&&c.options.method==='POST');
+  assert.equal(JSON.parse(save.options.body).lucroPercentual,'');
+  assert.deepEqual(p.errors,[]);
+ }finally{p.dom.window.close();}
+});
+
+test('table sanitizer preserves cells while removing executable content',async()=>{
+ const p=await page('app.html',u=>u.pathname==='/api/auth-cliente'?{status:401,body:{}}:common(u));
+ try{const row=p.w.document.createElement('tr');row.innerHTML=p.w.safeRowHTML('<td><img src=x onerror="alert(1)"><svg onload="alert(1)"></svg><a href="javascript:alert(1)">x</a></td><td><input data-campo="lucroPercentual" value="200"></td>');assert.equal(row.cells.length,2);assert(!row.querySelector('[onerror],[onload],svg'));assert.equal(row.querySelector('a').getAttribute('href'),null);assert.equal(row.querySelector('input').value,'200');}finally{p.dom.window.close();}
+});

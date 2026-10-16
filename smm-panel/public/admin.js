@@ -15,10 +15,10 @@
     } catch { $('login-msg').textContent='Erro de conexão'; }
   });
 
-  function entrarNoAdmin(){
+  async function entrarNoAdmin(){
     $('login-gate').style.display = 'none';
     $('painel').style.display = 'block';
-    carregarConfig(); carregarServicos(); carregarPedidos();
+    await carregarConfig(); carregarServicos(); carregarPedidos();
     carregarTickets(); carregarClientes(); carregarIntegracoes(); carregarVitrine(); carregarRevendedores();
   }
 
@@ -48,7 +48,7 @@
     const data = await r.json();
     $('cfg-msg').textContent = r.ok ? 'Configuração salva.' : (data.erro || 'Erro');
     $('cfg-msg').className = 'msg ' + (r.ok ? 'ok' : 'erro');
-    if(r.ok){ lucroGlobalAtual = Number($('cfg-lucro').value || 30); cotacaoAtual = Number($('cfg-cotacao').value || 0); }
+    if(r.ok){ lucroGlobalAtual = Number($('cfg-lucro').value || 30); cotacaoAtual = Number($('cfg-cotacao').value || 0); atualizarPrecosServicos(); }
   });
 
   $('cfg-saldo-btn').addEventListener('click', async () => {
@@ -120,7 +120,7 @@
       const tr = document.createElement('tr');
       if(s.indisponivel) tr.style.background = 'rgba(255,80,80,.06)';
       const precoFinalInicial = calcularPrecoFinal(s.taxaCusto, s.lucroPercentual);
-      tr.innerHTML = safeHTML(`
+      tr.innerHTML = safeRowHTML(`
         <td><input type="checkbox" ${escapeHTML(s.ativo ? 'checked' : '')} data-campo="ativo" data-id="${escapeHTML(s.idFornecedor)}"></td>
         <td>
           <select data-campo="icone" data-id="${escapeHTML(s.idFornecedor)}">
@@ -145,7 +145,7 @@
         </select></td>
         <td><input value="${escapeHTML(s.servicoTipo || '')}" placeholder="seguidores" data-campo="servicoTipo" data-id="${escapeHTML(s.idFornecedor)}"></td>
         <td>${escapeHTML(s.taxaCusto)}</td>
-        <td><input class="small-input" type="number" value="${escapeHTML(s.lucroPercentual ?? '')}" data-campo="lucroPercentual" data-id="${escapeHTML(s.idFornecedor)}" data-custo="${escapeHTML(s.taxaCusto)}"></td>
+        <td><input class="small-input" type="number" min="0" step="0.01" placeholder="Global" value="${escapeHTML(s.lucroPercentual ?? '')}" data-campo="lucroPercentual" data-id="${escapeHTML(s.idFornecedor)}" data-custo="${escapeHTML(s.taxaCusto)}"></td>
         <td class="preco-final" data-id="${escapeHTML(s.idFornecedor)}">R$ ${precoFinalInicial}</td>
         <td><button class="secundario btn-salvar-servico" data-id="${escapeHTML(s.idFornecedor)}">Salvar</button></td>
       `);
@@ -214,7 +214,7 @@
     lista.forEach((p) => {
       const cli = (clientesCache||{})[p.clienteId];
       const tr = document.createElement('tr');
-      tr.innerHTML = safeHTML(`
+      tr.innerHTML = safeRowHTML(`
         <td style="color:var(--accent);font-weight:700;">${escapeHTML(p.numeroPedido || '-')}</td>
         <td style="font-size:12px;">
           <div style="font-weight:600;">${escapeHTML(cli?.nome || p.clienteId || '-')}</div>
@@ -366,7 +366,7 @@
       const tr = document.createElement('tr');
       if(s.indisponivel) tr.style.background = 'rgba(255,80,80,.06)';
       const precoFinalInicial = calcularPrecoFinal(s.taxaCusto, s.lucroPercentual);
-      tr.innerHTML = safeHTML(`
+      tr.innerHTML = safeRowHTML(`
         <td><input type="checkbox" ${escapeHTML(s.ativo?'checked':'')} data-campo="ativo" data-id="${escapeHTML(s.idFornecedor)}"></td>
         <td>
           <select data-campo="icone" data-id="${escapeHTML(s.idFornecedor)}" style="margin-bottom:0;padding:4px 6px;font-size:13px;">
@@ -392,7 +392,7 @@
           </select>
         </td>
         <td style="font-family:monospace;font-size:12px;color:var(--accent);">${escapeHTML(s.idFornecedor)}</td>
-        <td><input value="${escapeHTML((s.nomeCustomizado||'').replace(/"/g,'&quot;'))}" data-campo="nomeCustomizado" data-id="${escapeHTML(s.idFornecedor)}" style="font-family:inherit;" placeholder="Nome (aceita emoji 🇧🇷)"></td>
+        <td><input value="${escapeHTML(s.nomeCustomizado||'')}" data-campo="nomeCustomizado" data-id="${escapeHTML(s.idFornecedor)}" style="font-family:inherit;" placeholder="Nome (aceita emoji 🇧🇷)"></td>
         <td style="font-size:11px;color:var(--muted);max-width:120px;">${escapeHTML(s.categoriaOriginal||'')}</td>
         <td><select data-campo="redeSocial" data-id="${escapeHTML(s.idFornecedor)}" style="margin-bottom:0;padding:4px 6px;font-size:12px;">
           <option value="">--</option>
@@ -400,7 +400,7 @@
         </select></td>
         <td><input value="${escapeHTML(s.servicoTipo||'')}" placeholder="tipo" data-campo="servicoTipo" data-id="${escapeHTML(s.idFornecedor)}" style="font-size:12px;"></td>
         <td style="font-size:12px;">${escapeHTML(s.taxaCusto)}</td>
-        <td><input type="number" value="${escapeHTML(s.lucroPercentual??'')}" data-campo="lucroPercentual" data-id="${escapeHTML(s.idFornecedor)}" data-custo="${escapeHTML(s.taxaCusto)}" style="font-size:12px;"></td>
+        <td><input type="number" min="0" step="0.01" placeholder="Global" value="${escapeHTML(s.lucroPercentual??'')}" data-campo="lucroPercentual" data-id="${escapeHTML(s.idFornecedor)}" data-custo="${escapeHTML(s.taxaCusto)}" style="font-size:12px;"></td>
         <td class="preco-final" data-id="${escapeHTML(s.idFornecedor)}" style="font-size:12px;">R$ ${precoFinalInicial}</td>
         <td><button class="secundario btn-salvar-servico" data-id="${escapeHTML(s.idFornecedor)}" style="font-size:12px;padding:6px 10px;">Salvar</button></td>
       `);
@@ -502,7 +502,7 @@
     tbody.innerHTML = safeHTML('');
     (data.tickets||[]).forEach((t) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = safeHTML(`
+      tr.innerHTML = safeRowHTML(`
         <td>${escapeHTML(t.nome||'')}</td><td>${escapeHTML(t.whatsapp||t.clienteId||'')}</td>
         <td style="max-width:200px;">${escapeHTML(t.mensagem||'')}</td>
         <td>${escapeHTML(t.pedidoId?t.pedidoId.slice(-6):'-')}</td>
@@ -569,7 +569,7 @@
     const tbody=$('tabela-clientes-body'); tbody.innerHTML=safeHTML('');
     lista.forEach((c)=>{
       const tr=document.createElement('tr');
-      tr.innerHTML=safeHTML(`
+      tr.innerHTML = safeRowHTML(`
         <td>${escapeHTML(c.nome||'-')}</td>
         <td style="color:var(--accent);">${escapeHTML(c.usuario?'@'+c.usuario:'-')}</td>
         <td>${escapeHTML(c.whatsapp&&c.whatsapp!=='undefined'?c.whatsapp:c.clienteId)}</td>
@@ -628,10 +628,16 @@
     $('creditar-manual-btn').disabled=false;
   });
 
+  function atualizarPrecosServicos(){
+    document.querySelectorAll('input[data-campo="lucroPercentual"]').forEach(input=>{
+      const cell=input.closest('tr').querySelector('.preco-final');
+      if(cell) cell.textContent='R$ '+calcularPrecoFinal(input.dataset.custo,input.value);
+    });
+  }
   function calcularPrecoFinal(custo, lucroPercentual){
     const lucro=(lucroPercentual===''||lucroPercentual===null||lucroPercentual===undefined)?lucroGlobalAtual:Number(lucroPercentual);
     const custoConvertido=Number(custo)*(cotacaoAtual||1);
-    return (custoConvertido*(1+lucro/100)).toFixed(4);
+    return (Math.round(custoConvertido*(1+lucro/100)*100)/100).toFixed(2);
   }
 
 

@@ -487,7 +487,7 @@
       tbody.innerHTML=safeHTML('');
       (data.pedidos||[]).forEach(p=>{
         const tr=document.createElement('tr'); tr.style.borderBottom='1px solid var(--line)';
-        tr.innerHTML=safeHTML(`<td style="padding:8px 6px;color:var(--accent);font-weight:700;">${escapeHTML(p.numeroPedido||'-')}</td><td style="padding:8px 6px;font-size:12px;">${escapeHTML(p.clienteId||'-')}</td><td style="padding:8px 6px;font-size:12px;">${escapeHTML(p.nomeServico||'-')}</td><td style="padding:8px 6px;">${escapeHTML(p.quantidade)}</td><td style="padding:8px 6px;">R$ ${escapeHTML(Number(p.valorTotal).toFixed(2))}</td><td style="padding:8px 6px;"><span class="status-pill ${escapeHTML(p.status)}">${escapeHTML(formatarStatus(p.status))}</span></td>`);
+        tr.innerHTML = safeRowHTML(`<td style="padding:8px 6px;color:var(--accent);font-weight:700;">${escapeHTML(p.numeroPedido||'-')}</td><td style="padding:8px 6px;font-size:12px;">${escapeHTML(p.clienteId||'-')}</td><td style="padding:8px 6px;font-size:12px;">${escapeHTML(p.nomeServico||'-')}</td><td style="padding:8px 6px;">${escapeHTML(p.quantidade)}</td><td style="padding:8px 6px;">R$ ${escapeHTML(Number(p.valorTotal).toFixed(2))}</td><td style="padding:8px 6px;"><span class="status-pill ${escapeHTML(p.status)}">${escapeHTML(formatarStatus(p.status))}</span></td>`);
         tbody.appendChild(tr);
       });
       if(!data.pedidos?.length) $('rev-pedidos-msg').textContent='Nenhum pedido ainda.';
