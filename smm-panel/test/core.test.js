@@ -47,3 +47,20 @@ test('failed balance purchase is terminal and is never charged by recovery later
 test('catalog sync keeps overrides, disables new services and marks missing ones unavailable',async()=>{reset();set('catalogo/1/nomeCustomizado','Custom');set('catalogo/old',{ativo:true,nomeOriginal:'Removed'});const token='b'.repeat(64);set('sessions/'+auth.digest(token),{clienteId:'admin',role:'admin',expiresAt:Date.now()+60000});const req=request();req.headers.cookie='smm_admin='+token;const r=await call(require('../api/sync-services'),req);assert.equal(r.statusCode,200);assert.equal(get('catalogo/1/nomeCustomizado'),'Custom');assert.equal(get('catalogo/1/ativo'),true);assert.equal(get('catalogo/2/ativo'),false);assert.equal(get('catalogo/old/indisponivel'),true);});
 test('public API refreshes provider status only after checking order ownership',async()=>{reset();const token='fsx_'+'c'.repeat(48),hash=auth.digest(token);set('api_keys/'+hash,{clienteId:'5511999999999'});set('clientes/5511999999999/apiKeyHash',hash);set('pedidos/api_status',{clienteId:'5511999999999',numeroPedido:'#00001',status:'executando',orderIdFornecedor:10,valorTotal:10});const req=request({method:'GET',query:{action:'status',order:'#00001'},headers:{authorization:'Bearer '+token}});const r=await call(require('../api/public-api'),req);assert.equal(r.statusCode,200);assert.equal(r.body.status,'concluido');assert.equal(get('pedidos/api_status/status'),'concluido');});
 test('legacy provider errors are retained for review without sending or refunding',async()=>{reset();set('pedidos/legacy_error',{clienteId:'5511999999999',pagamento:'saldo',status:'erro_fornecedor',valorTotal:10});await orders.recover();await orders.dispatch('legacy_error');assert.equal(providerCalls,0);assert.equal(get('pedidos/legacy_error/status'),'erro_fornecedor');assert.equal(get('carteiras/5511999999999'),null);});
+
+test('percentage configuration and overrides persist and price consistently across APIs',async()=>{
+ reset();const token='b'.repeat(64);set('sessions/'+auth.digest(token),{clienteId:'admin',role:'admin',expiresAt:Date.now()+60000});
+ const admin=body=>{const r=request({body});r.headers.cookie='smm_admin='+token;return r;};
+ assert.equal((await call(require('../api/config'),admin({lucroPercentualGlobal:50,cotacaoUSDBRL:5.4}))).statusCode,200);
+ set('catalogo/1/taxaCusto',0.7469);
+ assert.equal((await call(require('../api/admin-services'),admin({idFornecedor:'1',lucroPercentual:200}))).statusCode,200);
+ assert.equal(pricing.rate(get('catalogo/1'),get('config')),12.1);
+ assert.equal((await call(require('../api/admin-services'),admin({idFornecedor:'1',lucroPercentual:''}))).statusCode,200);
+ assert.equal(pricing.rate(get('catalogo/1'),get('config')),6.05);
+ assert.equal((await call(require('../api/config'),admin({lucroPercentualGlobal:0}))).statusCode,200);
+ assert.equal(pricing.rate(get('catalogo/1'),get('config')),4.03);
+ assert.equal((await call(require('../api/admin-services'),admin({idFornecedor:'1',lucroPercentual:-1}))).statusCode,400);
+ const apiToken='fsx_'+'c'.repeat(48),hash=auth.digest(apiToken);set('api_keys/'+hash,{clienteId:'5511999999999'});set('clientes/5511999999999/apiKeyHash',hash);
+ const result=await call(require('../api/public-api'),request({method:'GET',query:{action:'services'},headers:{authorization:'Bearer '+apiToken}}));
+ assert.equal(result.statusCode,200);assert.equal(result.body.find(s=>String(s.service)==='1').rate,3.63);
+});
