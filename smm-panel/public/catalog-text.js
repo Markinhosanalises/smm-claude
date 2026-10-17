@@ -21,13 +21,13 @@ function features(s){var a=[];if(s.refill)a.push('Reposição disponível');if(s
 function score(s){return (s.refill?2:0)+(s.cancel?1:0);}
 function priority(s,now){
  var raw=String(s.nomeOriginal||s.name||s.nome||'')+' '+String(s.categoriaOriginal||s.category||s.categoria||'');
- var real=s.reaisAnunciados===true||(/\b(?:real|reais)\b/i.test(raw)&&!/(?:\b(?:no|not|non|sem|nao|não)\s*[- ]?\s*(?:real|reais|organic)|\b(?:fake|bots?|rob[oô]s?)\b)/i.test(raw));
+ var real=typeof s.reaisAnunciados==='boolean'?s.reaisAnunciados:(/\b(?:real|reais)\b/i.test(raw)&&!/(?:\b(?:no|not|non|sem|nao|não)\s*[- ]?\s*(?:real|reais|organic)|\b(?:fake|bots?|rob[oô]s?)\b)/i.test(raw));
  var added=Number(s.adicionadoEm||0),time=now===undefined?Date.now():now;
  var fresh=s.novo===true||(added>0&&added<=time&&time-added<=30*86400000);
  var advertised=s.novidadeAnunciada===true||/\bnew\s+(?:services?|arrivals?)\b|\bnovos?\s+servi[cç]os?\b/i.test(raw);
  return {reaisAnunciados:real,novo:fresh,novidadeAnunciada:advertised};
 }
 function compare(a,b){var pa=priority(a),pb=priority(b);return Number(pb.reaisAnunciados)-Number(pa.reaisAnunciados)||Number(pb.novo||pb.novidadeAnunciada)-Number(pa.novo||pa.novidadeAnunciada)||(b.ordemRecursos===undefined?score(b):b.ordemRecursos)-(a.ordemRecursos===undefined?score(a):a.ordemRecursos)||String(a.nome||a.nomeOriginal||a.name||'').localeCompare(String(b.nome||b.nomeOriginal||b.name||''),'pt-BR')||String(a.id||a.idFornecedor||'').localeCompare(String(b.id||b.idFornecedor||''));}
-function present(s){var custom=s.nomeCustomizado,original=s.nomeOriginal||s.name;if(custom&&technical({...s,nomeOriginal:custom}))custom='';var details=[s.descricaoOriginal||s.description||'',custom&&custom!==original?original:''].filter(Boolean).join(' — ');return {...priority(s),nome:translate(custom||original),categoria:translate(s.categoriaOriginal||s.category||''),descricao:translate(details),redeSocial:s.redeSocial||network(s.categoriaOriginal||s.category,s.nomeOriginal||s.name),servicoTipo:s.servicoTipo||objective(s.categoriaOriginal||s.category,s.nomeOriginal||s.name,s.tipo||s.type||'Default'),recursos:features(s),ordemRecursos:score(s)};}
+function present(s){var custom=s.nomeCustomizado,original=s.nomeOriginal||s.name;if(custom&&technical({...s,nomeOriginal:custom}))custom='';if(custom&&/\b(?:fake|bots?)\b|(?:not|non)[ -]+real/i.test(original)&&priority({nomeOriginal:custom}).reaisAnunciados)custom='';var details=[s.descricaoOriginal||s.description||'',custom&&custom!==original?original:''].filter(Boolean).join(' — ');return {...priority(s),nome:translate(custom||original),categoria:translate(s.categoriaOriginal||s.category||''),descricao:translate(details),redeSocial:s.redeSocial||network(s.categoriaOriginal||s.category,s.nomeOriginal||s.name),servicoTipo:s.servicoTipo||objective(s.categoriaOriginal||s.category,s.nomeOriginal||s.name,s.tipo||s.type||'Default'),recursos:features(s),ordemRecursos:score(s)};}
 return {technical:technical,translate:translate,whiteLabel:whiteLabel,network:network,objective:objective,present:present,features:features,score:score,priority:priority,compare:compare};
 });
