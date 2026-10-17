@@ -1,10 +1,11 @@
 const { number, fail } = require('./http');
 function rate(s, config, customer = {}) {
-  const cost = number(s.taxaCusto, 'Custo', 0.000001, 100000000);
+  const cost = number(s.taxaCusto, 'Custo', 0.000000001, 100000000);
   const fx = number(config.cotacaoUSDBRL ?? 1, 'Cotação', 0.000001, 100000);
   const margin = number(s.lucroPercentual ?? config.lucroPercentualGlobal ?? 30, 'Margem', 0, 100000);
   const discount = number(customer.desconto || 0, 'Desconto', 0, 90);
-  return Math.round(cost * fx * (1 + margin / 100) * (1 - discount / 100) * 100) / 100;
+  // Per-thousand tariffs may be fractions of a cent. Round money at order total.
+  return Number((cost * fx * (1 + margin / 100) * (1 - discount / 100)).toFixed(8));
 }
 function total(s, config, customer, quantity) {
   if (!s || !s.ativo || s.indisponivel) fail('Serviço indisponível', 404);

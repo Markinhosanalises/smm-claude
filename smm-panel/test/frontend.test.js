@@ -54,14 +54,14 @@ test('admin keeps table cells and previews global/custom percentage prices consi
   const rows=p.w.document.querySelectorAll('#tabela-servicos-body tr');
   assert.equal(rows.length,2);assert.equal(rows[0].cells.length,11);assert.equal(rows[1].cells.length,11);
   assert.equal(rows[0].querySelector('[data-campo="nomeCustomizado"]').value,'Serviço "teste"');
-  assert.equal(rows[0].querySelector('.preco-final').textContent,'R$ 12.10');
-  assert.equal(rows[1].querySelector('.preco-final').textContent,'R$ 16.20');
+  assert.equal(rows[0].querySelector('.preco-final').textContent,'R$ 12,09978');
+  assert.equal(rows[1].querySelector('.preco-final').textContent,'R$ 16,20');
   p.w.document.querySelector('#cfg-lucro').value='0';p.w.document.querySelector('#cfg-salvar').click();await wait();
   assert.equal(saved.lucroPercentualGlobal,'0');
-  assert.equal(rows[0].querySelector('.preco-final').textContent,'R$ 12.10');
-  assert.equal(rows[1].querySelector('.preco-final').textContent,'R$ 10.80');
+  assert.equal(rows[0].querySelector('.preco-final').textContent,'R$ 12,09978');
+  assert.equal(rows[1].querySelector('.preco-final').textContent,'R$ 10,80');
   const margin=rows[0].querySelector('[data-campo="lucroPercentual"]');margin.value='';margin.dispatchEvent(new p.w.Event('input'));
-  assert.equal(rows[0].querySelector('.preco-final').textContent,'R$ 4.03');
+  assert.equal(rows[0].querySelector('.preco-final').textContent,'R$ 4,03326');
   rows[0].querySelector('.btn-salvar-servico').click();await wait();
   const save=p.calls.find(c=>c.url.pathname==='/api/admin-services'&&c.options.method==='POST');
   assert.equal(JSON.parse(save.options.body).lucroPercentual,'');
@@ -72,4 +72,24 @@ test('admin keeps table cells and previews global/custom percentage prices consi
 test('table sanitizer preserves cells while removing executable content',async()=>{
  const p=await page('app.html',u=>u.pathname==='/api/auth-cliente'?{status:401,body:{}}:common(u));
  try{const row=p.w.document.createElement('tr');row.innerHTML=p.w.safeRowHTML('<td><img src=x onerror="alert(1)"><svg onload="alert(1)"></svg><a href="javascript:alert(1)">x</a></td><td><input data-campo="lucroPercentual" value="200"></td>');assert.equal(row.cells.length,2);assert(!row.querySelector('[onerror],[onload],svg'));assert.equal(row.querySelector('a').getAttribute('href'),null);assert.equal(row.querySelector('input').value,'200');}finally{p.dom.window.close();}
+});
+
+test('beginner purchase flow explains steps, quantities and total before payment',async()=>{
+ const service={id:'cheap',nome:'Instagram Likes [No Refill]',servicoTipo:'Curtidas',tipo:'Default',precoPorMil:0.4,min:10,max:1000};
+ const p=await page('app.html',u=>{
+  if(u.pathname==='/api/auth-cliente')return customer;
+  if(u.pathname==='/api/services')return u.searchParams.has('redeSocial')?{servicos:[service]}:{redesSociais:['instagram']};
+  return common(u);
+ });
+ try{
+  const d=p.w.document;p.w.HTMLElement.prototype.scrollIntoView=()=>{};
+  d.querySelector('.rede-tab').click();await wait();assert.equal(d.querySelector('#passo-tipo').getAttribute('aria-current'),'step');
+  d.querySelector('.tipo-chip').click();const card=d.querySelector('.servico-card');assert.equal(card.tagName,'BUTTON');assert.match(card.textContent,/Sem reposição/);assert(!card.textContent.includes('/un'));
+  card.click();assert.equal(d.querySelector('#passo-pagar').getAttribute('aria-current'),'step');assert.equal(d.querySelector('#eng-qtd').value,'13');
+  const link=d.querySelector('#eng-link'),qty=d.querySelector('#eng-qtd');link.value='invalido';link.dispatchEvent(new p.w.Event('input'));assert.match(d.querySelector('#eng-validacao').textContent,/https/);
+  link.value='https://instagram.com/p/post';link.dispatchEvent(new p.w.Event('input'));assert.equal(d.querySelector('#eng-resultado').classList.contains('hidden'),false);assert.match(d.querySelector('#eng-preco').textContent,/0,01/);
+  qty.value='2.5';qty.dispatchEvent(new p.w.Event('input'));assert.equal(d.querySelector('#eng-resultado').classList.contains('hidden'),true);assert.match(d.querySelector('#eng-validacao').textContent,/inteira/);
+  qty.value='1000';qty.dispatchEvent(new p.w.Event('input'));assert.match(d.querySelector('#eng-preco').textContent,/0,40/);assert.match(d.querySelector('#eng-resumo').textContent,/Instagram/);
+  assert(!p.calls.some(c=>c.url.pathname==='/api/order'));assert.deepEqual(p.errors,[]);
+ }finally{p.dom.window.close();}
 });

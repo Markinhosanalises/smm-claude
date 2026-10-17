@@ -109,6 +109,20 @@
   const iconeRede = {instagram:'📸',tiktok:'🎵',youtube:'▶️',facebook:'📘',twitter:'𝕏',spotify:'🎵',telegram:'✈️'};
 
   function capitalizar(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+  const moeda = valor => Number(valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const tarifa = valor => Number(valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:8});
+  function etapaCompra(etapa){
+    for(const id of ['rede','tipo','servico','pagar']){
+      const el=$('passo-'+id);if(id===etapa)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');
+    }
+  }
+  function quantidadeInicial(s){
+    return Math.max(Number(s.min),Math.ceil(5/Number(s.precoPorMil)));
+  }
+  function nomeAmigavel(nome){
+    const termos=[[/\bNo\s*Refill\b/gi,'Sem reposição'],[/\bNon[- ]?Drop\b/gi,'Baixa queda'],[/\bHigh Quality\b|\bHQ\b/gi,'Alta qualidade'],[/\bFollowers\b/gi,'Seguidores'],[/\bLikes\b/gi,'Curtidas'],[/\bViews\b/gi,'Visualizações'],[/\bSubscribers\b/gi,'Inscritos'],[/\bComments\b/gi,'Comentários'],[/\bShares\b/gi,'Compartilhamentos'],[/\bRefill\b/gi,'Reposição'],[/\bInstant\b/gi,'Início imediato'],[/\bBrazilian\b/gi,'Brasileiros'],[/\bWorldwide\b/gi,'Mundial']];
+    return termos.reduce((text,[pattern,value])=>text.replace(pattern,value),String(nome||''));
+  }
 
   function ordenarServicos(lista){
     if(ordemServicos==='preco_asc') return [...lista].sort((a,b)=>a.precoPorMil-b.precoPorMil);
@@ -120,6 +134,7 @@
   async function carregarFiltrosIniciais(){
     try{
       const r = await fetch(`${API_BASE}/api/services`);
+      if(!r.ok)throw new Error();
       const data = await r.json();
       const redesTabs = $('redes-tabs');
       redesTabs.innerHTML = safeHTML('');
@@ -131,10 +146,12 @@
         btn.addEventListener('click',()=>selecionarRede(rede));
         redesTabs.appendChild(btn);
       });
+      if(!redesTabs.children.length)redesTabs.textContent='Nenhuma opção disponível agora. Fale com a equipe na aba Preciso de ajuda.';
     }catch(e){ $('redes-tabs').innerHTML=safeHTML('<p style="color:var(--muted);font-size:13px;">Erro ao carregar redes.</p>'); }
   }
 
   async function selecionarRede(rede){
+    etapaCompra('tipo');
     redeSelecionada = rede; tipoSelecionado = ''; servicoSelecionado = null;
     // destaca o botão
     document.querySelectorAll('.rede-tab').forEach(b=>b.classList.toggle('ativa',b.dataset.rede===rede));
@@ -147,7 +164,9 @@
 
     try{
       const r = await fetch(`${API_BASE}/api/services?redeSocial=${encodeURIComponent(rede)}`);
+      if(!r.ok)throw new Error();
       const data = await r.json();
+      if(redeSelecionada!==rede)return;
       todosServicos = data.servicos||[];
       const tipos = [...new Set(todosServicos.map(s=>s.servicoTipo).filter(Boolean))];
       $('tipos-chips').innerHTML = safeHTML('');
@@ -159,10 +178,12 @@
         chip.addEventListener('click',()=>selecionarTipo(tipo));
         $('tipos-chips').appendChild(chip);
       });
+      if(!tipos.length)$('tipos-chips').textContent='Não há opções disponíveis nesta rede no momento. Escolha outra rede.';
     }catch(e){ $('tipos-chips').innerHTML=safeHTML('<span style="color:#ff8b8b;font-size:13px;">Erro ao carregar tipos.</span>'); }
   }
 
   function selecionarTipo(tipo){
+    etapaCompra('servico');
     tipoSelecionado = tipo; servicoSelecionado = null;
     document.querySelectorAll('.tipo-chip').forEach(c=>c.classList.toggle('ativo',c.dataset.tipo===tipo));
     $('tipo-selecionado-label').textContent = capitalizar(tipo);
@@ -170,15 +191,16 @@
     const lista = $('servicos-lista');
     lista.innerHTML = safeHTML('');
     filtrados.forEach(s=>{
-      const card = document.createElement('div');
+      const card = document.createElement('button');
+      card.type='button';card.setAttribute('aria-pressed','false');
       card.className = 'servico-card';
       card.dataset.id = s.id;
       card.innerHTML = safeHTML(`
         <div class="servico-card-top">
-          <span class="servico-card-nome">${escapeHTML(s.icone?s.icone+' ':'')}${escapeHTML(s.nome)}</span>
-          <span class="servico-card-preco">R$ ${escapeHTML((s.precoPorMil/1000).toFixed(4).replace(/\.?0+$/,''))}/un</span>
+          <span class="servico-card-nome">${escapeHTML(s.icone?s.icone+' ':'')}${escapeHTML(nomeAmigavel(s.nome))}</span>
+          <span class="servico-card-preco">${escapeHTML(moeda(Math.round(s.precoPorMil*quantidadeInicial(s)/10)/100))}<br><span class="preco-detalhe">por ${escapeHTML(quantidadeInicial(s).toLocaleString('pt-BR'))}</span></span>
         </div>
-        <div class="servico-card-info">Min: ${escapeHTML(s.min)} · Max: ${escapeHTML(s.max.toLocaleString('pt-BR'))}${escapeHTML(s.refill?' · ♻️ Refill':'')}</div>
+        <div class="servico-card-info">De ${escapeHTML(s.min)} até ${escapeHTML(s.max.toLocaleString('pt-BR'))} · ${escapeHTML(tarifa(s.precoPorMil))} por 1.000${escapeHTML(s.refill?' · Reposição disponível':'')}</div>
       `);
       card.addEventListener('click',()=>selecionarServico(s));
       lista.appendChild(card);
@@ -188,17 +210,19 @@
   }
 
   function selecionarServico(s){
+    etapaCompra('pagar');
     servicoSelecionado = s;
     document.querySelectorAll('.servico-card').forEach(c=>c.classList.toggle('selecionado',String(c.dataset.id)===String(s.id)));
-    $('servico-nome-display').textContent = (s.icone?s.icone+' ':'')+s.nome;
-    $('servico-info-display').textContent = `Min: ${escapeHTML(s.min)} · Max: ${escapeHTML(s.max.toLocaleString('pt-BR'))} · R$ ${escapeHTML(s.precoPorMil.toFixed(2))}/1000`;
+    document.querySelectorAll('.servico-card').forEach(c=>c.setAttribute('aria-pressed',String(String(c.dataset.id)===String(s.id))));
+    $('servico-nome-display').textContent = (s.icone?s.icone+' ':'')+nomeAmigavel(s.nome);
+    $('servico-info-display').textContent = `${tarifa(s.precoPorMil)} por 1.000 · Quantidade de ${s.min} a ${s.max.toLocaleString('pt-BR')}`;
     // instrução
     const instrEl = $('eng-instrucao');
     const tipo = (s.servicoTipo||'').toLowerCase();
     const nome = (s.nome||'').toLowerCase();
     let instrucao='', placeholder='https://...';
     if(tipo.includes('seguidor')||nome.includes('seguidor')){
-      instrucao=`👤 <strong>Cole o link do seu perfil</strong><br>⚠️ <strong>Seu perfil deve estar PÚBLICO.</strong> Perfis privados não têm reembolso.`;
+      instrucao=`👤 <strong>Cole o link do seu perfil.</strong><br>Mantenha o perfil público durante o processamento. Não precisamos da senha da sua rede social.`;
       placeholder='https://instagram.com/seuperfil';
     } else if(tipo.includes('curtida')||nome.includes('curtida')||nome.includes('like')){
       instrucao=`❤️ <strong>Cole o link da postagem</strong> que deseja receber curtidas.<br>⚠️ Postagem deve estar <strong>pública</strong>.`;
@@ -214,8 +238,16 @@
     }
     instrEl.innerHTML = safeHTML(instrucao);
     instrEl.style.display = 'block';
+    const hosts={instagram:'https://www.instagram.com/',tiktok:'https://www.tiktok.com/@',youtube:'https://www.youtube.com/',facebook:'https://www.facebook.com/',twitter:'https://x.com/',telegram:'https://t.me/',spotify:'https://open.spotify.com/'};
+    if(hosts[redeSelecionada])placeholder=hosts[redeSelecionada]+(tipo.includes('seguidor')?'seuperfil':'link-da-publicacao');
     $('eng-link').placeholder = placeholder;
-    $('eng-link').value=''; $('eng-qtd').value='';
+    $('eng-link').value=''; $('eng-qtd').value=quantidadeInicial(s);
+    $('eng-qtd').min=s.min;$('eng-qtd').max=s.max;
+    $('eng-qtd-ajuda').textContent=`Escolha entre ${s.min.toLocaleString('pt-BR')} e ${s.max.toLocaleString('pt-BR')}. O valor total aparece ao informar um link válido.`;
+    $('eng-validacao').textContent='';$('eng-quantidades').replaceChildren();
+    [...new Set([quantidadeInicial(s),100,500,1000])].filter(q=>q>=s.min&&q<=s.max).sort((a,b)=>a-b).forEach(q=>{
+      const button=document.createElement('button');button.type='button';button.textContent=q.toLocaleString('pt-BR');button.addEventListener('click',()=>{$('eng-qtd').value=q;atualizarPreco();});$('eng-quantidades').append(button);
+    });
     $('eng-resultado').classList.add('hidden');
     $('eng-msg').textContent='';
     const isCustom = s.tipo?.toLowerCase().includes('custom')||nome.includes('personaliz')||nome.includes('custom');
@@ -226,21 +258,32 @@
   }
 
   $('btn-voltar-servicos').addEventListener('click',()=>{
+    etapaCompra('servico');
     $('painel-form-pedido').classList.add('hidden');
     $('painel-servicos-lista').scrollIntoView({behavior:'smooth',block:'start'});
   });
 
   function atualizarPreco(){
-    if(!servicoSelecionado||!$('eng-link').value||!$('eng-qtd').value){ $('eng-resultado').classList.add('hidden'); return; }
+    $('eng-resultado').classList.add('hidden');$('eng-validacao').textContent='';
+    if(!servicoSelecionado)return false;
+    const link=$('eng-link').value.trim();
+    if(!link)return false;
+    try{const url=new URL(link);if(!['https:','http:'].includes(url.protocol)||url.username||url.password)throw new Error();}
+    catch{$('eng-validacao').textContent='Cole o link completo, começando com https://';return false;}
     const qtd=Number($('eng-qtd').value);
-    if(qtd<servicoSelecionado.min||qtd>servicoSelecionado.max){ $('eng-resultado').classList.add('hidden'); return; }
-    const total=(servicoSelecionado.precoPorMil*qtd)/1000;
-    $('eng-preco').textContent='R$ '+total.toFixed(2).replace('.',',');
+    if(!Number.isSafeInteger(qtd)||qtd<servicoSelecionado.min||qtd>servicoSelecionado.max){$('eng-validacao').textContent=`Informe uma quantidade inteira entre ${servicoSelecionado.min} e ${servicoSelecionado.max.toLocaleString('pt-BR')}.`;return false;}
+    const total=Math.round(servicoSelecionado.precoPorMil*qtd/10)/100;
+    if(total<0.01){$('eng-validacao').textContent='Aumente a quantidade para atingir o valor mínimo de R$ 0,01.';return false;}
+    if(!$('eng-comments-wrap').classList.contains('hidden')&&!$('eng-comments').value.trim()){$('eng-validacao').textContent='Escreva os comentários que deseja enviar, um por linha.';return false;}
+    $('eng-resumo').textContent=`Confira: ${qtd.toLocaleString('pt-BR')} ${servicoSelecionado.servicoTipo||'unidades'} em ${capitalizar(redeSelecionada)} para ${link}`;
+    $('eng-preco').textContent=moeda(total);
     $('eng-resultado').classList.remove('hidden');
+    return true;
   }
 
   $('eng-link').addEventListener('input',atualizarPreco);
   $('eng-qtd').addEventListener('input',atualizarPreco);
+  $('eng-comments').addEventListener('input',atualizarPreco);
 
   function msgEng(texto,tipo){ $('eng-msg').textContent=texto||''; $('eng-msg').className='msg'+(tipo?' '+tipo:''); }
 
@@ -280,8 +323,9 @@
 
   $('eng-pagar-saldo').addEventListener('click', async()=>{
     if(!servicoSelecionado||!clienteId) return;
+    if(!atualizarPreco())return;
     const qtd=Number($('eng-qtd').value);
-    const valorTotal=(servicoSelecionado.precoPorMil*qtd)/1000;
+    const valorTotal=Math.round(servicoSelecionado.precoPorMil*qtd/10)/100;
     try{ const rS=await fetch(`${API_BASE}/api/carteira?clienteId=${encodeURIComponent(clienteId)}`); const dS=await rS.json(); saldoAtual=Number(dS.saldo||0); $('saldo-display').textContent=`💰 R$ ${saldoAtual.toFixed(2)}`; }catch(e){}
     if(saldoAtual<valorTotal){ msgEng(`Saldo insuficiente (R$ ${saldoAtual.toFixed(2)}). Recarregue na aba Carteira.`,'erro'); return; }
     $('eng-pagar-saldo').disabled=true; msgEng('Processando com saldo...');
@@ -297,6 +341,7 @@
 
   $('eng-pagar-pix').addEventListener('click', async()=>{
     if(!servicoSelecionado||!clienteId){ msgEng('Faça login pra continuar.','erro'); return; }
+    if(!atualizarPreco())return;
     $('eng-pagar-pix').disabled=true; msgEng('Criando pedido...');
     try{
       const r=await fetch(`${API_BASE}/api/order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idFornecedor:servicoSelecionado.id,link:$('eng-link').value,quantidade:Number($('eng-qtd').value),clienteId,pagarComSaldo:false,comments:$('eng-comments').value||null})});
