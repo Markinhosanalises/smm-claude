@@ -34,6 +34,7 @@ module.exports=async function checkAllServiceForms(){
  assert.equal(forms.target({tipo:'Default',redeSocial:'facebook',nome:'Facebook página curtidas + seguidores'}).kind,'profile');
  assert.equal(catalog.translate(catalog.translate('Cancel Button Natural Increase')),catalog.translate('Cancel Button Natural Increase'));
  const current=catalog.present({nomeOriginal:'Twitter Followers',nomeCustomizado:'~~~~~~~~~',taxaCusto:1});assert.equal(current.nome,'Twitter seguidores');
+ assert(catalog.technical({name:'5724',category:'Other',rate:1}));assert(catalog.technical({name:'Test Service',category:'Other',rate:1}));
  return {modalities:forms.types.length,passed:true};
 };
 if(require.main===module)require('node:test')('all service forms, billing and branding contracts',module.exports);
