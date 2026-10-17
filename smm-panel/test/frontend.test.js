@@ -300,7 +300,7 @@ test('support links an owned order, shows the automatic conversation safely and 
   if(u.pathname==='/api/tickets'){
    if(o.method==='POST'){
     const b=JSON.parse(o.body);if(b.action==='pedir-humano'){handed=true;thread.humanoAtivo=true;thread.atendimento='aguardando_equipe';return{ok:true,ticket:thread};}
-    posted=b;thread={id:'ticket77',clienteId:customer.clienteId,mensagem:b.mensagem,pedidoId:b.pedidoId,status:'aberto',criadoEm:Date.now(),resposta:'Consultei o fornecedor: Em andamento.',atendimento:'aguardando_cliente',mensagens:[{autor:'cliente',texto:b.mensagem},{autor:'assistente',texto:'Consultei o fornecedor: Em andamento. <img src=x onerror=alert(1)>'}],consultaPedido:{pedido:{numero:'#00077'}}};return{ticketId:'ticket77',...thread};
+    posted=b;thread={id:'ticket77',clienteId:customer.clienteId,mensagem:b.mensagem,pedidoId:b.pedidoId,status:'aberto',criadoEm:Date.now(),resposta:'Consultei o fornecedor: Em andamento.',atendimento:'aguardando_cliente',mensagens:[{autor:'cliente',texto:b.mensagem},{autor:'assistente',texto:'Consultei o fornecedor: Em andamento. <img src=x onerror=alert(1)>'}],consultaPedido:{pedido:{numero:'#00077'}}};return{body:{ticketId:'ticket77',...thread}};
    }
    return{tickets:thread?[thread]:[]};
   }
