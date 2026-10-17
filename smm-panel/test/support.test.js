@@ -3,7 +3,7 @@ module.exports=async()=>{
  const paths=['../lib/firebase','../lib/auth','../lib/fornecedor','../lib/support-ai','../lib/support-assistant','../api/tickets'];const saved=new Map();for(const p of paths){const id=require.resolve(p);saved.set(id,require.cache[id]);delete require.cache[id];}
  const originalFetch=global.fetch,oldUrl=process.env.APP_URL,oldKey=process.env.OPENAI_API_KEY;delete process.env.OPENAI_API_KEY;process.env.APP_URL='https://example.com';
  let root,queue=Promise.resolve(),providerCalls,modelCalls,writes,providerFailure=false,providerHold=null,providerStarted=null,modelMode='ok',modelCategory='andamento',lastPayload;
- const clone=v=>v===undefined?undefined:JSON.parse(JSON.stringify(v));const get=p=>p?p.split('/').reduce((v,k)=>v?.[k],root)??null:root;
+ const clone=v=>v===undefined?undefined:JSON.parse(JSON.stringify(v,(key,value)=>key&&value===null?undefined:value));const get=p=>p?p.split('/').reduce((v,k)=>v?.[k],root)??null:root;
  const set=(p,v)=>{const bits=p.split('/'),last=bits.pop();let at=root;for(const bit of bits)at=at[bit]||(at[bit]={});at[last]=clone(v);};
  const fake={fbGet:async p=>clone(get(p)),fbPut:async(p,v)=>{writes.push(p);set(p,v);},fbPost:async(p,v)=>{const name='legacy-'+Object.keys(get(p)||{}).length;set(p+'/'+name,v);return{name};},fbQuery:async(p,f,v)=>Object.fromEntries(Object.entries(get(p)||{}).filter(([,r])=>r?.[f]===v)),key:v=>{v=String(v||'');if(!v||/[.#$\[\]\/]/.test(v))throw Error('bad key');return v;},fbTransaction:(p,fn)=>{const task=queue.then(()=>{const next=fn(clone(get(p)));if(next===undefined)return{committed:false,value:clone(get(p))};writes.push(p);set(p,next);return{committed:true,value:clone(next)};});queue=task.catch(()=>{});return task;}};
  function stub(p,exports){const id=require.resolve(p);require.cache[id]={id,filename:id,loaded:true,exports};}
@@ -18,6 +18,7 @@ module.exports=async()=>{
  let n=0;
  try{
   reset();assert.equal((await call({},null,false,'GET')).status,401);assert.equal((await call({},'alice',false,'GET',{clienteId:'bob'})).status,403);assert.equal((await call({mensagem:'oi'},'alice',false,'POST',{}, {origin:'https://evil.test'})).status,403);n++;
+  reset();let noOrder=await create({pedidoId:null,mensagem:'Como faço para fazer um pedido?'});assert.equal(noOrder.status,200);assert(noOrder.body.resposta);assert.equal((await create({pedidoId:null,mensagem:'Como faço para fazer um pedido?'})).status,200);assert.equal(Object.keys(root.tickets).length,1);n++;
   reset();assert.equal((await create({pedidoId:'foreign'})).status,404);assert.equal(providerCalls,0);assert.equal(Object.keys(root.tickets).length,0);n++;
   reset();let r=await create();assert.equal(r.status,200);assert.match(r.body.resposta,/Consultei o fornecedor agora: Em andamento/);assert.match(r.body.resposta,/100 de 100/);assert.equal(r.body.modoResposta,'basico');assert.equal(modelCalls,0);assert(writes.every(p=>p.startsWith('tickets/')));assert.equal(root.carteiras.alice.saldo,20);assert.equal(root.pedidos.own.status,'executando');n++;
   reset();await Promise.all([create(),create(),create()]);assert.equal(Object.keys(root.tickets).length,1);assert.equal(providerCalls,1);assert.equal(Object.values(root.tickets)[0].mensagens.length,2);n++;
