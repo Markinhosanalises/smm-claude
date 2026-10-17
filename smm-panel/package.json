@@ -3,7 +3,7 @@
   "version": "1.1.0",
   "private": true,
   "scripts": {
-    "test": "node test/core.test.js && node test/frontend.test.js",
+    "test": "node test/core.test.js && node test/frontend.test.js && node test/firebase.test.js",
     "check": "node scripts/check.js"
   },
   "engines": {

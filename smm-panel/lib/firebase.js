@@ -17,7 +17,7 @@ async function fbPatch(path, data) { await db().ref(path).update(data); return d
 async function fbPut(path, data) { await db().ref(path).set(data); return data; }
 async function fbPost(path, data) { const ref = db().ref(path).push(); await ref.set(data); return { name: ref.key }; }
 async function fbTransaction(path, update) {
-  const ref = db().ref(path);
+  const ref = path === '' ? db().ref() : db().ref(path);
   // Keep a listener until commit so conditionally aborted updates see server data,
   // including on a cold serverless instance (the initial transaction cache may be null).
   let listener;
