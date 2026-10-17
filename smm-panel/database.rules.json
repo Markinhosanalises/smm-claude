@@ -28,6 +28,11 @@
         "clienteId",
         "revendedorId"
       ]
+    },
+    "convites_revenda": {
+      ".indexOn": [
+        "revendedorId"
+      ]
     }
   }
 }

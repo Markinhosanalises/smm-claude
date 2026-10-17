@@ -2,9 +2,9 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {JSDOM,VirtualConsole}=require('jsdom');
 const base=path.join(__dirname,'../public');
 const wait=()=>new Promise(r=>setTimeout(r,30));
-async function page(name,route){
+async function page(name,route,query=""){
  const errors=[],console=new VirtualConsole();console.on('jsdomError',e=>errors.push(e.message));
- const html=fs.readFileSync(path.join(base,name),'utf8');const dom=new JSDOM(html,{url:'https://example.com/'+name,runScripts:'outside-only',virtualConsole:console});const w=dom.window,calls=[];
+ const html=fs.readFileSync(path.join(base,name),'utf8');const dom=new JSDOM(html,{url:'https://example.com/'+name+(query?'?'+query:''),runScripts:'outside-only',virtualConsole:console});const w=dom.window,calls=[];
  w.Headers=Headers;w.Response=Response;w.fetch=async(input,options={})=>{const u=new URL(String(input));calls.push({url:u,options});const r=await route(u,options);return new Response(JSON.stringify(r?.body??r??{}),{status:r?.status||200,headers:{'Content-Type':'application/json'}});};
  w.alert=()=>{};w.confirm=()=>true;w.prompt=()=>null;
  for(const file of ['vendor/purify.min.js','safe-html.js','api-client.js'])w.eval(fs.readFileSync(path.join(base,file),'utf8'));
@@ -124,10 +124,10 @@ test('custom comments and bounded subscriptions show correct fields and checkout
 
 test('linked customer requests manual PIX, sees seller instructions and cannot approve',async()=>{
  const recarga={id:'man_demo',referencia:'PIX-DEMO123',valor:25,status:'pendente',criadoEm:Date.now(),pix:{chave:'vendedor@example.invalid',nomeRecebedor:'Vendedor <img src=x onerror=alert(1)>',whatsapp:'5511999999999',instrucoes:'Envie o comprovante.'}};
- let requested=false;
+ let requested=false,depositApproved=false;
  const p=await page('app.html',(u,o)=>{
   if(u.pathname==='/api/auth-cliente')return customer;
-  if(u.pathname==='/api/carteira'&&u.searchParams.get('action')==='pix-manual')return{disponivel:true,configuracao:{minimo:5},recargas:requested?[recarga]:[]};
+  if(u.pathname==='/api/carteira'&&u.searchParams.get('action')==='pix-manual')return{disponivel:true,configuracao:{minimo:5},recargas:requested?[{...recarga,status:depositApproved?'aprovado':'pendente'}]:[]};
   if(u.pathname==='/api/carteira'&&o.method==='POST'){assert.equal(JSON.parse(o.body).action,'solicitar-pix-manual');requested=true;return{ok:true,recarga};}
   return common(u);
  });
@@ -142,7 +142,7 @@ test('linked customer requests manual PIX, sees seller instructions and cannot a
   assert.equal(p.w.document.querySelector('#manual-chave-copia').value,'vendedor@example.invalid');
   const request=p.calls.find(c=>c.options.method==='POST'&&c.url.pathname==='/api/carteira');assert(request);assert(request.options.headers.get('Idempotency-Key'));
   assert(!('revendedorId'in JSON.parse(request.options.body)));
-  assert(!p.calls.some(c=>c.url.pathname==='/api/pagamento'));assert.deepEqual(p.errors,[]);
+  assert(!p.calls.some(c=>c.url.pathname==='/api/pagamento'));depositApproved=true;p.w.document.querySelector('#manual-atualizar').click();await wait();await wait();assert.match(p.w.document.querySelector('#manual-dados').textContent,/Saldo liberado/);assert.equal(p.w.document.querySelector('#manual-dados a'),null);assert.deepEqual(p.errors,[]);
  }finally{p.dom.window.close();}
 });
 test('reseller verifies receipt before approving and client names remain text',async()=>{
@@ -163,5 +163,46 @@ test('reseller verifies receipt before approving and client names remain text',a
   const approve=list.querySelector('.btn');assert.equal(approve.disabled,true);approve.click();await wait();assert.equal(approved,false);
   const check=list.querySelector('input[type=checkbox]');check.checked=true;check.dispatchEvent(new p.w.Event('change'));assert.equal(approve.disabled,false);approve.click();await wait();await wait();
   assert.equal(approved,true);assert.match(p.w.document.querySelector('#rev-pix-msg').textContent,/uma vez/);assert.deepEqual(p.errors,[]);
+ }finally{p.dom.window.close();}
+});
+
+test('invited sub-reseller chooses credentials and enters own reseller area',async()=>{
+ const token='a'.repeat(64);
+ const p=await page('app.html',(u,o)=>{
+  if(u.pathname==='/api/auth-cliente'){
+   if(u.searchParams.get('acao')==='convite-subrevenda')return{valido:true,nomeRevenda:'Loja principal',expiraEm:Date.now()+86400000};
+   if(o.method==='POST')return{clienteId:'child',nome:'Minha sub-revenda',usuario:'minhaloja',role:'revendedor'};
+   return{status:401,body:{erro:'Login'}};
+  }
+  if(u.pathname==='/api/revendedor')return{clientes:[],subrevendedores:[],convites:[]};
+  return common(u);
+ },'convite='+token);
+ try{
+  assert.match(p.w.document.querySelector('#sub-convite-msg').textContent,/Loja principal/);
+  assert.equal(p.w.document.querySelector('#bloco-cadastro').classList.contains('hidden'),false);
+  for(const[id,value]of [['auth-nome','Minha sub-revenda'],['auth-usuario','minhaloja'],['auth-whats','5511999999999'],['auth-senha-cad','StrongPassword123']])p.w.document.getElementById(id).value=value;
+  p.w.document.querySelector('#btn-cadastrar').click();await wait();await wait();
+  const signup=p.calls.find(c=>c.url.pathname==='/api/auth-cliente'&&c.options.method==='POST'),body=JSON.parse(signup.options.body);
+  assert.equal(body.acao,'cadastro-subrevendedor');assert.equal(body.convite,token);assert(!('role'in body));assert.equal(p.w.document.querySelector('#tab-revendedor').classList.contains('hidden'),false);
+  assert.equal(p.w.location.search,'');assert.equal(p.w.document.querySelector('#auth-senha-cad').value,'');assert(!JSON.stringify(p.w.localStorage).includes(token));assert.deepEqual(p.errors,[]);
+ }finally{p.dom.window.close();}
+});
+test('reseller generates a shareable one-use invitation from own panel',async()=>{
+ const url='https://example.com/app.html?convite='+'a'.repeat(64);
+ const p=await page('app.html',(u,o)=>{
+  if(u.pathname==='/api/auth-cliente')return{...customer,role:'revendedor'};
+  if(u.pathname==='/api/revendedor'){
+   if(o.method==='POST')return{ok:true,url,expiraEm:Date.now()+7*86400000};
+   if(u.searchParams.get('action')==='subrevendas')return{subrevendedores:[{clienteId:'child',nome:'<img src=x onerror=alert(1)>',usuario:'subloja',saldo:10}],convites:[]};
+   if(u.searchParams.get('action')==='clientes')return{clientes:[]};
+   return{nome:'Revenda',saldo:100};
+  }return common(u);
+ });
+ try{
+  p.w.document.querySelector('#tab-revendedor').click();await wait();p.w.document.querySelector('#tab-rev-subrevendas').click();await wait();
+  assert.equal(p.w.document.querySelector('#rev-sub-lista img'),null);assert(p.w.document.querySelector('#rev-sub-lista').textContent.includes('<img'));
+  p.w.document.querySelector('#rev-sub-convite').click();await wait();await wait();
+  assert.equal(p.w.document.querySelector('#rev-sub-link').value,url);
+  const call=p.calls.find(c=>c.url.pathname==='/api/revendedor'&&c.options.method==='POST');assert.deepEqual(JSON.parse(call.options.body),{acao:'criar-convite-subrevenda'});assert.deepEqual(p.errors,[]);
  }finally{p.dom.window.close();}
 });

@@ -4,20 +4,28 @@ const { endpoint, mutation, fail, text, number } = require('../lib/http');
 const auth = require('../lib/auth');
 function whatsapp(v) { const id = String(v || '').replace(/\D/g, ''); if (!/^\d{8,15}$/.test(id)) fail('WhatsApp inválido'); return id; }
 function usuario(v) { const u = text(v, 'Usuário', 40).toLowerCase(); if (!/^[a-z0-9_]{3,40}$/.test(u)) fail('Usuário deve ter 3 a 40 letras, números ou _'); return u; }
-async function register(body, owner, role = 'cliente', discount = 0) {
+async function register(body, owner, role = 'cliente', discount = 0, invitationHash) {
   const id = whatsapp(body.whatsapp), user = usuario(body.usuario);
   const c = { nome: text(body.nome, 'Nome', 100), whatsapp: id, usuario: user, passwordHash: await auth.hashPassword(body.senha), origem: String(body.origem || 'site').slice(0, 80), criadoEm: Date.now(), role, desconto: discount, ...(owner ? { revendedorId: owner } : {}) };
+  let registrationError;
   const r = await fbTransaction('', root => {
-    root = root || {};
-    if (root.clientes?.[id] || root.usuarios?.[user]) return;
-    return { ...root, clientes: { ...root.clientes, [id]: c }, usuarios: { ...root.usuarios, [user]: { whatsapp: id } } };
+    root = root || {};registrationError=null;
+    let candidate=c,invites=root.convites_revenda;
+    if(invitationHash){const invitation=invites?.[invitationHash],parent=invitation&&root.clientes?.[invitation.revendedorId];
+      if(!invitation||invitation.status!=='ativo'||invitation.expiraEm<=Date.now()||parent?.role!=='revendedor'||parent.bloqueado){registrationError=['Convite inválido, expirado ou já utilizado',410];return;}
+      candidate={...c,role:'revendedor',revendedorId:invitation.revendedorId,desconto:Math.max(0,Math.min(90,Number(parent.desconto)||0))};
+      invites={...invites,[invitationHash]:{...invitation,status:'utilizado',utilizadoEm:Date.now(),clienteId:id}};
+    }
+    if (root.clientes?.[id] || root.usuarios?.[user]) {registrationError=[invitationHash?'WhatsApp ou usuário já cadastrado. Use uma nova conta para a sub-revenda.':'WhatsApp ou usuário já cadastrado',409];return;}
+    return { ...root, ...(invitationHash?{convites_revenda:invites}:{}),clientes: { ...root.clientes, [id]: candidate }, usuarios: { ...root.usuarios, [user]: { whatsapp: id } } };
   });
-  if (!r.committed) fail('WhatsApp ou usuário já cadastrado', 409);
-  return { clienteId: id, nome: c.nome, usuario: user };
+  if (!r.committed) fail(...(registrationError||['Não foi possível cadastrar',409]));
+  return { clienteId: id, nome: c.nome, usuario: user,role:r.value.clientes[id].role };
 }
 module.exports = endpoint(async (req, res) => {
   if (req.query.route === 'revendedor') return require('../lib/resellers')(req, res);
   if (req.method === 'GET') {
+    if(req.query.acao==='convite-subrevenda')return require('../lib/subresellers').publicInfo(req,res);
     if (req.query.acao === 'admin-session') { await auth.requireAdmin(req); return res.json({ ok: true }); }
     const s = await auth.session(req);
     return res.json({ clienteId: s.clienteId, nome: s.cliente.nome, usuario: s.cliente.usuario, role: s.cliente.role || 'cliente', desconto: s.cliente.desconto || 0 });
@@ -43,6 +51,7 @@ module.exports = endpoint(async (req, res) => {
     await fbPatch('clientes/' + id, { desconto });
     return res.json({ ok: true });
   }
+  if(acao==='cadastro-subrevendedor')return require('../lib/subresellers').accept(req,res);
   if (acao === 'cadastro') {
     await auth.rateLimit(req, 'cadastro', 5);
     const result = await register(b);

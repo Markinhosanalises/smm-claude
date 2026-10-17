@@ -149,7 +149,8 @@
       <div class="rede-badge">𝕏 Twitter</div>
       <div class="rede-badge">📘 Facebook</div>
     </div>
-    <div id="bloco-login">
+    <p class="hidden" id="sub-convite-msg" role="status"></p>
+      <div id="bloco-login">
       <div class="auth-divider"><span>Acesse sua conta</span></div>
       <input class="auth-input" id="auth-login-id" placeholder="👤 Usuário ou 📱 WhatsApp" autocomplete="username">
       <input class="auth-input" id="auth-senha" placeholder="🔒 Senha" type="password">
@@ -411,6 +412,7 @@
     <div class="tabs" style="display:flex;margin-bottom:16px;">
       <div class="tab ativa" id="tab-rev-clientes" style="cursor:pointer;">👥 Clientes</div>
       <div class="tab" id="tab-rev-pedidos" style="cursor:pointer;">📦 Pedidos</div>
+      <button type="button" class="tab" id="tab-rev-subrevendas">🌐 Sub-revendas</button>
       <button type="button" class="tab" id="tab-rev-pix">💸 PIX manual</button>
       <div class="tab" id="tab-rev-novo" style="cursor:pointer;">➕ Novo cliente</div>
     </div>
@@ -434,6 +436,24 @@
       <p class="msg" id="rev-pedidos-msg"></p>
     </div>
     
+    
+    <div id="painel-rev-subrevendas" class="card hidden">
+      <p class="eyebrow">Sua rede de revendas</p>
+      <h2 class="title">Abrir uma sub-revenda</h2>
+      <p>Gere um convite e envie para a pessoa. Ela cria o próprio usuário e senha e recebe acesso à área de revenda, onde pode cadastrar clientes, configurar o próprio PIX manual e convidar outras sub-revendas.</p>
+      <p>O acesso usa este mesmo site. Este convite cria uma conta de revenda; não registra um novo domínio.</p>
+      <button type="button" class="btn" id="rev-sub-convite">Gerar convite de cadastro</button>
+      <div id="rev-sub-link-wrap" class="hidden">
+        <label class="label" for="rev-sub-link">Copie e envie este link para uma pessoa</label><textarea class="input" id="rev-sub-link" rows="3" readonly></textarea>
+        <button type="button" class="btn-sec" id="rev-sub-copiar">Copiar convite</button><p id="rev-sub-expiracao"></p>
+      </div>
+      <p class="msg" id="rev-sub-msg" role="status"></p>
+      <h3>Minhas sub-revendas</h3>
+      <button type="button" class="btn-sec" id="rev-sub-atualizar">Atualizar lista</button>
+      <div id="rev-sub-lista"></div>
+      <h3>Convites recentes</h3><p>Cada convite vale por sete dias e pode ser usado uma única vez.</p>
+      <div id="rev-sub-convites"></div>
+    </div>
     <div id="painel-rev-pix" class="card hidden">
       <p class="eyebrow">Receba na sua conta</p>
       <h2 class="title">PIX manual</h2>

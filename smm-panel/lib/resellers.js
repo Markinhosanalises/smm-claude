@@ -12,16 +12,17 @@ module.exports = async (req,res) => {
     }
     const s = await session(req);
     if(s.cliente.role !== 'revendedor') fail('Acesso negado',403);
+    if(req.query.action==='subrevendas')return require('./subresellers').handle(req,res,s);
     if(req.query.action==='pix-manual')return require('./manual-pix').reseller(req,res,s);
     if(req.query.action === 'clientes') {
       const cs = await fbQuery('clientes','revendedorId',s.clienteId);
-      return res.json({clientes:Object.entries(cs||{}).map(([id,c])=>({clienteId:id,nome:c.nome,usuario:c.usuario,whatsapp:c.whatsapp}))});
+      return res.json({clientes:Object.entries(cs||{}).map(([id,c])=>({clienteId:id,nome:c.nome,usuario:c.usuario,whatsapp:c.whatsapp,role:c.role||'cliente'}))});
     }
     return res.json(safe(s.clienteId,s.cliente,await fbGet('carteiras/'+s.clienteId)));
   }
   mutation(req);
   const b=req.body||{};
-  if(admin && !['criar-cliente','configurar-pix-manual','aprovar-pix-manual','rejeitar-pix-manual','creditar-cliente-manual'].includes(b.acao)) {
+  if(admin && !['criar-cliente','configurar-pix-manual','aprovar-pix-manual','rejeitar-pix-manual','creditar-cliente-manual','criar-convite-subrevenda','revogar-convite-subrevenda'].includes(b.acao)) {
     if(b.acao==='set-desconto') {
       const id=key(b.clienteId);
       const c=await fbGet('clientes/'+id);
@@ -34,6 +35,7 @@ module.exports = async (req,res) => {
     return res.json(result);
   }
   const s=await session(req);
+  if(['criar-convite-subrevenda','revogar-convite-subrevenda'].includes(b.acao))return require('./subresellers').handle(req,res,s);
   if(['configurar-pix-manual','aprovar-pix-manual','rejeitar-pix-manual','creditar-cliente-manual'].includes(b.acao))return require('./manual-pix').reseller(req,res,s);
   if(s.cliente.role!=='revendedor'||b.acao!=='criar-cliente') fail('Acesso negado',403);
   await rateLimit(req,'reseller-register',20,60000);

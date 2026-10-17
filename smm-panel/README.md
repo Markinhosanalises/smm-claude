@@ -93,3 +93,15 @@ Coleções: `pix_revendedores/{revendedorId}` e `depositos_manuais/{id}`. As reg
 Rotas reutilizadas para respeitar o limite de funções: `GET /api/carteira?action=pix-manual`, `POST /api/carteira` com `action=solicitar-pix-manual`; `GET /api/revendedor?action=pix-manual`; ações `configurar-pix-manual`, `aprovar-pix-manual`, `rejeitar-pix-manual` e `creditar-cliente-manual` em POST de revendedor. Sessão e vínculo são verificados no servidor. Clientes com PIX manual ativo usam recarga e compra com saldo; novas cobranças automáticas na conta central são bloqueadas para evitar enviar o pagamento ao recebedor errado.
 
 Esta função pertence à área de revenda existente. Provisionamento de lojas independentes, subdomínios, preços por loja e conexão Mercado Pago por lojista ainda precisam de uma implementação própria. A transação na raiz prioriza consistência no volume atual; deve migrar para um ledger transacional com partições caso o volume cresça.
+
+## Sub-revendas por convite
+
+Em **Revendedor → Sub-revendas**, cada revendedor pode gerar um convite para outra pessoa abrir sua própria conta de revenda no mesmo site. O convite expira em sete dias, é de uso único e pode ser cancelado antes do cadastro. A pessoa escolhe seu próprio usuário e senha; a conta entra automaticamente na área de revenda após o cadastro.
+
+O servidor guarda somente o hash do token. Cadastro, reserva de usuário/WhatsApp e consumo do convite ocorrem na mesma transação. Convites expirados, cancelados, já usados ou de uma revenda bloqueada não abrem contas. Dados enviados pelo navegador não escolhem o dono, a função ou o desconto: a nova sub-revenda é vinculada ao autor do convite, recebe a função revendedor e herda, no máximo, o desconto já concedido a ele pelo administrador.
+
+Cada sub-revenda pode cadastrar clientes, ter seu próprio PIX manual e criar suas próprias sub-revendas. As listagens e liberações de saldo permanecem limitadas aos vínculos diretos: uma revenda não ganha acesso aos clientes de suas sub-revendas nem aos saldos ou configurações de outras redes. O saldo inicial da nova conta é zero; o convite não cria dinheiro. Para receber saldo do dono imediato, usa-se o fluxo de recarga manual ou crédito recebido já implementado.
+
+Coleção `convites_revenda`, com índice em `revendedorId`. Rotas: GET `/api/revendedor?action=subrevendas`; POST com `acao=criar-convite-subrevenda` ou `revogar-convite-subrevenda`; GET `/api/auth-cliente?acao=convite-subrevenda&convite=TOKEN` retorna apenas o nome da revenda e validade; POST `acao=cadastro-subrevendedor` valida o convite e cria a conta. O token é removido da URL após o cadastro e não é salvo no armazenamento local.
+
+As sub-revendas usam o painel compartilhado, com sessões e dados separados por conta. Domínios, marcas e tabelas de preços independentes por loja, comissões em múltiplos níveis e Mercado Pago por lojista ainda não fazem parte desta versão.
