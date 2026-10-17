@@ -33,7 +33,7 @@
     await fetch('/api/auth-cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'logout'})});
     localStorage.removeItem('eng_clienteId'); localStorage.removeItem('eng_clienteNome');
     clienteId = null; clienteNome = ''; isRevendedor = false;
-    pixManualAtivo=false;pixRevCarregado=false;$('manual-dados').replaceChildren();$('manual-dados').classList.add('hidden');$('recarga-automatica').classList.remove('hidden');$('pix-manual-cliente').classList.add('hidden');$('manual-historico-wrap').classList.add('hidden');
+    pixManualAtivo=false;pixRevCarregado=false;$('rev-sub-link').value='';$('rev-sub-link-wrap').classList.add('hidden');$('rev-sub-lista').replaceChildren();$('rev-sub-convites').replaceChildren();$('manual-dados').replaceChildren();$('manual-dados').classList.add('hidden');$('recarga-automatica').classList.remove('hidden');$('pix-manual-cliente').classList.add('hidden');$('manual-historico-wrap').classList.add('hidden');
     $('api-key-display').textContent='Nenhuma chave gerada';
     $('api-key-msg').textContent='';
     for(const k of Object.keys(sessionStorage))if(k.startsWith('smm_pending:'))sessionStorage.removeItem(k);
@@ -66,15 +66,17 @@
   $('btn-cadastrar').addEventListener('click', async () => {
     const nome=$('auth-nome').value.trim(), usuario=$('auth-usuario').value.trim().toLowerCase().replace(/[^a-z0-9_\.]/g,'');
     const whatsapp=$('auth-whats').value.trim(), senha=$('auth-senha-cad').value, origem=$('auth-origem').value||'nao_informado';
+    if(conviteSubrevenda&&!conviteSubValido){msgAuth('Convite indisponível. Peça um novo link à sua revenda.','erro');return;}
     if(!nome){ msgAuth('Informe seu nome','erro'); return; }
     if(!usuario||usuario.length<3){ msgAuth('Usuário deve ter pelo menos 3 caracteres','erro'); return; }
     if(!whatsapp){ msgAuth('Informe seu WhatsApp','erro'); return; }
     if(!senha||senha.length<8){ msgAuth('Senha deve ter pelo menos 8 caracteres','erro'); return; }
     try{
-      const r = await fetch(`${API_BASE}/api/auth-cliente`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'cadastro',nome,usuario,whatsapp,senha,origem})});
+      const r = await fetch(`${API_BASE}/api/auth-cliente`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:conviteSubrevenda?'cadastro-subrevendedor':'cadastro',...(conviteSubrevenda?{convite:conviteSubrevenda}:{}),nome,usuario,whatsapp,senha,origem})});
       const data = await r.json();
       if(!r.ok){ msgAuth(data.erro||'Erro ao criar conta','erro'); return; }
-      clienteId=data.clienteId; clienteNome=data.nome||'';
+      clienteId=data.clienteId; clienteNome=data.nome||'';isRevendedor=data.role==='revendedor';
+      if(conviteSubrevenda){conviteSubrevenda='';conviteSubValido=false;history.replaceState(null,'','/app.html');$('sub-convite-msg').classList.add('hidden');$('auth-senha-cad').value='';}
       localStorage.setItem('eng_clienteId',clienteId); localStorage.setItem('eng_clienteNome',clienteNome);
       atualizarTopBar();
     }catch(e){ msgAuth('Erro de conexão','erro'); }
@@ -489,7 +491,7 @@
     const data=await manualRequest('/api/revendedor?action=pix-manual');
     if(reloadConfig||!pixRevCarregado){const c=data.configuracao||{};$('rev-pix-ativo').checked=!!c.ativo;$('rev-pix-tipo').value=c.tipoChave||'aleatoria';for(const [id,field]of [['chave','chave'],['recebedor','nomeRecebedor'],['whatsapp','whatsapp'],['minimo','minimo'],['instrucoes','instrucoes']])$('rev-pix-'+id).value=c[field]??(field==='minimo'?5:'');pixRevCarregado=true;}
     const clients=await manualRequest('/api/revendedor?action=clientes'),select=$('rev-pix-cliente'),selected=select.value;select.replaceChildren();const empty=document.createElement('option');empty.value='';empty.textContent='Escolha o cliente';select.append(empty);
-    for(const c of clients.clientes||[]){const o=document.createElement('option');o.value=c.clienteId;o.textContent=c.nome+' · '+c.whatsapp;select.append(o);}select.value=selected;
+    for(const c of clients.clientes||[]){const o=document.createElement('option');o.value=c.clienteId;o.textContent=(c.role==='revendedor'?'Sub-revenda: ':'')+c.nome+' · '+c.whatsapp;select.append(o);}select.value=selected;
     const list=$('rev-pix-recargas');list.replaceChildren();
     for(const p of data.recargas||[]){
       const div=document.createElement('div');div.className='manual-item';manualText(div,'h4',p.nomeCliente+' · '+brl(p.valor));
@@ -518,6 +520,31 @@
     catch(e){$('rev-pix-credito-msg').textContent=e.message;}finally{button.disabled=false;}
   });
 
+
+  // ===== SUB-REVENDAS POR CONVITE =====
+  let conviteSubrevenda=new URLSearchParams(location.search).get('convite')||'',conviteSubValido=false;
+  async function carregarConviteSubrevenda(){
+    if(!conviteSubrevenda)return;
+    $('sub-convite-msg').classList.remove('hidden');$('sub-convite-msg').textContent='Conferindo seu convite de sub-revenda...';
+    try{const d=await manualRequest('/api/auth-cliente?acao=convite-subrevenda&convite='+encodeURIComponent(conviteSubrevenda));conviteSubValido=true;$('sub-convite-msg').textContent='Você foi convidado por '+d.nomeRevenda+'. Crie sua conta para abrir sua sub-revenda.';$('bloco-login').classList.add('hidden');$('bloco-cadastro').classList.remove('hidden');$('btn-cadastrar').textContent='Criar minha sub-revenda';}
+    catch(e){$('sub-convite-msg').textContent=e.message;msgAuth('Peça um novo convite ao seu revendedor.','erro');}
+  }
+  async function carregarSubrevendas(){
+    const d=await manualRequest('/api/revendedor?action=subrevendas'),list=$('rev-sub-lista');list.replaceChildren();
+    for(const c of d.subrevendedores||[]){const div=document.createElement('div');div.className='manual-item';manualText(div,'h4',c.nome);manualText(div,'p','Usuário: '+c.usuario+' · Saldo: '+brl(c.saldo));const b=manualText(div,'button','Adicionar saldo recebido');b.type='button';b.className='btn-sec';b.addEventListener('click',async()=>{try{$('tab-rev-pix').click();await carregarPixRevendedor();$('rev-pix-cliente').value=c.clienteId;$('rev-pix-valor').focus();$('rev-pix-credito-msg').textContent='Confira o pagamento recebido desta sub-revenda antes de liberar o saldo.';}catch(e){$('rev-sub-msg').textContent=e.message;}});list.append(div);}
+    if(!list.children.length)manualText(list,'p','Você ainda não tem sub-revendas. Gere um convite para começar.');
+    const invites=$('rev-sub-convites');invites.replaceChildren();
+    for(const invite of d.convites||[]){const div=document.createElement('div');div.className='manual-item';manualText(div,'p',({ativo:'Aguardando cadastro',utilizado:'Cadastro concluído',revogado:'Convite cancelado',expirado:'Convite expirado'}[invite.status]||invite.status)+' · Criado em '+new Date(invite.criadoEm).toLocaleString('pt-BR'));if(invite.status==='ativo'){const b=manualText(div,'button','Cancelar convite');b.type='button';b.className='btn-sec';b.addEventListener('click',async()=>{b.disabled=true;try{await manualRequest('/api/revendedor',{acao:'revogar-convite-subrevenda',conviteId:invite.id});await carregarSubrevendas();}catch(e){$('rev-sub-msg').textContent=e.message;b.disabled=false;}});}invites.append(div);}
+    if(!invites.children.length)manualText(invites,'p','Nenhum convite gerado.');
+  }
+  $('rev-sub-convite').addEventListener('click',async()=>{
+    const b=$('rev-sub-convite');b.disabled=true;
+    try{const d=await manualRequest('/api/revendedor',{acao:'criar-convite-subrevenda'});$('rev-sub-link').value=d.url;$('rev-sub-link-wrap').classList.remove('hidden');$('rev-sub-expiracao').textContent='Válido até '+new Date(d.expiraEm).toLocaleString('pt-BR')+'. Uso único.';$('rev-sub-msg').textContent='Convite pronto. A pessoa escolherá o próprio usuário e senha.';await carregarSubrevendas();}
+    catch(e){$('rev-sub-msg').textContent=e.message;}finally{b.disabled=false;}
+  });
+  $('rev-sub-copiar').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('rev-sub-link').value);$('rev-sub-msg').textContent='Convite copiado. Envie para a pessoa que abrirá a sub-revenda.';}catch{$('rev-sub-msg').textContent='Selecione o link acima e copie.';}});
+  $('rev-sub-atualizar').addEventListener('click',()=>carregarSubrevendas().catch(e=>$('rev-sub-msg').textContent=e.message));
+
   // ===== REVENDEDOR =====
   async function carregarPainelRevendedor(){
     try{
@@ -534,7 +561,7 @@
     try{
       const rr=await fetch('/api/revendedor?action=clientes');const dados=await rr.json();
       const lista=$('lista-rev-clientes');if(!lista)return;lista.replaceChildren();
-      for(const c of dados.clientes||[]){const div=document.createElement('div');div.textContent=c.nome+' · '+c.whatsapp;lista.append(div);}
+      for(const c of dados.clientes||[]){const div=document.createElement('div');div.textContent=(c.role==='revendedor'?'Sub-revenda: ':'')+c.nome+' · '+c.whatsapp;lista.append(div);}
       $('rev-total-clientes').textContent=(dados.clientes||[]).length;
       if(!lista.children.length)lista.textContent='Nenhum cliente ainda.';
     }catch(e){}
@@ -555,12 +582,13 @@
     }catch(e){}
   }
 
-  ['clientes','pedidos','novo','pix'].forEach(aba=>{
+  ['clientes','pedidos','novo','pix','subrevendas'].forEach(aba=>{
     const tab=$(`tab-rev-${aba}`); if(!tab) return;
     tab.addEventListener('click',()=>{
-      ['clientes','pedidos','novo','pix'].forEach(a=>{ $(`tab-rev-${a}`)?.classList.remove('ativa'); $(`painel-rev-${a}`)?.classList.add('hidden'); });
+      ['clientes','pedidos','novo','pix','subrevendas'].forEach(a=>{ $(`tab-rev-${a}`)?.classList.remove('ativa'); $(`painel-rev-${a}`)?.classList.add('hidden'); });
       tab.classList.add('ativa'); $(`painel-rev-${aba}`)?.classList.remove('hidden');
       if(aba==='pedidos') carregarPedidosRevendedor();
+      if(aba==='subrevendas')carregarSubrevendas().catch(e=>$('rev-sub-msg').textContent=e.message);
       if(aba==='pix')carregarPixRevendedor().catch(e=>$('rev-pix-msg').textContent=e.message);
     });
   });
@@ -626,6 +654,7 @@
   async function restaurarSessao(){
     try{const r=await fetch('/api/auth-cliente');if(r.ok){const d=await r.json();clienteId=d.clienteId;clienteNome=d.nome||'';isRevendedor=d.role==='revendedor';atualizarTopBar();await carregarFiltrosIniciais();}}catch{}
   }
+  carregarConviteSubrevenda();
   restaurarSessao();
   // ===== INIT =====
   atualizarTopBar();

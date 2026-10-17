@@ -1,0 +1,35 @@
+const assert=require('node:assert/strict');
+module.exports=async()=>{
+ const previous=process.env.APP_URL;process.env.APP_URL='https://example.com';
+ const saved=new Map(),paths=['../lib/firebase','../lib/auth','../lib/subresellers','../lib/resellers','../lib/manual-pix','../lib/orders','../lib/wallet','../lib/payments','../lib/fornecedor','../api/auth-cliente'];
+ for(const p of paths){const id=require.resolve(p);saved.set(id,require.cache[id]);delete require.cache[id];}
+ let root={},queue=Promise.resolve();
+ const clone=v=>v===undefined?undefined:JSON.parse(JSON.stringify(v)),get=p=>p?p.split('/').reduce((v,k)=>v?.[k],root)??null:root;
+ const set=(p,v)=>{if(!p){root=clone(v);return;}const parts=p.split('/'),last=parts.pop();let at=root;for(const part of parts)at=at[part]||(at[part]={});if(v===null)delete at[last];else at[last]=clone(v);};
+ const fake={fbGet:async p=>clone(get(p)),fbPut:async(p,v)=>set(p,v),fbPatch:async(p,v)=>set(p,{...get(p),...v}),fbQuery:async(p,f,v)=>Object.fromEntries(Object.entries(get(p)||{}).filter(([,c])=>c?.[f]===v)),key:v=>{v=String(v||'');if(!v||/[.#$[\]/]/.test(v))throw Error('ID inválido');return v;},fbTransaction:(p,fn)=>{const run=queue.then(()=>{const next=fn(clone(get(p)));if(next===undefined)return{committed:false,value:clone(get(p))};set(p,next);return{committed:true,value:clone(next)};});queue=run.catch(()=>{});return run;}};
+ const fid=require.resolve('../lib/firebase');require.cache[fid]={id:fid,filename:fid,loaded:true,exports:fake};
+ const sub=require('../lib/subresellers'),auth=require('../lib/auth'),register=require('../api/auth-cliente').register;
+ const parent={clienteId:'parent',cliente:{nome:'Revenda principal',usuario:'parent',role:'revendedor',desconto:12}},other={clienteId:'other',cliente:{nome:'Outra revenda',role:'revendedor',desconto:0}};
+ const reset=()=>{root=clone({clientes:{parent:parent.cliente,other:other.cliente},usuarios:{parent:{whatsapp:'parent'}},carteiras:{parent:{saldo:100}}});queue=Promise.resolve();};
+ const request=(body={},method='POST')=>({body,method,query:{},headers:{'content-type':'application/json','idempotency-key':'subrevenda_test_operation'},socket:{remoteAddress:'test'}});
+ const call=async(fn,req,s)=>{let data;await fn(req,{json:v=>(data=v),setHeader:()=>{}},s);return data;};
+ const invite=async(s=parent)=>{const created=await call(sub.handle,request({acao:'criar-convite-subrevenda'}),s);const token=new URL(created.url).searchParams.get('convite');return{...created,token,hash:sub.tokenHash(token)};};
+ const form=(suffix,token)=>({nome:'Sub-revenda '+suffix,usuario:'sub_'+suffix,whatsapp:'5511000000'+suffix,senha:'StrongTestPassword123',convite:token,role:'admin',revendedorId:'other',desconto:90});
+ let scenarios=0;
+ try{
+  reset();await assert.rejects(call(sub.handle,request(),{clienteId:'client',cliente:{role:'cliente'}}),/Acesso/);const created=await invite();assert.match(created.url,/^https:\/\/example.com\/app.html\?convite=/);assert.equal(JSON.stringify(get('convites_revenda')).includes(created.token),false);assert.equal(get('convites_revenda/'+created.hash+'/revendedorId'),'parent');scenarios++;
+  const infoReq=request({},'GET');infoReq.query={convite:created.token};const info=await call(sub.publicInfo,infoReq);assert.deepEqual(Object.keys(info).sort(),['expiraEm','nomeRevenda','valido'].sort());assert.equal(info.nomeRevenda,'Revenda principal');scenarios++;
+  const accepted=await call(sub.accept,request(form('01',created.token)));assert.equal(accepted.role,'revendedor');const child=get('clientes/'+accepted.clienteId);assert.equal(child.revendedorId,'parent');assert.equal(child.role,'revendedor');assert.equal(child.desconto,12);assert(child.passwordHash.startsWith('scrypt$'));assert.equal(child.senha,undefined);assert.equal(get('convites_revenda/'+created.hash+'/status'),'utilizado');assert.equal(get('usuarios/sub_01/whatsapp'),accepted.clienteId);await assert.rejects(call(sub.accept,request(form('02',created.token))),/Convite/);scenarios++;
+  const childSession={clienteId:accepted.clienteId,cliente:child},grandInvite=await invite(childSession);const grand=await call(sub.accept,request(form('03',grandInvite.token)));assert.equal(get('clientes/'+grand.clienteId+'/revendedorId'),accepted.clienteId);
+  const parentList=await call(sub.handle,request({},'GET'),parent),otherList=await call(sub.handle,request({},'GET'),other);assert.equal(parentList.subrevendedores.length,1);assert.equal(parentList.subrevendedores[0].clienteId,accepted.clienteId);assert.equal(otherList.subrevendedores.length,0);scenarios++;
+  const manual=require('../lib/manual-pix');await assert.rejects(call(manual.reseller,request({acao:'creditar-cliente-manual',clienteId:grand.clienteId,valor:10,confirmado:true}),parent),/pertence/);scenarios++;
+  reset();const concurrentInvite=await invite();const hash=concurrentInvite.hash;const parallel=await Promise.allSettled([register(form('11',concurrentInvite.token),undefined,'revendedor',0,hash),register(form('12',concurrentInvite.token),undefined,'revendedor',0,hash)]);assert.equal(parallel.filter(x=>x.status==='fulfilled').length,1);assert.equal(Object.values(get('clientes')).filter(c=>c.revendedorId==='parent').length,1);assert.equal(get('convites_revenda/'+hash+'/status'),'utilizado');scenarios++;
+  reset();const revoked=await invite();await assert.rejects(call(sub.handle,request({acao:'revogar-convite-subrevenda',conviteId:revoked.hash}),other),/não encontrado/);await call(sub.handle,request({acao:'revogar-convite-subrevenda',conviteId:revoked.hash}),parent);await assert.rejects(call(sub.accept,request(form('21',revoked.token))),/Convite/);await assert.rejects(register(form('22',revoked.token),undefined,'revendedor',0,revoked.hash),/Convite/);assert.equal(get('clientes/551100000022'),null);scenarios++;
+  const expired=await invite();set('convites_revenda/'+expired.hash+'/expiraEm',Date.now()-1);await assert.rejects(call(sub.accept,request(form('23',expired.token))),/Convite/);scenarios++;
+  const blocked=await invite();set('clientes/parent/bloqueado',true);await assert.rejects(call(sub.accept,request(form('24',blocked.token))),/Convite/);assert.equal(get('convites_revenda/'+blocked.hash+'/status'),'ativo');scenarios++;
+  reset();const existing=await invite();set('clientes/551100000031',{role:'cliente',nome:'Conta existente'});await assert.rejects(register(form('31',existing.token),undefined,'revendedor',0,existing.hash),/já cadastrado/);assert.equal(get('clientes/551100000031/role'),'cliente');assert.equal(get('convites_revenda/'+existing.hash+'/status'),'ativo');scenarios++;
+  assert.throws(()=>sub.tokenHash('forged'),/Convite/);scenarios++;
+  return{passed:true,scenarios};
+ }finally{if(previous===undefined)delete process.env.APP_URL;else process.env.APP_URL=previous;for(const[id,entry]of saved){if(entry)require.cache[id]=entry;else delete require.cache[id];}}
+};
+if(require.main===module)require('node:test')('sub-reseller invites, hierarchy and atomic signup',module.exports);
