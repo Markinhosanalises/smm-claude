@@ -7,7 +7,7 @@
   let isRevendedor = false;
   localStorage.removeItem('eng_revSenha'); localStorage.removeItem('eng_apiKey');
   let whatsappSuporte = '';
-  let ordemServicos = 'padrao';
+  let ordemServicos = 'recursos';
 
   // ===== TOP BAR =====
   function atualizarTopBar(){
@@ -106,186 +106,108 @@
   let tipoSelecionado = '';
   let servicoSelecionado = null;
 
-  const iconeRede = {instagram:'📸',tiktok:'🎵',youtube:'▶️',facebook:'📘',twitter:'𝕏',spotify:'🎵',telegram:'✈️'};
-
-  function capitalizar(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
-  const moeda = valor => Number(valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-  const tarifa = valor => Number(valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:8});
-  function etapaCompra(etapa){
-    for(const id of ['rede','tipo','servico','pagar']){
-      const el=$('passo-'+id);if(id===etapa)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');
-    }
-  }
-  function quantidadeInicial(s){
-    return Math.max(Number(s.min),Math.ceil(5/Number(s.precoPorMil)));
-  }
-  function nomeAmigavel(nome){
-    const termos=[[/\bNo\s*Refill\b/gi,'Sem reposição'],[/\bNon[- ]?Drop\b/gi,'Baixa queda'],[/\bHigh Quality\b|\bHQ\b/gi,'Alta qualidade'],[/\bFollowers\b/gi,'Seguidores'],[/\bLikes\b/gi,'Curtidas'],[/\bViews\b/gi,'Visualizações'],[/\bSubscribers\b/gi,'Inscritos'],[/\bComments\b/gi,'Comentários'],[/\bShares\b/gi,'Compartilhamentos'],[/\bRefill\b/gi,'Reposição'],[/\bInstant\b/gi,'Início imediato'],[/\bBrazilian\b/gi,'Brasileiros'],[/\bWorldwide\b/gi,'Mundial']];
-    return termos.reduce((text,[pattern,value])=>text.replace(pattern,value),String(nome||''));
-  }
-
+  const iconeRede={};
+  const logos={"instagram":"instagram","telegram":"telegram","whatsapp":"whatsapp","tiktok":"tiktok","threads":"threads","youtube":"youtube","facebook":"facebook","twitter":"x","spotify":"spotify","kick":"kick","twitch":"twitch","snapchat":"snapchat","soundcloud":"soundcloud","shopee":"shopee","reddit":"reddit","google":"google","discord":"discord","pinterest":"pinterest","clubhouse":"clubhouse","deezer":"deezer","apple music":"applemusic","trustpilot":"trustpilot","line":"line","dailymotion":"dailymotion","quora":"quora","tumblr":"tumblr","tidal":"tidal","shazam":"shazam","vimeo":"vimeo","rumble":"rumble","linkedin":"linkedin","kwai":"kuaishou","apple":"apple","android":"android","bluesky":"bluesky","vk":"vk","medium":"medium","audiomack":"audiomack","mixcloud":"mixcloud","ok.ru":"odnoklassniki","github":"github","napster":"napster","reverbnation":"reverbnation"};
+  const brandColors={instagram:'#d94691',tiktok:'#22c5ca',youtube:'#f04444',facebook:'#3984f5',twitter:'#768390',telegram:'#27a7df',spotify:'#23c86b',twitch:'#9560ff',kick:'#62dd21',whatsapp:'#25c875',pinterest:'#e53950',linkedin:'#2685bb',snapchat:'#dfce25',soundcloud:'#f77d2b',discord:'#7981f5'};
+  const prettyNames={instagram:'Instagram',tiktok:'TikTok',youtube:'YouTube',facebook:'Facebook',twitter:'X / Twitter',telegram:'Telegram',spotify:'Spotify',twitch:'Twitch',kick:'Kick',whatsapp:'WhatsApp',pinterest:'Pinterest',linkedin:'LinkedIn',snapchat:'Snapchat',soundcloud:'SoundCloud',kwai:'Kwai',threads:'Threads',shazam:'Shazam','apple music':'Apple Music',discord:'Discord',clubhouse:'Clubhouse',reddit:'Reddit',quora:'Quora',google:'Google',line:'LINE',dailymotion:'Dailymotion',trustpilot:'Trustpilot','outras plataformas':'Outras plataformas',website:'Sites e páginas'};
+  const moeda=valor=>Number(valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const tarifa=valor=>Number(valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:8});
+  function capitalizar(s){return prettyNames[s]||(s?s.charAt(0).toUpperCase()+s.slice(1):'');}
+  function nomeAmigavel(s){return CatalogText.translate(s);}
+  function etapaCompra(etapa){for(const id of ['rede','tipo','servico','pagar']){const el=$('passo-'+id);if(id===etapa)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');}}
+  function quantidadeInicial(s){if(OrderForms.isPackage(s))return 1;return Math.min(Number(s.max),Math.max(Number(s.min),Math.ceil(5/Number(s.precoPorMil))));}
   function ordenarServicos(lista){
-    if(ordemServicos==='preco_asc') return [...lista].sort((a,b)=>a.precoPorMil-b.precoPorMil);
-    if(ordemServicos==='preco_desc') return [...lista].sort((a,b)=>b.precoPorMil-a.precoPorMil);
-    if(ordemServicos==='destaque') return [...lista].sort((a,b)=>(b.destaque?1:0)-(a.destaque?1:0));
-    return lista;
+    const sorted=[...lista];if(ordemServicos==='preco_asc')return sorted.sort((a,b)=>a.precoPorMil-b.precoPorMil);
+    if(ordemServicos==='preco_desc')return sorted.sort((a,b)=>b.precoPorMil-a.precoPorMil);
+    return sorted.sort((a,b)=>(b.ordemRecursos??CatalogText.score(b))-(a.ordemRecursos??CatalogText.score(a))||a.precoPorMil-b.precoPorMil);
   }
-
+  function networkLogo(rede){const wrap=document.createElement('span');wrap.className='network-logo';if(logos[rede]){const img=document.createElement('img');img.src='/network-logos/'+logos[rede]+'.svg';img.alt='';img.width=26;img.height=26;wrap.append(img);}else wrap.textContent='🌐';return wrap;}
+  let mostrarTodasRedes=false;
+  function filtrarRedes(){const search=$('redes-busca').value.trim().toLowerCase();const buttons=[...document.querySelectorAll('.rede-tab')];buttons.forEach((b,i)=>b.hidden=search?!b.textContent.toLowerCase().includes(search):!mostrarTodasRedes&&i>=8);$('redes-mais').hidden=buttons.length<=8||!!search;$('redes-mais').textContent=mostrarTodasRedes?'Mostrar redes principais':'Ver todas as redes ('+buttons.length+')';}
+  $('redes-busca').addEventListener('input',filtrarRedes);$('redes-mais').addEventListener('click',()=>{mostrarTodasRedes=!mostrarTodasRedes;filtrarRedes();});
   async function carregarFiltrosIniciais(){
-    try{
-      const r = await fetch(`${API_BASE}/api/services`);
-      if(!r.ok)throw new Error();
-      const data = await r.json();
-      const redesTabs = $('redes-tabs');
-      redesTabs.innerHTML = safeHTML('');
-      (data.redesSociais||[]).forEach(rede=>{
-        const btn = document.createElement('button');
-        btn.className = 'rede-tab';
-        btn.textContent = (iconeRede[rede.toLowerCase()]||'🌐') + ' ' + capitalizar(rede);
-        btn.dataset.rede = rede;
-        btn.addEventListener('click',()=>selecionarRede(rede));
-        redesTabs.appendChild(btn);
-      });
-      if(!redesTabs.children.length)redesTabs.textContent='Nenhuma opção disponível agora. Fale com a equipe na aba Preciso de ajuda.';
-    }catch(e){ $('redes-tabs').innerHTML=safeHTML('<p style="color:var(--muted);font-size:13px;">Erro ao carregar redes.</p>'); }
+    try{const r=await fetch('/api/services');if(!r.ok)throw Error();const data=await r.json(),el=$('redes-tabs');el.replaceChildren();
+      for(const rede of data.redesSociais||[]){const button=document.createElement('button');button.type='button';button.className='rede-tab';button.dataset.rede=rede;button.setAttribute('aria-pressed','false');button.style.setProperty('--network-color',brandColors[rede]||'#52b98c');button.append(networkLogo(rede));const label=document.createElement('span');label.textContent=capitalizar(rede);button.append(label);const count=(data.redes||[]).find(x=>x.nome===rede)?.total;if(count){const small=document.createElement('small');small.textContent=count.toLocaleString('pt-BR')+' opções';button.append(small);}button.addEventListener('click',()=>selecionarRede(rede));el.append(button);}
+      filtrarRedes();if(!el.children.length)el.textContent='Nenhuma opção disponível agora. Fale com a equipe em Preciso de ajuda.';
+    }catch{$('redes-tabs').textContent='Não foi possível carregar as redes. Atualize a página ou fale com a equipe.';}
   }
-
   async function selecionarRede(rede){
-    etapaCompra('tipo');
-    redeSelecionada = rede; tipoSelecionado = ''; servicoSelecionado = null;
-    // destaca o botão
-    document.querySelectorAll('.rede-tab').forEach(b=>b.classList.toggle('ativa',b.dataset.rede===rede));
-    // mostra spinner
-    $('painel-tipos').classList.remove('hidden');
-    $('painel-servicos-lista').classList.add('hidden');
-    $('painel-form-pedido').classList.add('hidden');
-    $('rede-selecionada-label').textContent = (iconeRede[rede.toLowerCase()]||'🌐') + ' ' + capitalizar(rede);
-    $('tipos-chips').innerHTML = safeHTML('<span style="color:var(--muted);font-size:13px;">Carregando...</span>');
-
-    try{
-      const r = await fetch(`${API_BASE}/api/services?redeSocial=${encodeURIComponent(rede)}`);
-      if(!r.ok)throw new Error();
-      const data = await r.json();
-      if(redeSelecionada!==rede)return;
-      todosServicos = data.servicos||[];
-      const tipos = [...new Set(todosServicos.map(s=>s.servicoTipo).filter(Boolean))];
-      $('tipos-chips').innerHTML = safeHTML('');
-      tipos.forEach(tipo=>{
-        const chip = document.createElement('button');
-        chip.className = 'tipo-chip';
-        chip.textContent = capitalizar(tipo);
-        chip.dataset.tipo = tipo;
-        chip.addEventListener('click',()=>selecionarTipo(tipo));
-        $('tipos-chips').appendChild(chip);
-      });
-      if(!tipos.length)$('tipos-chips').textContent='Não há opções disponíveis nesta rede no momento. Escolha outra rede.';
-    }catch(e){ $('tipos-chips').innerHTML=safeHTML('<span style="color:#ff8b8b;font-size:13px;">Erro ao carregar tipos.</span>'); }
+    redeSelecionada=rede;tipoSelecionado='';servicoSelecionado=null;etapaCompra('tipo');
+    document.querySelectorAll('.rede-tab').forEach(b=>{b.classList.toggle('ativa',b.dataset.rede===rede);b.setAttribute('aria-pressed',String(b.dataset.rede===rede));});
+    $('painel-tipos').classList.remove('hidden');$('painel-servicos-lista').classList.add('hidden');$('painel-form-pedido').classList.add('hidden');$('rede-selecionada-label').textContent=capitalizar(rede);$('tipos-chips').textContent='Carregando objetivos…';
+    try{const r=await fetch('/api/services?redeSocial='+encodeURIComponent(rede));if(!r.ok)throw Error();const data=await r.json();if(redeSelecionada!==rede)return;todosServicos=(data.servicos||[]).map(s=>({...s,redeSocial:rede}));const tipos=[...new Set(todosServicos.map(s=>s.servicoTipo).filter(Boolean))];$('tipos-chips').replaceChildren();for(const tipo of tipos){const b=document.createElement('button');b.type='button';b.className='tipo-chip';b.dataset.tipo=tipo;b.textContent=capitalizar(tipo);b.addEventListener('click',()=>selecionarTipo(tipo));$('tipos-chips').append(b);}if(!tipos.length)$('tipos-chips').textContent='Não há opções nesta rede. Escolha outra rede.';$('painel-tipos').scrollIntoView({behavior:'smooth',block:'nearest'});
+    }catch{if(redeSelecionada===rede)$('tipos-chips').textContent='Não foi possível carregar as opções. Tente selecionar a rede novamente.';}
   }
-
+  let limiteServicos=20;
   function selecionarTipo(tipo){
-    etapaCompra('servico');
-    tipoSelecionado = tipo; servicoSelecionado = null;
-    document.querySelectorAll('.tipo-chip').forEach(c=>c.classList.toggle('ativo',c.dataset.tipo===tipo));
-    $('tipo-selecionado-label').textContent = capitalizar(tipo);
-    const filtrados = ordenarServicos(todosServicos.filter(s=>(s.servicoTipo||'').toLowerCase()===tipo.toLowerCase()));
-    const lista = $('servicos-lista');
-    lista.innerHTML = safeHTML('');
-    filtrados.forEach(s=>{
-      const card = document.createElement('button');
-      card.type='button';card.setAttribute('aria-pressed','false');
-      card.className = 'servico-card';
-      card.dataset.id = s.id;
-      card.innerHTML = safeHTML(`
-        <div class="servico-card-top">
-          <span class="servico-card-nome">${escapeHTML(s.icone?s.icone+' ':'')}${escapeHTML(nomeAmigavel(s.nome))}</span>
-          <span class="servico-card-preco">${escapeHTML(moeda(Math.round(s.precoPorMil*quantidadeInicial(s)/10)/100))}<br><span class="preco-detalhe">por ${escapeHTML(quantidadeInicial(s).toLocaleString('pt-BR'))}</span></span>
-        </div>
-        <div class="servico-card-info">De ${escapeHTML(s.min)} até ${escapeHTML(s.max.toLocaleString('pt-BR'))} · ${escapeHTML(tarifa(s.precoPorMil))} por 1.000${escapeHTML(s.refill?' · Reposição disponível':'')}</div>
-      `);
-      card.addEventListener('click',()=>selecionarServico(s));
-      lista.appendChild(card);
-    });
-    $('painel-servicos-lista').classList.remove('hidden');
-    $('painel-form-pedido').classList.add('hidden');
+    tipoSelecionado=tipo;servicoSelecionado=null;etapaCompra('servico');limiteServicos=20;
+    document.querySelectorAll('.tipo-chip').forEach(b=>b.classList.toggle('ativo',b.dataset.tipo===tipo));
+    $('tipo-selecionado-label').textContent=capitalizar(tipo);$('servico-busca').value='';$('servico-categoria').replaceChildren();
+    const all=document.createElement('option');all.value='';all.textContent='Todas as categorias';$('servico-categoria').append(all);
+    const categorias=[...new Set(todosServicos.filter(s=>s.servicoTipo===tipo).map(s=>s.categoria).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));for(const categoria of categorias){const op=document.createElement('option');op.value=categoria;op.textContent=categoria;$('servico-categoria').append(op);}
+    $('painel-servicos-lista').classList.remove('hidden');$('painel-form-pedido').classList.add('hidden');renderizarServicos();
   }
-
-  function selecionarServico(s){
-    etapaCompra('pagar');
-    servicoSelecionado = s;
-    document.querySelectorAll('.servico-card').forEach(c=>c.classList.toggle('selecionado',String(c.dataset.id)===String(s.id)));
-    document.querySelectorAll('.servico-card').forEach(c=>c.setAttribute('aria-pressed',String(String(c.dataset.id)===String(s.id))));
-    $('servico-nome-display').textContent = (s.icone?s.icone+' ':'')+nomeAmigavel(s.nome);
-    $('servico-info-display').textContent = `${tarifa(s.precoPorMil)} por 1.000 · Quantidade de ${s.min} a ${s.max.toLocaleString('pt-BR')}`;
-    // instrução
-    const instrEl = $('eng-instrucao');
-    const tipo = (s.servicoTipo||'').toLowerCase();
-    const nome = (s.nome||'').toLowerCase();
-    let instrucao='', placeholder='https://...';
-    if(tipo.includes('seguidor')||nome.includes('seguidor')){
-      instrucao=`👤 <strong>Cole o link do seu perfil.</strong><br>Mantenha o perfil público durante o processamento. Não precisamos da senha da sua rede social.`;
-      placeholder='https://instagram.com/seuperfil';
-    } else if(tipo.includes('curtida')||nome.includes('curtida')||nome.includes('like')){
-      instrucao=`❤️ <strong>Cole o link da postagem</strong> que deseja receber curtidas.<br>⚠️ Postagem deve estar <strong>pública</strong>.`;
-      placeholder='https://instagram.com/p/seu-post';
-    } else if(tipo.includes('visuali')||nome.includes('view')){
-      instrucao=`▶️ <strong>Cole o link do vídeo/reels</strong><br>⚠️ Conteúdo deve estar <strong>público</strong>.`;
-      placeholder='https://instagram.com/reel/seu-video';
-    } else if(tipo.includes('comentar')||nome.includes('comment')){
-      instrucao=`💬 <strong>Cole o link da postagem</strong> onde deseja comentários.<br>⚠️ Postagem deve estar <strong>pública</strong>.`;
-      placeholder='https://instagram.com/p/seu-post';
-    } else {
-      instrucao=`🔗 <strong>Cole o link correto</strong> para o serviço.<br>⚠️ O perfil ou postagem deve estar <strong>público</strong>.`;
+  function renderizarServicos(){
+    const search=$('servico-busca').value.toLocaleLowerCase('pt-BR').trim(),category=$('servico-categoria').value;
+    const filtered=ordenarServicos(todosServicos.filter(s=>s.servicoTipo===tipoSelecionado&&(!category||s.categoria===category)&&(!search||(s.nome+' '+s.categoria+' '+s.id).toLocaleLowerCase('pt-BR').includes(search))));
+    const list=$('servicos-lista');list.replaceChildren();
+    for(const s of filtered.slice(0,limiteServicos)){
+      const card=document.createElement('button');card.type='button';card.className='servico-card';card.dataset.id=s.id;card.setAttribute('aria-pressed','false');
+      const spec=OrderForms.describe(s),amount=Math.max(0.01,Math.round(s.precoPorMil*(spec.package?100:quantidadeInicial(s)/10))/100);
+      const unit=spec.package?'pelo pacote':spec.subscription?'por publicação (quantidade inicial)':'por '+quantidadeInicial(s).toLocaleString('pt-BR')+' unidades';
+      card.innerHTML=safeHTML('<span class="service-category">'+escapeHTML(s.categoria||tipoSelecionado)+'</span><span class="servico-card-top"><span class="servico-card-nome">'+escapeHTML(nomeAmigavel(s.nome))+'</span></span><span class="service-badges">'+(s.refill?'<span>↻ Reposição</span>':'')+(s.cancel?'<span>Cancelamento disponível</span>':'')+'</span><span class="service-price">'+escapeHTML(moeda(amount))+' <small>'+escapeHTML(unit)+'</small></span><span class="service-open">Ver instruções e fazer pedido →</span>');
+      card.addEventListener('click',()=>selecionarServico(s));list.append(card);
     }
-    instrEl.innerHTML = safeHTML(instrucao);
-    instrEl.style.display = 'block';
-    const hosts={instagram:'https://www.instagram.com/',tiktok:'https://www.tiktok.com/@',youtube:'https://www.youtube.com/',facebook:'https://www.facebook.com/',twitter:'https://x.com/',telegram:'https://t.me/',spotify:'https://open.spotify.com/'};
-    if(hosts[redeSelecionada])placeholder=hosts[redeSelecionada]+(tipo.includes('seguidor')?'seuperfil':'link-da-publicacao');
-    $('eng-link').placeholder = placeholder;
-    $('eng-link').value=''; $('eng-qtd').value=quantidadeInicial(s);
-    $('eng-qtd').min=s.min;$('eng-qtd').max=s.max;
-    $('eng-qtd-ajuda').textContent=`Escolha entre ${s.min.toLocaleString('pt-BR')} e ${s.max.toLocaleString('pt-BR')}. O valor total aparece ao informar um link válido.`;
-    $('eng-validacao').textContent='';$('eng-quantidades').replaceChildren();
-    [...new Set([quantidadeInicial(s),100,500,1000])].filter(q=>q>=s.min&&q<=s.max).sort((a,b)=>a-b).forEach(q=>{
-      const button=document.createElement('button');button.type='button';button.textContent=q.toLocaleString('pt-BR');button.addEventListener('click',()=>{$('eng-qtd').value=q;atualizarPreco();});$('eng-quantidades').append(button);
-    });
-    $('eng-resultado').classList.add('hidden');
-    $('eng-msg').textContent='';
-    const isCustom = s.tipo?.toLowerCase().includes('custom')||nome.includes('personaliz')||nome.includes('custom');
-    $('eng-comments-wrap').classList.toggle('hidden',!isCustom);
-    if(!isCustom) $('eng-comments').value='';
-    $('painel-form-pedido').classList.remove('hidden');
-    $('painel-form-pedido').scrollIntoView({behavior:'smooth',block:'start'});
+    $('servicos-contagem').textContent=filtered.length?'Mostrando '+Math.min(limiteServicos,filtered.length)+' de '+filtered.length.toLocaleString('pt-BR')+' opções':'Nenhuma opção encontrada. Limpe a busca ou escolha outra categoria.';
+    $('servicos-mais').hidden=filtered.length<=limiteServicos;
   }
-
-  $('btn-voltar-servicos').addEventListener('click',()=>{
-    etapaCompra('servico');
-    $('painel-form-pedido').classList.add('hidden');
-    $('painel-servicos-lista').scrollIntoView({behavior:'smooth',block:'start'});
-  });
-
-  function atualizarPreco(){
-    $('eng-resultado').classList.add('hidden');$('eng-validacao').textContent='';
-    if(!servicoSelecionado)return false;
-    const link=$('eng-link').value.trim();
-    if(!link)return false;
-    try{const url=new URL(link);if(!['https:','http:'].includes(url.protocol)||url.username||url.password)throw new Error();}
-    catch{$('eng-validacao').textContent='Cole o link completo, começando com https://';return false;}
-    const qtd=Number($('eng-qtd').value);
-    if(!Number.isSafeInteger(qtd)||qtd<servicoSelecionado.min||qtd>servicoSelecionado.max){$('eng-validacao').textContent=`Informe uma quantidade inteira entre ${servicoSelecionado.min} e ${servicoSelecionado.max.toLocaleString('pt-BR')}.`;return false;}
-    const total=Math.round(servicoSelecionado.precoPorMil*qtd/10)/100;
-    if(total<0.01){$('eng-validacao').textContent='Aumente a quantidade para atingir o valor mínimo de R$ 0,01.';return false;}
-    if(!$('eng-comments-wrap').classList.contains('hidden')&&!$('eng-comments').value.trim()){$('eng-validacao').textContent='Escreva os comentários que deseja enviar, um por linha.';return false;}
-    $('eng-resumo').textContent=`Confira: ${qtd.toLocaleString('pt-BR')} ${servicoSelecionado.servicoTipo||'unidades'} em ${capitalizar(redeSelecionada)} para ${link}`;
-    $('eng-preco').textContent=moeda(total);
-    $('eng-resultado').classList.remove('hidden');
-    return true;
+  for(const id of ['servico-busca','servico-categoria','servico-ordem'])$(id).addEventListener(id==='servico-busca'?'input':'change',()=>{limiteServicos=20;ordemServicos=$('servico-ordem').value;renderizarServicos();});
+  $('servicos-mais').addEventListener('click',()=>{limiteServicos+=20;renderizarServicos();});
+  function dadosDoPedido(){
+    const body={link:$('eng-link').value.trim(),quantidade:$('eng-qtd').value,comments:$('eng-comments').value};
+    document.querySelectorAll('[data-pedido-field]').forEach(el=>body[el.dataset.pedidoField]=el.value);
+    const normalized=OrderForms.normalize(servicoSelecionado,body);
+    return {...body,idFornecedor:servicoSelecionado.id,quantidade:normalized.quantity,...(normalized.link?{link:normalized.link}:{})};
   }
-
-  $('eng-link').addEventListener('input',atualizarPreco);
-  $('eng-qtd').addEventListener('input',atualizarPreco);
-  $('eng-comments').addEventListener('input',atualizarPreco);
-
-  function msgEng(texto,tipo){ $('eng-msg').textContent=texto||''; $('eng-msg').className='msg'+(tipo?' '+tipo:''); }
+  function selecionarServico(s){
+    servicoSelecionado=s;etapaCompra('pagar');
+    document.querySelectorAll('.servico-card').forEach(c=>{const active=String(c.dataset.id)===String(s.id);c.classList.toggle('selecionado',active);c.setAttribute('aria-pressed',String(active));});
+    const spec=OrderForms.describe(s),dest=spec.target;
+    $('servico-nome-display').textContent=nomeAmigavel(s.nome);$('servico-info-display').textContent=spec.package?tarifa(s.precoPorMil)+' pelo pacote':tarifa(s.precoPorMil)+' por 1.000'+(spec.subscription?', por publicação':'');
+    $('eng-instrucao').textContent=spec.instruction;$('eng-instrucao').style.display='block';
+    $('eng-caracteristicas').textContent=(s.descricao?nomeAmigavel(s.descricao)+'\n\n':'')+'Categoria: '+(s.categoria||s.servicoTipo)+'. '+(s.refill?'Reposição disponível. ':'')+(s.cancel?'Permite solicitar cancelamento. ':'')+'Prazos e características indicados no nome são estimativas anunciadas; não garantem resultado ou horário exato.';
+    $('eng-link-wrap').classList.toggle('hidden',!spec.linkRequired);$('eng-link-label').textContent=dest.label;$('eng-link').placeholder=dest.example;$('eng-link').value='';
+    $('eng-qtd-wrap').classList.toggle('hidden',!spec.quantity);$('eng-qtd-label').textContent=spec.subscription?'Quantidade para cada publicação':'Quantidade desejada';
+    $('eng-qtd').min=s.min;$('eng-qtd').max=s.max;$('eng-qtd').value=quantidadeInicial(s);$('eng-qtd-ajuda').textContent='Escolha entre '+s.min.toLocaleString('pt-BR')+' e '+s.max.toLocaleString('pt-BR')+(spec.subscription?' por publicação.':' unidades.');
+    $('eng-validacao').textContent='';$('eng-msg').textContent='';$('eng-resultado').classList.add('hidden');$('eng-campos-extra').replaceChildren();$('eng-comments').value='';
+    const comment=spec.fields.find(f=>f.key==='comments');$('eng-comments-wrap').classList.toggle('hidden',!comment);
+    if(comment){$('eng-comments-label').textContent=comment.label;$('eng-comments-ajuda').textContent=comment.help+(spec.package?' Confira a quantidade de textos informada no nome do pacote.':' Mínimo: '+s.min+'; máximo: '+s.max.toLocaleString('pt-BR')+'.');}
+    for(const field of spec.fields.filter(f=>f.key!=='comments')){
+      const wrap=document.createElement('div'),label=document.createElement('label');label.className='label';label.htmlFor='pedido-'+field.key;label.textContent=field.label;wrap.append(label);
+      const input=document.createElement(field.input==='textarea'?'textarea':field.input==='select'?'select':'input');input.className=field.input==='select'?'select':'input';if(!['textarea','select'].includes(field.input))input.type=field.input;input.id='pedido-'+field.key;input.dataset.pedidoField=field.key;input.required=field.required;
+      if(field.placeholder)input.placeholder=field.placeholder;if(field.min!==undefined)input.min=field.min;if(field.max!==undefined)input.max=field.max;
+      if(field.input==='number'){input.step='1';input.inputMode='numeric';}
+      if(field.input==='textarea')input.rows=4;
+      if(field.options)for(const option of field.options){const op=document.createElement('option');op.value=option.value;op.textContent=option.label;input.append(op);}
+      if(field.defaultValue!==undefined)input.value=field.defaultValue;
+      if(field.key==='posts')input.value=1;
+      if(field.input==='date'){const date=new Date();date.setDate(date.getDate()+30);input.value=date.toISOString().slice(0,10);input.min=new Date().toISOString().slice(0,10);}
+      const help=document.createElement('p');help.id='pedido-ajuda-'+field.key;help.className='preco-detalhe';help.textContent=field.help;input.setAttribute('aria-describedby',help.id);wrap.append(input,help);input.addEventListener('input',atualizarPreco);input.addEventListener('change',atualizarPreco);$('eng-campos-extra').append(wrap);
+    }
+    $('eng-quantidades').replaceChildren();if(spec.quantity)for(const q of [...new Set([quantidadeInicial(s),100,500,1000])].filter(q=>q>=s.min&&q<=s.max).sort((a,b)=>a-b)){const b=document.createElement('button');b.type='button';b.textContent=q.toLocaleString('pt-BR');b.addEventListener('click',()=>{$('eng-qtd').value=q;atualizarPreco();});$('eng-quantidades').append(b);}
+    $('painel-form-pedido').classList.remove('hidden');$('painel-form-pedido').scrollIntoView({behavior:'smooth',block:'start'});atualizarPreco(false);
+  }
+  $('btn-voltar-servicos').addEventListener('click',()=>{etapaCompra('servico');$('painel-form-pedido').classList.add('hidden');$('painel-servicos-lista').scrollIntoView({behavior:'smooth',block:'start'});});
+  function atualizarPreco(show){
+    $('eng-resultado').classList.add('hidden');$('eng-validacao').textContent='';if(!servicoSelecionado)return false;
+    try{const body=dadosDoPedido(),normalized=OrderForms.normalize(servicoSelecionado,body),price=OrderForms.amount(servicoSelecionado,servicoSelecionado.precoPorMil,normalized);
+      const summary=normalized.package?'1 pacote':normalized.subscription?normalized.quantity.toLocaleString('pt-BR')+' por publicação; até '+normalized.units+' publicações (novas e antigas)':normalized.quantity.toLocaleString('pt-BR')+' unidades';
+      $('eng-resumo').textContent='Confira: '+summary+' em '+capitalizar(redeSelecionada)+'. Destino: '+(normalized.params.username||normalized.link)+'.'+(normalized.subscription?' Compra limitada, sem renovação automática.':'');
+      $('eng-preco').textContent=moeda(price.value);$('eng-resultado').classList.remove('hidden');return true;
+    }catch(e){if(show!==false)$('eng-validacao').textContent=e.message;return false;}
+  }
+  for(const id of ['eng-link','eng-qtd','eng-comments'])$(id).addEventListener('input',atualizarPreco);
+  function msgEng(texto,tipo){$('eng-msg').textContent=texto||'';$('eng-msg').className='msg'+(tipo?' '+tipo:'');}
 
   // ===== PAGAMENTOS =====
   let saldoAtual=0;
@@ -325,12 +247,12 @@
     if(!servicoSelecionado||!clienteId) return;
     if(!atualizarPreco())return;
     const qtd=Number($('eng-qtd').value);
-    const valorTotal=Math.round(servicoSelecionado.precoPorMil*qtd/10)/100;
+    const valorTotal=OrderForms.amount(servicoSelecionado,servicoSelecionado.precoPorMil,OrderForms.normalize(servicoSelecionado,dadosDoPedido())).value;
     try{ const rS=await fetch(`${API_BASE}/api/carteira?clienteId=${encodeURIComponent(clienteId)}`); const dS=await rS.json(); saldoAtual=Number(dS.saldo||0); $('saldo-display').textContent=`💰 R$ ${saldoAtual.toFixed(2)}`; }catch(e){}
     if(saldoAtual<valorTotal){ msgEng(`Saldo insuficiente (R$ ${saldoAtual.toFixed(2)}). Recarregue na aba Carteira.`,'erro'); return; }
     $('eng-pagar-saldo').disabled=true; msgEng('Processando com saldo...');
     try{
-      const r=await fetch(`${API_BASE}/api/order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idFornecedor:servicoSelecionado.id,link:$('eng-link').value,quantidade:qtd,clienteId,pagarComSaldo:true,comments:$('eng-comments').value||null})});
+      const r=await fetch(`${API_BASE}/api/order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...dadosDoPedido(),clienteId,pagarComSaldo:true})});
       const data=await r.json();
       if(!r.ok){ msgEng(data.erro||'Erro','erro'); $('eng-pagar-saldo').disabled=false; return; }
       saldoAtual=data.novoSaldo||0; $('saldo-display').textContent=`💰 R$ ${saldoAtual.toFixed(2)}`;
@@ -344,7 +266,7 @@
     if(!atualizarPreco())return;
     $('eng-pagar-pix').disabled=true; msgEng('Criando pedido...');
     try{
-      const r=await fetch(`${API_BASE}/api/order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idFornecedor:servicoSelecionado.id,link:$('eng-link').value,quantidade:Number($('eng-qtd').value),clienteId,pagarComSaldo:false,comments:$('eng-comments').value||null})});
+      const r=await fetch(`${API_BASE}/api/order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...dadosDoPedido(),clienteId,pagarComSaldo:false})});
       const data=await r.json();
       if(!r.ok){ msgEng(data.erro||'Erro ao criar pedido','erro'); $('eng-pagar-pix').disabled=false; return; }
       msgEng('Gerando PIX...');
@@ -497,7 +419,7 @@
     try{
       const r=await fetch(`${API_BASE}/api/config`);
       const data=await r.json();
-      ordemServicos=data.ordemServicos||'padrao';
+      ordemServicos=data.ordemServicos||'recursos';
       if(data.whatsappSuporte){ const el=$('float-whats'); if(el){ el.href=`https://wa.me/${data.whatsappSuporte}`; el.style.display='flex'; } }
     }catch(e){}
   }

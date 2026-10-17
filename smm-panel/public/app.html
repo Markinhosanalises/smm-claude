@@ -129,6 +129,7 @@
   .redes-badges{display:flex;justify-content:center;gap:10px;margin-bottom:22px;flex-wrap:wrap;}
   .rede-badge{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--muted);}
 </style>
+<link rel="stylesheet" href="/order-ui.css">
 </head>
 <body>
 
@@ -211,12 +212,14 @@
     </ol>
     <div class="card">
       <p class="eyebrow">Disponível agora</p>
-      <h2 class="title">Onde você quer divulgar?</h2>
+      <h2 class="title">Onde você quer engajar?</h2>
       <p class="sub">Escolha uma rede. Depois, informe o que deseja, o link e a quantidade. Você verá o total antes de pagar.</p>
+      <label class="label" for="redes-busca">Encontre sua rede</label><input class="input" id="redes-busca" type="search" placeholder="Ex.: Instagram, TikTok ou YouTube">
       <!-- Botões de rede social -->
       <div class="redes-tabs" id="redes-tabs">
         <div style="color:var(--muted);font-size:13px;">Carregando redes...</div>
       </div>
+      <button class="btn-sec" id="redes-mais" type="button" hidden>Ver todas as redes</button>
     </div>
 
     <!-- Tipos de serviço (aparece após selecionar rede) -->
@@ -233,8 +236,15 @@
       <div class="card">
         <p class="eyebrow" id="tipo-selecionado-label">Seguidores</p>
         <h2 class="title" style="font-size:16px;">Escolha uma opção</h2>
-        <p class="sub">Compare o preço para a quantidade mínima. O total muda conforme a quantidade escolhida.</p>
-        <div class="servicos-lista" id="servicos-lista"></div>
+        <p class="sub">Compare as opções e abra uma delas para ver as instruções. Cada modalidade tem seus próprios campos e forma de cobrança.</p>
+        <div class="catalog-filters">
+          <div><label class="label" for="servico-busca">Buscar uma característica</label><input class="input" id="servico-busca" type="search" placeholder="Ex.: Brasil, reposição, comentários"></div>
+          <div><label class="label" for="servico-categoria">Categoria</label><select class="select" id="servico-categoria"><option value="">Todas as categorias</option></select></div>
+          <div><label class="label" for="servico-ordem">Ordenar opções</label><select class="select" id="servico-ordem"><option value="recursos">Mais recursos primeiro</option><option value="preco_asc">Menor preço</option><option value="preco_desc">Maior preço</option></select></div>
+        </div>
+        <p class="preco-detalhe">Mais recursos prioriza reposição e possibilidade de cancelamento. Não é uma avaliação de qualidade ou garantia de entrega.</p>
+        <p id="servicos-contagem" class="msg" role="status" aria-live="polite"></p>
+        <div class="servicos-lista" id="servicos-lista"></div><button class="btn-sec" id="servicos-mais" type="button" hidden>Mostrar mais opções</button>
       </div>
     </div>
 
@@ -246,24 +256,27 @@
           <div style="font-size:12px;color:var(--muted);" id="servico-info-display"></div>
         </div>
 
+        <details class="service-details"><summary>Características e condições desta opção</summary><p id="eng-caracteristicas" class="preco-detalhe"></p></details>
         <div id="eng-instrucao" style="display:none;background:#1a2a1a;border:1px solid rgba(124,255,178,.2);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12.5px;color:#a8e6c0;line-height:1.6;"></div>
 
-        <details class="preco-detalhe" style="margin-bottom:16px;"><summary style="cursor:pointer;color:var(--accent)">Como copiar o link?</summary><p>Abra o perfil ou a publicação na rede social. Procure Compartilhar ou o menu de três pontos e escolha Copiar link. Volte aqui e cole o endereço completo.</p></details>
-        <label class="label" for="eng-link">Cole o link do perfil ou da publicação</label>
-        <input class="input" id="eng-link" type="url" inputmode="url" autocomplete="url" placeholder="https://instagram.com/seuperfil" aria-describedby="eng-instrucao eng-validacao">
+        <div id="eng-link-wrap"><details class="preco-detalhe" style="margin-bottom:16px;"><summary style="cursor:pointer;color:var(--accent)">Como copiar o link?</summary><p>Abra o perfil ou a publicação na rede social. Procure Compartilhar ou o menu de três pontos e escolha Copiar link. Volte aqui e cole o endereço completo.</p></details>
+        <label class="label" id="eng-link-label" for="eng-link">Cole o link do perfil ou da publicação</label>
+        <input class="input" id="eng-link" type="url" inputmode="url" autocomplete="url" placeholder="https://instagram.com/seuperfil" aria-describedby="eng-instrucao eng-validacao"></div>
 
-        <label class="label" for="eng-qtd">Quantos você quer?</label>
+        <div id="eng-qtd-wrap"><label class="label" id="eng-qtd-label" for="eng-qtd">Quantos você quer?</label>
         <input class="input" id="eng-qtd" type="number" inputmode="numeric" step="1" placeholder="Ex.: 500" aria-describedby="eng-qtd-ajuda eng-validacao">
         <p class="preco-detalhe" id="eng-qtd-ajuda"></p>
-        <div class="quantidades-rapidas" id="eng-quantidades" aria-label="Sugestões de quantidade"></div>
+        <div class="quantidades-rapidas" id="eng-quantidades" aria-label="Sugestões de quantidade"></div></div>
         <p class="msg" id="eng-validacao" role="status" aria-live="polite"></p>
 
         <div id="eng-comments-wrap" class="hidden">
-          <label class="label">Seus comentários (um por linha)</label>
+          <label class="label" id="eng-comments-label" for="eng-comments">Seus comentários (um por linha)</label>
           <textarea class="input" id="eng-comments" rows="4" placeholder="Que foto incrível!&#10;Adorei demais!" style="resize:vertical;height:100px;"></textarea>
-          <p style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:14px;">Um comentário por linha.</p>
+          <p id="eng-comments-ajuda" class="preco-detalhe">Um comentário por linha.</p>
         </div>
 
+        <div id="eng-campos-extra"></div>
+        <p class="preco-detalhe">Pedido mínimo: R$ 0,01. Confira o destino e o total antes de pagar.</p>
         <div id="eng-resultado" class="hidden">
           <p class="preco-detalhe" id="eng-resumo"></p>
           <div class="preco-row">
@@ -425,6 +438,8 @@
 <script src="/vendor/purify.min.js"></script>
 <script src="/safe-html.js"></script>
 <script src="/api-client.js"></script>
+<script src="/service-forms.js"></script>
+<script src="/catalog-text.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

@@ -4,6 +4,9 @@ const { url, text, fail } = require('./http');
 const { digest } = require('./auth');
 const wallet = require('./wallet');
 const { criarPedido } = require('./fornecedor');
+const forms = require('../public/service-forms');
+const catalogText = require('../public/catalog-text');
+const { rate } = require('./pricing');
 function requestKey(req) {
   const value = req.headers['idempotency-key'] || req.headers['x-idempotency-key'];
   if (typeof value !== 'string' || !/^[a-zA-Z0-9_-]{16,100}$/.test(value)) fail('Envie Idempotency-Key com 16 a 100 caracteres');
@@ -32,7 +35,7 @@ async function dispatch(id) {
   if (!claim.committed) return fbGet('pedidos/' + id);
   const p = claim.value;
   let reply;
-  try { reply = await criarPedido({ service: p.idFornecedor, link: p.link, quantity: p.quantidade, ...(p.comments ? { comments: p.comments } : {}) }); }
+  try { reply = await criarPedido(p.providerParams ? { service: p.idFornecedor, ...p.providerParams } : { service: p.idFornecedor, link: p.link, quantity: p.quantidade, ...(p.comments ? { comments: p.comments } : {}) }); }
   catch {
     // A timeout may mean the provider accepted the order. Never retry/refund automatically.
     await fbPatch('pedidos/' + id, { status: 'revisao_fornecedor', erroFornecedor: 'Resultado do envio desconhecido. Conferir no fornecedor antes de qualquer reenvio.' });
@@ -51,20 +54,28 @@ async function dispatch(id) {
 }
 async function create(customerId, customer, body, operation) {
   const service = key(body.idFornecedor ?? body.service);
-  const link = url(body.link, 'Link');
-  const quantity = body.quantidade ?? body.quantity;
-  const comments = body.comments ? text(body.comments, 'Comentários', 10000) : null;
   const payment = body.pagarComSaldo === false ? 'pix' : 'saldo';
-  const fingerprint = digest(JSON.stringify({ service, link, quantity: Number(quantity), comments, payment }));
   const id = digest(customerId + ':' + operation);
   let p = await fbGet('pedidos/' + id);
+  let normalized, fingerprint, s, config;
+  if(p && !p.inputVersion){
+    const legacyLink=url(body.link,'Link'),legacyComments=body.comments?text(body.comments,'Comentários',10000):null;
+    fingerprint=digest(JSON.stringify({service,link:legacyLink,quantity:Number(body.quantidade??body.quantity),comments:legacyComments,payment}));
+  }else{
+    if(p)s=p.serviceSpec;else [s,config]=await Promise.all([fbGet('catalogo/'+service),fbGet('config')]);
+    if(!s||(!p&&(!s.ativo||s.indisponivel)))fail('Serviço indisponível',404);
+    normalized=forms.normalize(s,body);
+    fingerprint=digest(JSON.stringify({service,params:normalized.params,payment}));
+  }
   if (!p) {
-    const [s, config] = await Promise.all([fbGet('catalogo/' + service), fbGet('config')]);
-    const price = total(s, config || {}, customer, quantity);
+    const price=forms.amount(s,rate(s,config||{},customer),normalized);
+    const link=normalized.link,comments=normalized.params.comments||null;
     const counter = await fbTransaction('config/contadorPedidos', n => Number(n || 0) + 1);
     const candidate = {
       numeroPedido: '#' + String(counter.value).padStart(5, '0'), idFornecedor: service,
-      nomeServico: s.nomeCustomizado || s.nomeOriginal || '', link, quantidade: price.qtd,
+      nomeServico: catalogText.present(s).nome, link, quantidade: price.qtd,
+      inputVersion: 1, providerParams: normalized.params, serviceSpec: {tipo:s.tipo||'Default',min:s.min,max:s.max,redeSocial:s.redeSocial||'',nomeOriginal:s.nomeOriginal||'',dripfeed:!!s.dripfeed},
+      unidadesCobradas: normalized.billableQuantity, pacote: normalized.package, assinatura: normalized.subscription,
       valorCentavos: price.cents, valorTotal: price.value, status: payment === 'saldo' ? 'processando_saldo' : 'aguardando_pagamento',
       clienteId: customerId, ...(customer.revendedorId ? { revendedorId: customer.revendedorId } : {}),
       pagamento: payment, comments, fingerprint, workflowVersion: 2, criadoEm: Date.now()

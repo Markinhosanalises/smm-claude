@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const path = require('node:path');
 const clone = value => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
-let root = {}, queue = Promise.resolve(), providerCalls = 0, providerMode = 'ok';
+let root = {}, queue = Promise.resolve(), providerCalls = 0, providerMode = 'ok', providerPayloads = [];
 function get(p) { return p ? p.split('/').reduce((v,k)=>v?.[k],root) ?? null : root; }
 function set(p,v) { if(!p){root=clone(v);return;} const keys=p.split('/'),last=keys.pop();let at=root;for(const k of keys)at=at[k]||(at[k]={});if(v===null)delete at[last];else at[last]=clone(v); }
 const firebase = {
@@ -19,10 +19,10 @@ const firebase = {
 };
 require.cache[require.resolve('../lib/firebase')]={id:require.resolve('../lib/firebase'),filename:require.resolve('../lib/firebase'),loaded:true,exports:firebase};
 require.cache[require.resolve('../lib/fornecedor')]={id:require.resolve('../lib/fornecedor'),filename:require.resolve('../lib/fornecedor'),loaded:true,exports:{
-  criarPedido:async()=>{providerCalls++;await new Promise(r=>setTimeout(r,5));if(providerMode==='timeout')throw new Error('timeout');if(providerMode==='reject')return{error:'unavailable'};return{order:100};},statusPedido:async()=>({status:'Completed',remains:0,start_count:10}), listarServicos:async()=>[{service:'1',name:'Existing',rate:'100',min:'1',max:'10000'},{service:'2',name:'New',rate:'2',min:'1',max:'10000'}]
+  criarPedido:async(params)=>{providerPayloads.push(clone(params));providerCalls++;await new Promise(r=>setTimeout(r,5));if(providerMode==='timeout')throw new Error('timeout');if(providerMode==='reject')return{error:'unavailable'};return{order:100};},statusPedido:async()=>({status:'Completed',remains:0,start_count:10}), listarServicos:async()=>[{service:'1',name:'Existing',rate:'100',min:'1',max:'10000'},{service:'2',name:'New',rate:'2',min:'1',max:'10000'}]
 }};
 const auth=require('../lib/auth'),wallet=require('../lib/wallet'),orders=require('../lib/orders'),payments=require('../lib/payments'),pricing=require('../lib/pricing');
-function reset(){root={clientes:{'5511999999999':{nome:'Cliente',usuario:'cliente',role:'cliente',desconto:10}},catalogo:{'1':{idFornecedor:'1',nomeOriginal:'Likes',ativo:true,min:1,max:100000,taxaCusto:100}},config:{lucroPercentualGlobal:0,mercadopago:{accessToken:'test'}}};providerCalls=0;providerMode='ok';}
+function reset(){root={clientes:{'5511999999999':{nome:'Cliente',usuario:'cliente',role:'cliente',desconto:10}},catalogo:{'1':{idFornecedor:'1',nomeOriginal:'Likes',ativo:true,min:1,max:100000,taxaCusto:100}},config:{lucroPercentualGlobal:0,mercadopago:{accessToken:'test'}}};providerCalls=0;providerMode='ok';providerPayloads=[];}
 function request(overrides={}){return{method:'POST',headers:{'content-type':'application/json',origin:'https://example.com'},query:{},body:{},socket:{remoteAddress:'127.0.0.1'},...overrides};}
 async function call(handler,req){const out={statusCode:200,headers:{}};const res={setHeader:(k,v)=>{out.headers[k]=v;},status:n=>{out.statusCode=n;return res;},json:v=>{out.body=v;return res;},end:()=>res};await handler(req,res);return out;}
 process.env.APP_URL='https://example.com';process.env.ADMIN_PIN='test-admin-long-secret';process.env.MP_WEBHOOK_SECRET='test-webhook';
@@ -71,4 +71,44 @@ test('sub-cent tariffs keep precision and round only final order money',()=>{
  assert.equal(pricing.rate(s,config),0.00189);
  assert.equal(pricing.total(s,config,{},100000).cents,19);
  assert.throws(()=>pricing.total(s,config,{},1),/Valor/);
+});
+
+test('all supplier modalities persist and dispatch only their documented parameters',async()=>{
+ const expiry=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+ const cases=[
+ ['Default',{quantidade:100},['link','quantity']],
+ ['Package',{},['link']],
+ ['SEO',{quantidade:100,keywords:'tema um\ntema dois'},['link','quantity','keywords']],
+ ['Custom Comments',{comments:'Um\nDois\nTrês'},['link','comments']],
+ ['Mentions Custom List',{usernames:'user1\nuser2\nuser3'},['link','usernames']],
+ ['Mentions Hashtag',{quantidade:100,hashtag:'tema'},['link','quantity','hashtag']],
+ ['Mentions User Followers',{quantidade:100,username:'https://instagram.com/origem'},['link','quantity','username']],
+ ['Custom Comments Package',{comments:'Um\nDois\nTrês\nQuatro\nCinco'},['link','comments']],
+ ['Comment Likes',{quantidade:100,username:'autor'},['link','quantity','username']],
+ ['Poll',{quantidade:100,answer_number:2},['link','quantity','answer_number']],
+ ['Comment Replies',{username:'autor',comments:'Um\nDois\nTrês'},['link','username','comments']],
+ ['Invites from Groups',{quantidade:100,groups:'origem1\norigem2'},['link','quantity','groups']],
+ ['Subscriptions',{quantidade:100,username:'meuperfil',posts:2,old_posts:0,delay:0,expiry},['username','min','max','posts','old_posts','delay','expiry']]
+ ];
+ for(const [index,[type,extra,fields]]of cases.entries()){
+  reset();set('carteiras/5511999999999',{saldo:1000});set('catalogo/1/tipo',type);set('catalogo/1/taxaCusto',10);set('catalogo/1/nomeOriginal',type==='Custom Comments Package'?'Instagram 5 Comments (Custom)':'Instagram '+type);
+  const body={idFornecedor:'1',link:'https://instagram.com/p/teste',key:'do-not-forward',action:'do-not-forward',...extra};
+  const result=await orders.create('5511999999999',get('clientes/5511999999999'),body,'modality_operation_'+index);
+  assert.equal(result.status,'executando',type);assert.equal(providerCalls,1,type);
+  assert.deepEqual(Object.keys(providerPayloads[0]).sort(),['service',...fields].sort(),type);
+  await orders.create('5511999999999',get('clientes/5511999999999'),body,'modality_operation_'+index);
+  assert.equal(providerCalls,1,'replay '+type);
+  if(type==='Package'||type==='Custom Comments Package')assert.equal(result.valorCentavos,900,'package is priced per package');
+  if(type==='Custom Comments')assert.equal(result.quantidade,3,'comments determine quantity');
+  if(type==='Subscriptions'){assert.equal(result.valorCentavos,180);assert.equal(providerPayloads[0].posts,2);assert.equal(providerPayloads[0].min,100);assert.equal(providerPayloads[0].max,100);}
+ }
+});
+test('subscription limits and custom text counts reject invalid purchases before debit',async()=>{
+ reset();set('carteiras/5511999999999',{saldo:1000});set('catalogo/1/tipo','Subscriptions');
+ const body={idFornecedor:'1',username:'perfil',quantidade:100,posts:0,old_posts:0,delay:0,expiry:new Date(Date.now()+86400000).toISOString().slice(0,10)};
+ await assert.rejects(orders.create('5511999999999',get('clientes/5511999999999'),body,'invalid_sub_operation'),/publicações/);
+ assert.equal(providerCalls,0);assert.equal(get('carteiras/5511999999999/saldo'),1000);
+ set('catalogo/1/tipo','Custom Comments');set('catalogo/1/min',5);
+ await assert.rejects(orders.create('5511999999999',get('clientes/5511999999999'),{idFornecedor:'1',link:'https://instagram.com/p/a',quantidade:1000,comments:'Um\nDois'},'invalid_comments_operation'),/Quantidade/);
+ assert.equal(providerCalls,0);assert.equal(get('carteiras/5511999999999/saldo'),1000);
 });

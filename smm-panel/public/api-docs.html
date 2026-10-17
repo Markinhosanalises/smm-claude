@@ -112,8 +112,9 @@
   {
     "service": "1234",
     "name": "Instagram Seguidores Brasileiros",
-    "category": "Instagram Followers [Brazil]",
-    "type": "seguidores",
+    "category": "Instagram seguidores [Brasil]",
+    "type": "Default",
+    "billing": "per_1000",
     "rate": 2.50,
     "min": 100,
     "max": 10000,
@@ -125,9 +126,9 @@
         <tr><th>Campo</th><th>Descrição</th></tr>
         <tr><td>service</td><td>ID do serviço (use no action=add)</td></tr>
         <tr><td>name</td><td>Nome do serviço</td></tr>
-        <tr><td>rate</td><td>Preço por 1000 unidades em BRL</td></tr>
+        <tr><td>rate</td><td>Tarifa em BRL conforme billing: por mil ou pelo pacote</td></tr>
         <tr><td>min / max</td><td>Quantidade mínima e máxima por pedido</td></tr>
-        <tr><td>refill</td><td>Se o serviço tem reposição automática</td></tr>
+        <tr><td>refill</td><td>Se o serviço permite solicitar reposição</td></tr>
       </table>
     </div>
 
@@ -161,7 +162,23 @@
         <tr><td>quantity</td><td>number</td><td>Quantidade desejada</td></tr>
         <tr><td>comments</td><td>string</td><td>(opcional) Comentários separados por linha</td></tr>
       </table>
-      <h3>Exemplo de requisição</h3>
+      <h3>Modalidades e cobrança</h3>
+<p>Consulte <code>type</code> e <code>billing</code> na listagem. Em <code>per_1000</code>, o total é rate × quantidade ÷ 1000. Em <code>package</code>, rate é o preço do pacote inteiro. Em <code>subscription</code>, rate é a tarifa por mil para cada publicação; o total usa quantity × (posts + old_posts). Pedidos positivos têm mínimo de R$ 0,01.</p>
+<table><tr><th>type</th><th>Campos além de service/action</th></tr>
+<tr><td>Default</td><td>link, quantity; runs e interval opcionais se a modalidade permitir entregas parceladas</td></tr>
+<tr><td>Package</td><td>link; não envie quantity</td></tr>
+<tr><td>SEO</td><td>link, quantity, keywords (uma expressão por linha)</td></tr>
+<tr><td>Custom Comments / Custom Comments Package</td><td>link, comments (um texto por linha; respeite a quantidade do pacote quando indicada)</td></tr>
+<tr><td>Comment Replies</td><td>link, username do autor do comentário, comments</td></tr>
+<tr><td>Comment Likes</td><td>link, quantity, username do autor do comentário</td></tr>
+<tr><td>Mentions Custom List</td><td>link, usernames (um por linha)</td></tr>
+<tr><td>Mentions Hashtag</td><td>link, quantity, hashtag</td></tr>
+<tr><td>Mentions User Followers</td><td>link, quantity, username (URL do perfil de origem)</td></tr>
+<tr><td>Poll</td><td>link, quantity, answer_number (posição da alternativa, começando em 1)</td></tr>
+<tr><td>Invites from Groups</td><td>link, quantity, groups (uma origem ou termo por linha, conforme o serviço)</td></tr>
+<tr><td>Subscriptions</td><td>username sem @, quantity por publicação, posts (1–100), old_posts (0–100), delay, expiry (AAAA-MM-DD). Soma de publicações até 100; data final até 366 dias. Compra limitada, sem renovação automática.</td></tr></table>
+<p>As listas de comentários e usuários determinam a quantidade automaticamente. A API valida os parâmetros antes de cobrar. Preserve o mesmo <code>Idempotency-Key</code> ao repetir uma tentativa.</p>
+<h3>Exemplo de requisição</h3>
       <pre><button class="copy-btn" data-copy-pre>Copiar</button>{
   "action": "add",
   "service": "1234",

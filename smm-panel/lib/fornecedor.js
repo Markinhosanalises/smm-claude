@@ -45,11 +45,11 @@ async function listarServicos() {
   return chamarFornecedor({ action: 'services' });
 }
 
-async function criarPedido({ service, link, quantity, runs, interval, comments }) {
-  const params = { action: 'add', service, link, quantity };
-  if (runs) params.runs = runs;
-  if (interval) params.interval = interval;
-  if (comments) params.comments = comments;
+async function criarPedido(input) {
+  const params={action:'add'};
+  for(const field of ['service','link','quantity','runs','interval','comments','keywords','usernames','hashtag','username','answer_number','groups','min','max','posts','old_posts','delay','expiry']) {
+    if(input[field]!==undefined&&input[field]!==null&&input[field]!=='')params[field]=input[field];
+  }
   return chamarFornecedor(params);
 }
 
