@@ -124,10 +124,10 @@ test('custom comments and bounded subscriptions show correct fields and checkout
 
 test('linked customer requests manual PIX, sees seller instructions and cannot approve',async()=>{
  const recarga={id:'man_demo',referencia:'PIX-DEMO123',valor:25,status:'pendente',criadoEm:Date.now(),pix:{chave:'vendedor@example.invalid',nomeRecebedor:'Vendedor <img src=x onerror=alert(1)>',whatsapp:'5511999999999',instrucoes:'Envie o comprovante.'}};
- let requested=false;
+ let requested=false,depositApproved=false;
  const p=await page('app.html',(u,o)=>{
   if(u.pathname==='/api/auth-cliente')return customer;
-  if(u.pathname==='/api/carteira'&&u.searchParams.get('action')==='pix-manual')return{disponivel:true,configuracao:{minimo:5},recargas:requested?[recarga]:[]};
+  if(u.pathname==='/api/carteira'&&u.searchParams.get('action')==='pix-manual')return{disponivel:true,configuracao:{minimo:5},recargas:requested?[{...recarga,status:depositApproved?'aprovado':'pendente'}]:[]};
   if(u.pathname==='/api/carteira'&&o.method==='POST'){assert.equal(JSON.parse(o.body).action,'solicitar-pix-manual');requested=true;return{ok:true,recarga};}
   return common(u);
  });
@@ -142,7 +142,7 @@ test('linked customer requests manual PIX, sees seller instructions and cannot a
   assert.equal(p.w.document.querySelector('#manual-chave-copia').value,'vendedor@example.invalid');
   const request=p.calls.find(c=>c.options.method==='POST'&&c.url.pathname==='/api/carteira');assert(request);assert(request.options.headers.get('Idempotency-Key'));
   assert(!('revendedorId'in JSON.parse(request.options.body)));
-  assert(!p.calls.some(c=>c.url.pathname==='/api/pagamento'));assert.deepEqual(p.errors,[]);
+  assert(!p.calls.some(c=>c.url.pathname==='/api/pagamento'));depositApproved=true;p.w.document.querySelector('#manual-atualizar').click();await wait();await wait();assert.match(p.w.document.querySelector('#manual-dados').textContent,/Saldo liberado/);assert.equal(p.w.document.querySelector('#manual-dados a'),null);assert.deepEqual(p.errors,[]);
  }finally{p.dom.window.close();}
 });
 test('reseller verifies receipt before approving and client names remain text',async()=>{

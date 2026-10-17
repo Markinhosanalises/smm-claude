@@ -33,7 +33,7 @@
     await fetch('/api/auth-cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'logout'})});
     localStorage.removeItem('eng_clienteId'); localStorage.removeItem('eng_clienteNome');
     clienteId = null; clienteNome = ''; isRevendedor = false;
-    pixManualAtivo=false;pixRevCarregado=false;$('rev-sub-link').value='';$('rev-sub-link-wrap').classList.add('hidden');$('rev-sub-lista').replaceChildren();$('rev-sub-convites').replaceChildren();$('manual-dados').replaceChildren();$('manual-dados').classList.add('hidden');$('recarga-automatica').classList.remove('hidden');$('pix-manual-cliente').classList.add('hidden');$('manual-historico-wrap').classList.add('hidden');
+    pixManualAtivo=false;pixManualSelecionado=null;pixRevCarregado=false;$('rev-sub-link').value='';$('rev-sub-link-wrap').classList.add('hidden');$('rev-sub-lista').replaceChildren();$('rev-sub-convites').replaceChildren();$('manual-dados').replaceChildren();$('manual-dados').classList.add('hidden');$('recarga-automatica').classList.remove('hidden');$('pix-manual-cliente').classList.add('hidden');$('manual-historico-wrap').classList.add('hidden');
     $('api-key-display').textContent='Nenhuma chave gerada';
     $('api-key-msg').textContent='';
     for(const k of Object.keys(sessionStorage))if(k.startsWith('smm_pending:'))sessionStorage.removeItem(k);
@@ -432,7 +432,7 @@
 
 
   // ===== PIX MANUAL DA REVENDA =====
-  let pixManualAtivo=false,pixManualMinimo=5,pixManualCarregando=null;
+  let pixManualAtivo=false,pixManualMinimo=5,pixManualCarregando=null,pixManualSelecionado=null;
   const brl=value=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const manualStatus=status=>({pendente:'Aguardando conferência',aprovado:'Saldo liberado',rejeitado:'Não aprovado'}[status]||status);
   const manualText=(parent,tag,value)=>{const e=document.createElement(tag);e.textContent=value;parent.append(e);return e;};
@@ -441,6 +441,7 @@
     const data=await r.json();if(!r.ok)throw Error(data.erro||'Não foi possível concluir.');return data;
   }
   function mostrarPixManual(p){
+    pixManualSelecionado=p.id;
     const box=$('manual-dados');box.replaceChildren();box.classList.remove('hidden');
     manualText(box,'h3',p.referencia+' · '+brl(p.valor));
     manualText(box,'p',manualStatus(p.status));
@@ -475,13 +476,14 @@
         for(const p of recargas){const div=document.createElement('div');div.className='manual-item';manualText(div,'strong',p.referencia+' · '+brl(p.valor));manualText(div,'p',manualStatus(p.status)+' · '+new Date(p.criadoEm).toLocaleString('pt-BR'));if(p.observacao)manualText(div,'p',p.observacao);
           if(p.status==='pendente'){const b=manualText(div,'button','Ver chave PIX e enviar comprovante');b.type='button';b.className='btn-sec';b.addEventListener('click',()=>mostrarPixManual(p));}list.append(div);}
         if(!list.children.length)manualText(list,'p','Você ainda não solicitou uma recarga manual.');
+        if(pixManualSelecionado){const selected=recargas.find(p=>p.id===pixManualSelecionado);if(selected)mostrarPixManual(selected);}
       }catch(e){if(clienteId===requestedClient)$('manual-msg').textContent=e.message;}
     })();
     try{await pixManualCarregando;}finally{pixManualCarregando=null;}
   }
   $('manual-solicitar').addEventListener('click',async()=>{
     const b=$('manual-solicitar');b.disabled=true;$('manual-msg').textContent='Preparando os dados do PIX...';
-    try{const d=await manualRequest('/api/carteira',{action:'solicitar-pix-manual',valor:Number($('manual-valor').value)});mostrarPixManual(d.recarga);$('manual-msg').textContent='Solicitação registrada. Pague e envie o comprovante ao vendedor.';await carregarPixManualCliente();}
+    try{const d=await manualRequest('/api/carteira',{action:'solicitar-pix-manual',valor:Number($('manual-valor').value)});mostrarPixManual(d.recarga);$('manual-valor').value='';$('manual-solicitar').textContent='Solicitar outra recarga';$('manual-msg').textContent='Solicitação registrada. Pague e envie o comprovante ao vendedor.';await carregarPixManualCliente();}
     catch(e){$('manual-msg').textContent=e.message;}finally{b.disabled=!pixManualAtivo;}
   });
   $('manual-atualizar').addEventListener('click',()=>carregarSaldo());
