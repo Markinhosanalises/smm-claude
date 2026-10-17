@@ -72,7 +72,7 @@ module.exports = endpoint(async (req, res) => {
  const message=text(b.mensagem,'Mensagem',5000),op=operation(b.requestId),now=Date.now();
  const ticket={clienteId:s.clienteId,nome:s.cliente.nome||'',whatsapp:s.cliente.whatsapp||'',mensagem:message,pedidoId,status:'aberto',criadoEm:now,revisao:1,revisaoRespondida:0,humanoAtivo:false,atendimento:'aguardando',mensagens:[{autor:'cliente',texto:message,criadoEm:now}]};
  let id;
- if(op){id=digest('ticket:'+s.clienteId+':'+op);const r=await fbTransaction('tickets/'+id,current=>current||ticket);if(r.value.mensagem!==message||r.value.pedidoId!==pedidoId)fail('Identificador de envio já usado com outra pergunta.',409);}
+ if(op){id=digest('ticket:'+s.clienteId+':'+op);const r=await fbTransaction('tickets/'+id,current=>current||ticket);if(r.value.mensagem!==message||(r.value.pedidoId||null)!==pedidoId)fail('Identificador de envio já usado com outra pergunta.',409);}
  else id=(await fbPost('tickets',ticket)).name;
  await safeRespond(id);
  return res.json({ticketId:id,...assistant.publicTicket(id,await fbGet('tickets/'+id))});
