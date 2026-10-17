@@ -52,3 +52,6 @@ input,select,textarea{font-size:16px!important}
  #eng-resultado .btn{font-size:13px}
 }
 @media(prefers-reduced-motion:reduce){.rede-tab:hover .network-logo{transform:none}}
+
+/* Keep the checkout controls clear on small screens. */
+@media(max-width:700px){body:has(#painel-form-pedido:not(.hidden)) #float-whats,body:has(#painel-form-pedido:not(.hidden)) #btn-instalar-app{display:none!important;}}
