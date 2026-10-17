@@ -123,3 +123,11 @@ Em Meus pedidos, serviços em andamento marcados com cancel=true exibem Solicita
 As consultas de status centralizadas conciliam Cancelled/Canceled ou Partial após uma solicitação. O valor não entregue é creditado em saldo do painel (inclusive pedidos pagos diretamente por PIX), proporcional à quantidade restante, com pedido, carteira e lançamento atômicos. Pedido concluído não gera crédito. Dados inválidos, assinaturas, pacote parcialmente entregue e pedidos legados sem comprovação do débito ficam para revisão do suporte. Não há estorno bancário automático neste fluxo. A tela explica isso antes da solicitação e mostra a situação da devolução.
 
 A conferência ocorre nas consultas de status e na atualização a cada 30 segundos enquanto Meus pedidos estiver aberta; ainda não há trabalhador agendado para esta conciliação. Reabrir ou atualizar a tela retoma a conferência. O botão não cancela pedidos não elegíveis nem garante que o fornecedor aceitará.
+
+### Seleção comercial e objetivos de compra
+
+A regra em lib/catalog-policy.js oculta e bloqueia novos pedidos de seguidores dos 23 países definidos pelo administrador e serviços de Instagram identificados como africanos. Serviços explicitamente anunciados como árabes são a exceção preservada, inclusive origens mistas. Nomes e categorias originais são analisados com limites de palavra e normalização de acentos. Os bloqueios valem para a loja, API pública, criação de pedidos, sincronização manual/diária e tentativa de reativação administrativa. Pedidos existentes continuam consultáveis.
+
+O catálogo prioriza anúncios de perfis reais, depois novidades e recursos de reposição/cancelamento; preço não desempata a ordem padrão. O cliente pode filtrar reais ou novidades e ordenar por preço explicitamente. O selo Adicionado recentemente usa adicionadoEm (30 dias), gravado somente para serviços novos em sincronizações futuras; atualizar preço não torna um serviço antigo uma novidade. Categorias New Services recebem o selo Novidade anunciada. Esses sinais são anúncios do fornecedor, não avaliações comprovadas de entrega.
+
+Ao escolher uma rede, um modal nativo acessível apresenta objetivos com ícones, explicação e contagem, busca e fechamento pelo botão ou Escape. Os mesmos cartões permanecem acessíveis na página como alternativa.

@@ -108,12 +108,12 @@ test('custom comments and bounded subscriptions show correct fields and checkout
  try{
  const d=p.w.document;p.w.HTMLElement.prototype.scrollIntoView=()=>{};
  d.querySelector('.rede-tab').click();await wait();
- [...d.querySelectorAll('.tipo-chip')].find(b=>b.textContent==='Comentários').click();d.querySelector('.servico-card').click();
+ [...d.querySelectorAll('.tipo-chip')].find(b=>b.dataset.tipo==='Comentários').click();d.querySelector('.servico-card').click();
  assert(d.querySelector('#eng-qtd-wrap').classList.contains('hidden'));assert(!d.querySelector('#eng-comments-wrap').classList.contains('hidden'));
  d.querySelector('#eng-link').value='https://instagram.com/p/post';d.querySelector('#eng-comments').value='Primeiro\nSegundo\nTerceiro';d.querySelector('#eng-comments').dispatchEvent(new p.w.Event('input'));
  assert(!d.querySelector('#eng-resultado').classList.contains('hidden'));assert.match(d.querySelector('#eng-preco').textContent,/0,03/);
  d.querySelector('#eng-pagar-saldo').click();await wait();const first=p.calls.find(c=>c.url.pathname==='/api/order');assert.equal(JSON.parse(first.options.body).quantidade,3);
- [...d.querySelectorAll('.tipo-chip')].find(b=>b.textContent==='Acompanhamento automático').click();d.querySelector('.servico-card').click();
+ [...d.querySelectorAll('.tipo-chip')].find(b=>b.dataset.tipo==='Acompanhamento automático').click();d.querySelector('.servico-card').click();
  assert(d.querySelector('#eng-link-wrap').classList.contains('hidden'));assert(d.querySelector('#pedido-username'));assert(d.querySelector('#pedido-posts'));assert(d.querySelector('#pedido-expiry'));
  d.querySelector('#pedido-username').value='meuperfil';d.querySelector('#eng-qtd').value='100';d.querySelector('#pedido-posts').value='2';d.querySelector('#pedido-posts').dispatchEvent(new p.w.Event('input'));
  assert.match(d.querySelector('#eng-preco').textContent,/2,00/);assert.match(d.querySelector('#eng-resumo').textContent,/sem renovação/);
@@ -273,4 +273,21 @@ test('customer requests cancellation only after confirmation and sees pending st
 test('non-cancellable services show explanation without a cancellation button',async()=>{
  const p=await page('app.html',(u)=>{if(u.pathname==='/api/auth-cliente')return customer;if(u.pathname==='/api/pedidos')return{pedidos:[{id:'one',status:'executando',quantidade:100,restam:0,startCount:0,valorTotal:1,criadoEm:1,podeSolicitarCancelamento:false}]};return common(u);});
  try{p.w.document.querySelector('#tab-pedidos').click();await wait();await wait();assert.equal(p.w.document.querySelector('.btn-cancelar-pedido'),null);assert.match(p.w.document.querySelector('#lista-pedidos').textContent,/não oferece cancelamento/);assert.match(p.w.document.querySelector('#lista-pedidos').textContent,/100% concluído/);}finally{p.dom.window.close();}
+});
+
+test('objectives have icons and descriptions; real and new services precede cheap options',async()=>{
+ const services=[{id:'cheap',nome:'Curtidas econômicas',servicoTipo:'Curtidas',precoPorMil:.1},{id:'real-old',nome:'Curtidas reais',servicoTipo:'Curtidas',precoPorMil:10,reaisAnunciados:true},{id:'new',nome:'Novidade',servicoTipo:'Curtidas',precoPorMil:5,novo:true},{id:'real-new',nome:'Curtidas reais recentes',servicoTipo:'Curtidas',precoPorMil:20,reaisAnunciados:true,novo:true}].map(s=>({...s,tipo:'Default',min:10,max:10000,categoria:'Instagram',redeSocial:'instagram'}));
+ const p=await page('app.html',u=>{if(u.pathname==='/api/auth-cliente')return customer;if(u.pathname==='/api/services')return u.searchParams.has('redeSocial')?{servicos:services}:{redesSociais:['instagram'],redes:[{nome:'instagram',total:4}]};return common(u);});
+ try{
+  const d=p.w.document,dialog=d.querySelector('#objetivos-modal');dialog.showModal=()=>dialog.setAttribute('open','');dialog.close=()=>dialog.removeAttribute('open');
+  d.querySelector('.rede-tab').click();await wait();assert(dialog.open);assert.match(dialog.textContent,/O que você quer aumentar/);
+  const option=d.querySelector('#objetivos-modal-lista .tipo-chip');assert(option.querySelector('svg'));assert.match(option.textContent,/Dê mais destaque/);assert.match(option.textContent,/4 opções disponíveis/);
+  d.querySelector('#objetivos-busca').value='inexistente';d.querySelector('#objetivos-busca').dispatchEvent(new p.w.Event('input'));assert.equal(option.hidden,true);assert.equal(d.querySelector('#objetivos-vazio').hidden,false);
+  d.querySelector('#objetivos-busca').value='';d.querySelector('#objetivos-busca').dispatchEvent(new p.w.Event('input'));option.click();assert.equal(dialog.open,false);
+  assert.deepEqual([...d.querySelectorAll('.servico-card')].map(b=>b.dataset.id),['real-new','real-old','new','cheap']);
+  d.querySelector('[data-catalog-filter="novos"]').click();assert.deepEqual([...d.querySelectorAll('.servico-card')].map(b=>b.dataset.id),['real-new','new']);
+  d.querySelector('[data-catalog-filter="reais"]').click();assert.deepEqual([...d.querySelectorAll('.servico-card')].map(b=>b.dataset.id),['real-new','real-old']);
+  d.querySelector('[data-catalog-filter="todos"]').click();d.querySelector('#servico-ordem').value='preco_asc';d.querySelector('#servico-ordem').dispatchEvent(new p.w.Event('change'));assert.equal(d.querySelector('.servico-card').dataset.id,'cheap');
+  assert.deepEqual(p.errors,[]);
+ }finally{p.dom.window.close();}
 });

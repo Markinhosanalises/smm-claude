@@ -1,3 +1,4 @@
+const policy=require('./catalog-policy');
 const { fbGet, fbPut, fbPatch, fbTransaction, key } = require('./firebase');
 const { total } = require('./pricing');
 const { url, text, fail } = require('./http');
@@ -63,7 +64,7 @@ async function create(customerId, customer, body, operation) {
     fingerprint=digest(JSON.stringify({service,link:legacyLink,quantity:Number(body.quantidade??body.quantity),comments:legacyComments,payment}));
   }else{
     if(p)s=p.serviceSpec;else [s,config]=await Promise.all([fbGet('catalogo/'+service),fbGet('config')]);
-    if(!s||(!p&&(!s.ativo||s.indisponivel)))fail('Serviço indisponível',404);
+    if(!s||(!p&&(!s.ativo||s.indisponivel||policy.reason(s))))fail('Serviço indisponível',404);
     normalized=forms.normalize(s,body);
     fingerprint=digest(JSON.stringify({service,params:normalized.params,payment}));
   }

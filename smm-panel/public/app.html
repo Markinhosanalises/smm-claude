@@ -228,11 +228,18 @@
     <div id="painel-tipos" class="hidden">
       <div class="card">
         <p class="eyebrow" id="rede-selecionada-label">Instagram</p>
-        <h2 class="title" style="font-size:16px;">O que você quer aumentar?</h2>
+        <div class="objetivo-heading"><div><h2 class="title">O que você quer aumentar?</h2><p class="sub">Escolha seu objetivo. Vamos mostrar as opções e explicar o que preencher.</p></div><button type="button" class="btn-sec" id="abrir-objetivos">Escolher objetivo</button></div>
         <div class="tipos-chips" id="tipos-chips"></div>
       </div>
     </div>
 
+    <dialog id="objetivos-modal" class="objetivos-modal" aria-labelledby="objetivos-modal-titulo" aria-describedby="objetivos-modal-ajuda">
+      <div class="objetivos-modal-top"><div><p class="eyebrow" id="objetivos-modal-rede">Sua rede social</p><h2 id="objetivos-modal-titulo">O que você quer aumentar?</h2></div><button type="button" id="fechar-objetivos" class="objetivos-fechar" aria-label="Fechar escolha de objetivo">×</button></div>
+      <p id="objetivos-modal-ajuda">Toque em um objetivo. Depois, compare os serviços e siga as instruções do pedido.</p>
+      <label class="label" for="objetivos-busca">Encontre seu objetivo</label><input class="input" id="objetivos-busca" type="search" placeholder="Ex.: curtidas, seguidores, comentários" autocomplete="off">
+      <div class="objetivos-grid" id="objetivos-modal-lista"></div><p id="objetivos-vazio" role="status" hidden>Nenhum objetivo encontrado. Tente outra palavra.</p>
+      <p class="objetivos-modal-foot">Próximo passo: escolher um serviço e conferir o link, a quantidade e o valor.</p>
+    </dialog>
     <!-- Lista de serviços (aparece após selecionar tipo) -->
     <div id="painel-servicos-lista" class="hidden">
       <div class="card">
@@ -242,9 +249,9 @@
         <div class="catalog-filters">
           <div><label class="label" for="servico-busca">Buscar uma característica</label><input class="input" id="servico-busca" type="search" placeholder="Ex.: Brasil, reposição, comentários"></div>
           <div><label class="label" for="servico-categoria">Categoria</label><select class="select" id="servico-categoria"><option value="">Todas as categorias</option></select></div>
-          <div><label class="label" for="servico-ordem">Ordenar opções</label><select class="select" id="servico-ordem"><option value="recursos">Mais recursos primeiro</option><option value="preco_asc">Menor preço</option><option value="preco_desc">Maior preço</option></select></div>
+          <div><label class="label" for="servico-ordem">Ordenar opções</label><select class="select" id="servico-ordem"><option value="prioridade">Reais e novidades primeiro</option><option value="novos">Novidades primeiro</option><option value="preco_asc">Menor preço</option><option value="preco_desc">Maior preço</option></select></div>
         </div>
-        <p class="preco-detalhe">Mais recursos prioriza reposição e possibilidade de cancelamento. Não é uma avaliação de qualidade ou garantia de entrega.</p>
+        <div class="catalog-highlights" role="group" aria-label="Filtrar características"><button type="button" data-catalog-filter="todos" class="ativo" aria-pressed="true">Todas as opções</button><button type="button" data-catalog-filter="reais" aria-pressed="false">✦ Anunciados como reais</button><button type="button" data-catalog-filter="novos" aria-pressed="false">✧ Novidades</button></div><p class="preco-detalhe">Primeiro os anunciados como reais, depois novidades e recursos como reposição e cancelamento. São características anunciadas pelo fornecedor; não comprovam rapidez ou qualidade. O menor preço pode ser escolhido no filtro.</p>
         <p id="servicos-contagem" class="msg" role="status" aria-live="polite"></p>
         <div class="servicos-lista" id="servicos-lista"></div><button class="btn-sec" id="servicos-mais" type="button" hidden>Mostrar mais opções</button>
       </div>
