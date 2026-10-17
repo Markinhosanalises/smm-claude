@@ -1,10 +1,17 @@
-const { fbGet, fbPatch, fbQuery, fbTransaction, key } = require('../lib/firebase');
+const { fbGet, fbQuery, fbTransaction, key } = require('../lib/firebase');
 const { endpoint, fail, mutation, text } = require('../lib/http');
 const { session, rateLimit, requireAdmin } = require('../lib/auth');
 const { statusPedido } = require('../lib/fornecedor');
 module.exports = endpoint(async (req, res) => {
   if (req.method === 'POST') {
-    mutation(req); await requireAdmin(req);
+    mutation(req);
+    if (req.body?.action === 'solicitar-cancelamento') {
+      const s = await session(req);
+      await rateLimit(req, 'cancelamento', 10, 60000);
+      const p = await require('../lib/order-cancellation').request(key(req.body.pedidoId), s.clienteId);
+      return res.json({ ok: true, pedido: p });
+    }
+    await requireAdmin(req);
     if (req.body?.action === 'recuperar') return res.json({ ok: true, recuperados: await require('../lib/orders').recover() });
     const id = key(req.body?.pedidoId), action = req.body?.action;
     const p = await fbGet('pedidos/' + id);
@@ -32,17 +39,10 @@ module.exports = endpoint(async (req, res) => {
   if (req.query.pedidoId) {
     const id = key(req.query.pedidoId), p = await fbGet('pedidos/' + id);
     if (!p || (!admin && p.clienteId !== s.clienteId && !(s.cliente.role === 'revendedor' && p.revendedorId === s.clienteId))) fail('Pedido não encontrado',404);
-    if (p.orderIdFornecedor && !['concluido','cancelado','parcial'].includes(p.status)) {
-      await rateLimit(req, 'status', 60, 60000);
-      const status = await statusPedido(p.orderIdFornecedor);
-      const update = { statusFornecedor: status.status || null, restam: status.remains ?? status.restam ?? null, startCount: status.start_count ?? null };
-      if (['Completed','Concluído'].includes(status.status)) update.status = 'concluido';
-      if (['Canceled','Cancelled','Cancelado'].includes(status.status)) update.status = 'cancelado';
-      if (['Partial','Parcial'].includes(status.status)) update.status = 'parcial';
-      await fbPatch('pedidos/' + id, update);
-      return res.json({ ...p, ...update });
-    }
-    return res.json(p);
+    await rateLimit(req, 'status', 60, 60000);
+    const refreshed = await require('../lib/order-status').refresh(id, p);
+    const service = p.idFornecedor ? await fbGet('catalogo/' + key(p.idFornecedor)) : null;
+    return res.json(require('../lib/order-cancellation').view(refreshed, service));
   }
   if (req.query.revendedorId) {
     const id = key(req.query.revendedorId);
@@ -54,6 +54,7 @@ module.exports = endpoint(async (req, res) => {
     items = await fbQuery('pedidos','clienteId',id);
   } else if (admin) items = await fbGet('pedidos');
   else items = await fbQuery('pedidos','clienteId',s.clienteId);
-  return res.json({ pedidos: Object.entries(items || {}).filter(([,p])=>p).map(([id,p])=>({id,...p})).sort((a,b)=>b.criadoEm-a.criadoEm) });
+  const catalog = await fbGet('catalogo');
+  return res.json({ pedidos: Object.entries(items || {}).filter(([,p])=>p).map(([id,p])=>({id,...require('../lib/order-cancellation').view(p,catalog?.[p.idFornecedor])})).sort((a,b)=>b.criadoEm-a.criadoEm) });
 });
 
