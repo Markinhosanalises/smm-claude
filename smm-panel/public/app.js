@@ -33,6 +33,7 @@
     await fetch('/api/auth-cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'logout'})});
     localStorage.removeItem('eng_clienteId'); localStorage.removeItem('eng_clienteNome');
     clienteId = null; clienteNome = ''; isRevendedor = false;
+    pixManualAtivo=false;pixRevCarregado=false;$('manual-dados').replaceChildren();$('manual-dados').classList.add('hidden');$('recarga-automatica').classList.remove('hidden');$('pix-manual-cliente').classList.add('hidden');$('manual-historico-wrap').classList.add('hidden');
     $('api-key-display').textContent='Nenhuma chave gerada';
     $('api-key-msg').textContent='';
     for(const k of Object.keys(sessionStorage))if(k.startsWith('smm_pending:'))sessionStorage.removeItem(k);
@@ -220,12 +221,14 @@
       saldoAtual=Number(data.saldo||0);
       $('saldo-display').textContent=`💰 R$ ${saldoAtual.toFixed(2)}`;
       if($('saldo-carteira')) $('saldo-carteira').textContent=`R$ ${saldoAtual.toFixed(2)}`;
+      await carregarPixManualCliente();
     }catch(e){}
   }
 
   $('deposito-btn').addEventListener('click', async()=>{
+    await carregarPixManualCliente();if(pixManualAtivo){$('deposito-msg').textContent='Use os dados do PIX manual abaixo.';return;}
     const valor=Number($('deposito-valor').value);
-    if(!valor||valor<5){ $('deposito-msg').textContent='Valor mínimo é R$ 5,00'; $('deposito-msg').className='msg erro'; return; }
+    if(!valor||valor<Number($('deposito-valor').min||5)){ $('deposito-msg').textContent='Valor mínimo: '+brl($('deposito-valor').min||5); $('deposito-msg').className='msg erro'; return; }
     $('deposito-btn').disabled=true; $('deposito-msg').textContent='Gerando PIX...';
     try{
       const r=await fetch(`${API_BASE}/api/carteira`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clienteId,valor})});
@@ -264,6 +267,7 @@
   $('eng-pagar-pix').addEventListener('click', async()=>{
     if(!servicoSelecionado||!clienteId){ msgEng('Faça login pra continuar.','erro'); return; }
     if(!atualizarPreco())return;
+    await carregarPixManualCliente();if(pixManualAtivo){ativarAba('carteira');$('manual-valor').value=Math.max(pixManualMinimo,OrderForms.amount(servicoSelecionado,servicoSelecionado.precoPorMil,OrderForms.normalize(servicoSelecionado,dadosDoPedido())).value).toFixed(2);$('manual-msg').textContent='Recarregue o saldo com seu vendedor. Após a aprovação, volte ao pedido e pague com saldo.';return;}
     $('eng-pagar-pix').disabled=true; msgEng('Criando pedido...');
     try{
       const r=await fetch(`${API_BASE}/api/order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...dadosDoPedido(),clienteId,pagarComSaldo:false})});
@@ -424,6 +428,96 @@
     }catch(e){}
   }
 
+
+  // ===== PIX MANUAL DA REVENDA =====
+  let pixManualAtivo=false,pixManualMinimo=5,pixManualCarregando=null;
+  const brl=value=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const manualStatus=status=>({pendente:'Aguardando conferência',aprovado:'Saldo liberado',rejeitado:'Não aprovado'}[status]||status);
+  const manualText=(parent,tag,value)=>{const e=document.createElement(tag);e.textContent=value;parent.append(e);return e;};
+  async function manualRequest(url,body){
+    const r=await fetch(url,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});
+    const data=await r.json();if(!r.ok)throw Error(data.erro||'Não foi possível concluir.');return data;
+  }
+  function mostrarPixManual(p){
+    const box=$('manual-dados');box.replaceChildren();box.classList.remove('hidden');
+    manualText(box,'h3',p.referencia+' · '+brl(p.valor));
+    manualText(box,'p',manualStatus(p.status));
+    if(p.status!=='pendente'){if(p.observacao)manualText(box,'p',p.observacao);return;}
+    const pix=p.pix;if(!pix)return;
+    manualText(box,'p','1. No aplicativo do seu banco, faça um PIX de '+brl(p.valor)+' para a chave abaixo.');
+    const label=manualText(box,'label','Chave PIX');label.htmlFor='manual-chave-copia';
+    const input=document.createElement('input');input.id='manual-chave-copia';input.className='input';input.value=pix.chave;input.readOnly=true;box.append(input);
+    const copy=manualText(box,'button','Copiar chave PIX');copy.className='btn-sec';copy.type='button';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(pix.chave);copy.textContent='Chave copiada';}catch{$('manual-msg').textContent='Selecione a chave acima e copie.';}});
+    manualText(box,'p','Recebedor: '+pix.nomeRecebedor+'. Confira esse nome antes de pagar.');
+    if(pix.instrucoes)manualText(box,'p',pix.instrucoes);
+    manualText(box,'p','2. Envie o comprovante ao vendedor e informe a referência '+p.referencia+'.');
+    const a=manualText(box,'a','Enviar comprovante pelo WhatsApp');a.className='btn';a.target='_blank';a.rel='noopener noreferrer';
+    a.href='https://wa.me/'+pix.whatsapp+'?text='+encodeURIComponent('Olá! Quero enviar o comprovante da recarga '+p.referencia+' de '+brl(p.valor)+'.');
+    manualText(box,'p','3. Aguarde a conferência. Depois de liberado, o saldo poderá ser usado para fazer seus pedidos.');
+  }
+  async function carregarPixManualCliente(){
+    if(!clienteId)return;
+    if(pixManualCarregando)return pixManualCarregando;
+    const requestedClient=clienteId;
+    pixManualCarregando=(async()=>{
+      try{
+        const data=await manualRequest('/api/carteira?action=pix-manual');if(clienteId!==requestedClient)return;
+        pixManualAtivo=data.disponivel===true;pixManualMinimo=Number(data.configuracao?.minimo||5);
+        $('recarga-automatica').classList.toggle('hidden',pixManualAtivo);
+        const recargas=data.recargas||[],pending=recargas.some(p=>p.status==='pendente');
+        $('pix-manual-cliente').classList.toggle('hidden',!pixManualAtivo&&!pending);
+        $('manual-solicitar').disabled=!pixManualAtivo;$('manual-valor').min=pixManualMinimo;$('manual-valor').placeholder='Mínimo '+brl(pixManualMinimo);
+        $('eng-pagar-pix').textContent=pixManualAtivo?'Recarregar por PIX manual':'📱 Pagar com PIX';
+        $('manual-historico-wrap').classList.toggle('hidden',!pixManualAtivo&&!recargas.length);
+        const list=$('manual-historico');list.replaceChildren();
+        for(const p of recargas){const div=document.createElement('div');div.className='manual-item';manualText(div,'strong',p.referencia+' · '+brl(p.valor));manualText(div,'p',manualStatus(p.status)+' · '+new Date(p.criadoEm).toLocaleString('pt-BR'));if(p.observacao)manualText(div,'p',p.observacao);
+          if(p.status==='pendente'){const b=manualText(div,'button','Ver chave PIX e enviar comprovante');b.type='button';b.className='btn-sec';b.addEventListener('click',()=>mostrarPixManual(p));}list.append(div);}
+        if(!list.children.length)manualText(list,'p','Você ainda não solicitou uma recarga manual.');
+      }catch(e){if(clienteId===requestedClient)$('manual-msg').textContent=e.message;}
+    })();
+    try{await pixManualCarregando;}finally{pixManualCarregando=null;}
+  }
+  $('manual-solicitar').addEventListener('click',async()=>{
+    const b=$('manual-solicitar');b.disabled=true;$('manual-msg').textContent='Preparando os dados do PIX...';
+    try{const d=await manualRequest('/api/carteira',{action:'solicitar-pix-manual',valor:Number($('manual-valor').value)});mostrarPixManual(d.recarga);$('manual-msg').textContent='Solicitação registrada. Pague e envie o comprovante ao vendedor.';await carregarPixManualCliente();}
+    catch(e){$('manual-msg').textContent=e.message;}finally{b.disabled=!pixManualAtivo;}
+  });
+  $('manual-atualizar').addEventListener('click',()=>carregarSaldo());
+
+  let pixRevCarregado=false;
+  async function carregarPixRevendedor(reloadConfig=true){
+    const data=await manualRequest('/api/revendedor?action=pix-manual');
+    if(reloadConfig||!pixRevCarregado){const c=data.configuracao||{};$('rev-pix-ativo').checked=!!c.ativo;$('rev-pix-tipo').value=c.tipoChave||'aleatoria';for(const [id,field]of [['chave','chave'],['recebedor','nomeRecebedor'],['whatsapp','whatsapp'],['minimo','minimo'],['instrucoes','instrucoes']])$('rev-pix-'+id).value=c[field]??(field==='minimo'?5:'');pixRevCarregado=true;}
+    const clients=await manualRequest('/api/revendedor?action=clientes'),select=$('rev-pix-cliente'),selected=select.value;select.replaceChildren();const empty=document.createElement('option');empty.value='';empty.textContent='Escolha o cliente';select.append(empty);
+    for(const c of clients.clientes||[]){const o=document.createElement('option');o.value=c.clienteId;o.textContent=c.nome+' · '+c.whatsapp;select.append(o);}select.value=selected;
+    const list=$('rev-pix-recargas');list.replaceChildren();
+    for(const p of data.recargas||[]){
+      const div=document.createElement('div');div.className='manual-item';manualText(div,'h4',p.nomeCliente+' · '+brl(p.valor));
+      manualText(div,'p',p.referencia+' · '+new Date(p.criadoEm).toLocaleString('pt-BR')+' · '+manualStatus(p.status));
+      if(p.observacao)manualText(div,'p',p.observacao);
+      if(p.status==='pendente'){
+        const label=document.createElement('label');label.className='manual-check';const check=document.createElement('input');check.type='checkbox';label.append(check,document.createTextNode('Conferi este PIX no meu banco'));div.append(label);
+        const observation=document.createElement('input');observation.className='input';observation.maxLength=300;observation.placeholder='Referência bancária ou motivo da rejeição';observation.setAttribute('aria-label','Observação da recarga '+p.referencia);div.append(observation);
+        const actions=document.createElement('div');actions.className='manual-actions';const approve=manualText(actions,'button','Liberar '+brl(p.valor)),reject=manualText(actions,'button','Não aprovar');approve.className='btn';reject.className='btn-sec';approve.type=reject.type='button';approve.disabled=true;check.addEventListener('change',()=>approve.disabled=!check.checked);div.append(actions);
+        const decide=async action=>{approve.disabled=reject.disabled=true;$('rev-pix-msg').textContent='Processando...';try{const result=await manualRequest('/api/revendedor',{acao:action+'-pix-manual',recargaId:p.id,confirmado:check.checked,observacao:observation.value});$('rev-pix-msg').textContent=action==='aprovar'?'Saldo liberado uma vez para o cliente.':'Recarga não aprovada.';$('rev-saldo').textContent=brl(result.novoSaldo);await carregarSaldo();await carregarPixRevendedor(false);}catch(e){$('rev-pix-msg').textContent=e.message;approve.disabled=!check.checked;reject.disabled=false;}};
+        approve.addEventListener('click',()=>decide('aprovar'));reject.addEventListener('click',()=>decide('rejeitar'));
+      }
+      list.append(div);
+    }
+    if(!list.children.length)manualText(list,'p','Nenhuma recarga manual. As solicitações dos seus clientes aparecerão aqui.');
+  }
+  $('rev-pix-config').addEventListener('submit',async e=>{
+    e.preventDefault();const button=e.currentTarget.querySelector('button');button.disabled=true;
+    try{await manualRequest('/api/revendedor',{acao:'configurar-pix-manual',ativo:$('rev-pix-ativo').checked,tipoChave:$('rev-pix-tipo').value,chave:$('rev-pix-chave').value,nomeRecebedor:$('rev-pix-recebedor').value,whatsapp:$('rev-pix-whatsapp').value,minimo:Number($('rev-pix-minimo').value),instrucoes:$('rev-pix-instrucoes').value});$('rev-pix-config-msg').textContent='Configuração salva. Seus clientes já podem consultar esta opção em Meu saldo.';}
+    catch(e){$('rev-pix-config-msg').textContent=e.message;}finally{button.disabled=false;}
+  });
+  $('rev-pix-atualizar').addEventListener('click',()=>carregarPixRevendedor(false).catch(e=>$('rev-pix-msg').textContent=e.message));
+  $('rev-pix-credito').addEventListener('submit',async e=>{
+    e.preventDefault();const button=e.currentTarget.querySelector('button');button.disabled=true;$('rev-pix-credito-msg').textContent='Transferindo saldo...';
+    try{const result=await manualRequest('/api/revendedor',{acao:'creditar-cliente-manual',clienteId:$('rev-pix-cliente').value,valor:Number($('rev-pix-valor').value),observacao:$('rev-pix-observacao').value,confirmado:$('rev-pix-confirmado').checked});$('rev-pix-credito-msg').textContent='Saldo transferido para o cliente. Seu saldo: '+brl(result.novoSaldo);$('rev-pix-valor').value='';$('rev-pix-confirmado').checked=false;$('rev-pix-observacao').value='';await carregarSaldo();await carregarPixRevendedor(false);$('rev-saldo').textContent=brl(result.novoSaldo);}
+    catch(e){$('rev-pix-credito-msg').textContent=e.message;}finally{button.disabled=false;}
+  });
+
   // ===== REVENDEDOR =====
   async function carregarPainelRevendedor(){
     try{
@@ -461,12 +555,13 @@
     }catch(e){}
   }
 
-  ['clientes','pedidos','novo'].forEach(aba=>{
+  ['clientes','pedidos','novo','pix'].forEach(aba=>{
     const tab=$(`tab-rev-${aba}`); if(!tab) return;
     tab.addEventListener('click',()=>{
-      ['clientes','pedidos','novo'].forEach(a=>{ $(`tab-rev-${a}`)?.classList.remove('ativa'); $(`painel-rev-${a}`)?.classList.add('hidden'); });
+      ['clientes','pedidos','novo','pix'].forEach(a=>{ $(`tab-rev-${a}`)?.classList.remove('ativa'); $(`painel-rev-${a}`)?.classList.add('hidden'); });
       tab.classList.add('ativa'); $(`painel-rev-${aba}`)?.classList.remove('hidden');
       if(aba==='pedidos') carregarPedidosRevendedor();
+      if(aba==='pix')carregarPixRevendedor().catch(e=>$('rev-pix-msg').textContent=e.message);
     });
   });
 

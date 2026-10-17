@@ -22,6 +22,12 @@
       ".indexOn": [
         "revendedorId"
       ]
+    },
+    "depositos_manuais": {
+      ".indexOn": [
+        "clienteId",
+        "revendedorId"
+      ]
     }
   }
 }

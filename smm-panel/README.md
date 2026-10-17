@@ -79,3 +79,17 @@ A ordem padrão `recursos` prioriza a disponibilidade de reposição e cancelame
 O módulo compartilhado `public/service-forms.js` valida as 13 modalidades no navegador e no servidor. Comentários e listas calculam a quantidade pelas linhas; pacotes cobram uma tarifa única. Acompanhamentos exigem quantidade por publicação, limite de publicações futuras e antigas (até 100 no total), espera e data final; o valor máximo é cobrado antecipadamente e não há renovação automática. Entregas parceladas multiplicam a quantidade pelo número de parcelas. O total é arredondado para centavos e pedidos positivos têm mínimo de R$ 0,01.
 
 O envio ao fornecedor usa somente os parâmetros documentados de cada modalidade. Pedidos antigos conservam a identificação idempotente anterior; pedidos novos armazenam a especificação e os parâmetros normalizados para recuperação sem mudança do conteúdo. Os testes de compra usam um fornecedor simulado, sem gastos reais.
+
+## PIX manual da revenda
+
+Em **Revendedor → PIX manual**, o dono configura a própria chave PIX, nome do recebedor, WhatsApp para comprovantes, recarga mínima e instruções. A opção vem desativada. A configuração só é exibida aos clientes vinculados àquela revenda.
+
+O cliente abre **Meu saldo**, informa o valor e recebe uma referência. Ele paga no banco e envia o comprovante ao WhatsApp do vendedor. O painel não envia mensagens automaticamente e não armazena imagens de comprovantes. O vendedor confere a entrada no banco, marca a confirmação e aprova a recarga; também pode rejeitá-la com um motivo ou liberar saldo diretamente para um cliente vinculado.
+
+A aprovação faz uma transação atômica na raiz do Firebase: debita o valor nominal da carteira do revendedor, credita o mesmo valor na carteira do cliente, registra os dois movimentos e encerra a solicitação. Não cria saldo sem cobertura e não aplica desconto à transferência. A mesma solicitação pode ser repetida sem duplicar o crédito; solicitações concorrentes não podem gastar o mesmo saldo. Crédito direto exige Idempotency-Key e confirmação de recebimento. Não há estorno bancário ou pagamento externo automático nesta rotina.
+
+Coleções: `pix_revendedores/{revendedorId}` e `depositos_manuais/{id}`. As regras mantêm leitura/escrita públicas negadas; os índices de `depositos_manuais` são `clienteId` e `revendedorId`. A interface mostra todas as pendentes e as últimas 100 concluídas.
+
+Rotas reutilizadas para respeitar o limite de funções: `GET /api/carteira?action=pix-manual`, `POST /api/carteira` com `action=solicitar-pix-manual`; `GET /api/revendedor?action=pix-manual`; ações `configurar-pix-manual`, `aprovar-pix-manual`, `rejeitar-pix-manual` e `creditar-cliente-manual` em POST de revendedor. Sessão e vínculo são verificados no servidor. Clientes com PIX manual ativo usam recarga e compra com saldo; novas cobranças automáticas na conta central são bloqueadas para evitar enviar o pagamento ao recebedor errado.
+
+Esta função pertence à área de revenda existente. Provisionamento de lojas independentes, subdomínios, preços por loja e conexão Mercado Pago por lojista ainda precisam de uma implementação própria. A transação na raiz prioriza consistência no volume atual; deve migrar para um ledger transacional com partições caso o volume cresça.
