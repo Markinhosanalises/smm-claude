@@ -291,3 +291,33 @@ test('objectives have icons and descriptions; real and new services precede chea
   assert.deepEqual(p.errors,[]);
  }finally{p.dom.window.close();}
 });
+
+test('support links an owned order, shows the automatic conversation safely and allows human handoff',async()=>{
+ let thread=null,posted,handed=false;
+ const p=await page('app.html',(u,o)=>{
+  if(u.pathname==='/api/auth-cliente')return customer;
+  if(u.pathname==='/api/pedidos')return{pedidos:[{id:'owned',numeroPedido:'#00077',nomeServico:'Instagram Curtidas',status:'executando'}]};
+  if(u.pathname==='/api/tickets'){
+   if(o.method==='POST'){
+    const b=JSON.parse(o.body);if(b.action==='pedir-humano'){handed=true;thread.humanoAtivo=true;thread.atendimento='aguardando_equipe';return{ok:true,ticket:thread};}
+    posted=b;thread={id:'ticket77',clienteId:customer.clienteId,mensagem:b.mensagem,pedidoId:b.pedidoId,status:'aberto',criadoEm:Date.now(),resposta:'Consultei o fornecedor: Em andamento.',atendimento:'aguardando_cliente',mensagens:[{autor:'cliente',texto:b.mensagem},{autor:'assistente',texto:'Consultei o fornecedor: Em andamento. <img src=x onerror=alert(1)>'}],consultaPedido:{pedido:{numero:'#00077'}}};return{body:{ticketId:'ticket77',...thread}};
+   }
+   return{tickets:thread?[thread]:[]};
+  }
+  return common(u);
+ });
+ try{const d=p.w.document;d.querySelector('#tab-suporte').click();await wait();await wait();assert.equal(d.querySelector('#ticket-pedido option[value="owned"]').textContent.includes('#00077'),true);d.querySelector('#ticket-pedido').value='owned';d.querySelector('#ticket-mensagem').value='Como está o pedido?';d.querySelector('#ticket-enviar').click();await wait();await wait();assert.equal(posted.pedidoId,'owned');assert.equal(typeof posted.requestId,'string');assert.equal(posted.clienteId,undefined);assert.match(d.querySelector('#lista-tickets').textContent,/Assistente automático/);assert.match(d.querySelector('#lista-tickets').textContent,/Em andamento/);assert.equal(d.querySelector('#lista-tickets img'),null);[...d.querySelectorAll('#lista-tickets button')].find(b=>b.textContent==='Falar com a equipe').click();await wait();await wait();assert(handed);assert.match(d.querySelector('#lista-tickets').textContent,/Aguardando equipe/);assert.deepEqual(p.errors,[]);}finally{p.dom.window.close();}
+});
+test('admin saves AI credentials only to the protected endpoint and clears the password input',async()=>{
+ let saved;
+ const p=await page('admin.html',(u,o)=>{
+  if(u.pathname==='/api/auth-cliente')return{ok:true};
+  if(u.pathname==='/api/tickets'){
+   if(o.method==='POST'){saved=JSON.parse(o.body);return{ok:true};}
+   if(u.searchParams.get('action')==='configuracao-assistente')return{ativo:true,usarIA:false,chaveConfigurada:false,limiteDiario:50};
+   return{tickets:[]};
+  }
+  return common(u);
+ });
+ try{const d=p.w.document;await wait();d.querySelector('#assistente-chave').value='sk-test'+'x'.repeat(30);d.querySelector('#assistente-usar-ia').checked=true;d.querySelector('#assistente-config-form').dispatchEvent(new p.w.Event('submit',{cancelable:true,bubbles:true}));await wait();await wait();assert.equal(saved.action,'configurar-assistente');assert.equal(saved.usarIA,true);assert.equal(d.querySelector('#assistente-chave').value,'');assert(!JSON.stringify({...p.w.localStorage}).includes('sk-test'));assert(!p.calls.some(c=>c.url.href.includes('sk-test')));}finally{p.dom.window.close();}
+});

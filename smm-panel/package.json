@@ -3,7 +3,7 @@
   "version": "1.1.0",
   "private": true,
   "scripts": {
-    "test": "node test/core.test.js && node test/frontend.test.js && node test/firebase.test.js && node test/service-forms.test.js && node test/manual-pix.test.js && node test/subresellers.test.js && node test/account.test.js && node test/cancellation.test.js && node test/catalog-policy.test.js",
+    "test": "node test/core.test.js && node test/frontend.test.js && node test/firebase.test.js && node test/service-forms.test.js && node test/manual-pix.test.js && node test/subresellers.test.js && node test/account.test.js && node test/cancellation.test.js && node test/catalog-policy.test.js && node test/support.test.js",
     "check": "node scripts/check.js"
   },
   "engines": {
