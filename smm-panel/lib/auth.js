@@ -26,7 +26,10 @@ async function loginPassword(id, password) {
     if (!await verifyPassword(password, c.passwordHash)) fail('Usuário ou senha incorretos', 401);
   } else {
     if (!c.senha || !equal(password, c.senha)) fail('Usuário ou senha incorretos', 401);
-    await fbPatch('clientes/' + id, { passwordHash: await makeHash(password), senha: null });
+    const migrated=await makeHash(password);
+    const r=await fbTransaction('clientes/'+id,current=>current&&!current.bloqueado&&!current.passwordHash&&current.senha===c.senha&&Number(current.authVersion||0)===Number(c.authVersion||0)?{...current,passwordHash:migrated,senha:null}:undefined);
+    if(!r.committed)fail('Sua conta foi alterada. Entre novamente.',401);
+    return r.value;
   }
   return c;
 }
@@ -45,10 +48,12 @@ function cookie(req, role) {
   const prefix = cookieName(role) + '=';
   return (req.headers.cookie || '').split(';').map(v => v.trim()).find(v => v.startsWith(prefix))?.slice(prefix.length);
 }
-async function createSession(res, id, role = 'cliente') {
+async function createSession(res, id, role = 'cliente', expectedVersion) {
+  const version=role==='admin'?0:Number((await fbGet('clientes/'+key(id)))?.authVersion||0);
+  if(expectedVersion!==undefined&&version!==expectedVersion)fail('Sua senha foi alterada. Entre novamente.',401);
   const token = crypto.randomBytes(32).toString('hex');
   const maxAge = role === 'admin' ? 3600 : 86400;
-  await fbPut('sessions/' + digest(token), { clienteId: id, role, expiresAt: Date.now() + maxAge * 1000 });
+  await fbPut('sessions/' + digest(token), { clienteId: id, role, authVersion:version, expiresAt: Date.now() + maxAge * 1000 });
   res.setHeader('Set-Cookie', cookieName(role) + '=' + token + '; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=' + maxAge);
 }
 async function session(req, role = 'cliente', optional = false) {
@@ -61,6 +66,7 @@ async function session(req, role = 'cliente', optional = false) {
   if (s.role !== 'admin') {
     const c = await fbGet('clientes/' + key(s.clienteId));
     if (!c || c.bloqueado) fail('Conta indisponível', 401);
+    if(Number(s.authVersion||0)!==Number(c.authVersion||0))fail('Sua senha foi alterada. Entre novamente.',401);
     return { ...s, cliente: c };
   }
   return s;

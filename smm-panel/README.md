@@ -105,3 +105,13 @@ Cada sub-revenda pode cadastrar clientes, ter seu próprio PIX manual e criar su
 Coleção `convites_revenda`, com índice em `revendedorId`. Rotas: GET `/api/revendedor?action=subrevendas`; POST com `acao=criar-convite-subrevenda` ou `revogar-convite-subrevenda`; GET `/api/auth-cliente?acao=convite-subrevenda&convite=TOKEN` retorna apenas o nome da revenda e validade; POST `acao=cadastro-subrevendedor` valida o convite e cria a conta. O token é removido da URL após o cadastro e não é salvo no armazenamento local.
 
 As sub-revendas usam o painel compartilhado, com sessões e dados separados por conta. Domínios, marcas e tabelas de preços independentes por loja, comissões em múltiplos níveis e Mercado Pago por lojista ainda não fazem parte desta versão.
+
+## Minha conta
+
+A aba **Minha conta** permite consultar nome, usuário de acesso, WhatsApp, tipo de conta, desconto, data de cadastro, última troca de senha e existência de chave de API. O cliente pode editar seu próprio nome. Usuário e WhatsApp são apenas consultados nesta versão; o WhatsApp permanece como identificador dos saldos e pedidos.
+
+A troca de senha exige sessão válida, senha atual, nova senha com 8 a 128 caracteres e confirmação igual. O servidor valida o proprietário pela sessão, grava somente o hash scrypt e incrementa `authVersion` numa transação condicionada às credenciais verificadas. Isso impede duas trocas simultâneas de sobrescreverem uma à outra. A migração de senhas antigas também usa comparação e transação para não sobrescrever uma senha recém-alterada.
+
+Todas as sessões web anteriores tornam-se inválidas após a troca e o usuário precisa entrar novamente. Sessões antigas sem versão são compatíveis com a versão inicial zero. A emissão de sessão após login confere a versão das credenciais verificadas para fechar a corrida entre login e troca de senha. Chaves de API, saldos, vínculos comerciais e pedidos permanecem inalterados; a troca não revoga automaticamente a API.
+
+Rotas reutilizadas: GET `/api/auth-cliente?acao=minha-conta`; POST com `acao=atualizar-perfil` (nome) ou `acao=alterar-senha` (senhaAtual, novaSenha, confirmacaoSenha). A resposta do perfil usa uma lista explícita de campos e não retorna senhas, hashes ou chaves de API.

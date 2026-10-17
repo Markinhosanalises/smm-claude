@@ -199,6 +199,7 @@
     <button type="button" class="tab" id="tab-pedidos">📦 Meus pedidos</button>
     <button type="button" class="tab" id="tab-carteira">💰 Meu saldo</button>
     <button type="button" class="tab" id="tab-suporte">🎧 Preciso de ajuda</button>
+    <button type="button" class="tab" id="tab-conta">👤 Minha conta</button>
     <button type="button" class="tab" id="tab-api">🔑 API</button>
     <button type="button" class="tab hidden" id="tab-revendedor">🤝 Revendedor</button>
   </div>
@@ -345,6 +346,45 @@
         <button class="btn-sec" id="manual-atualizar">Atualizar saldo e recargas</button>
         <div id="manual-historico"></div>
       </section>
+    </div>
+  </div>
+
+
+  <div id="painel-conta" class="hidden">
+    <div class="card conta-card">
+      <p class="eyebrow">Seu perfil</p><h2 class="title">Minha conta</h2>
+      <p>Confira seus dados e o usuário usado para entrar no painel.</p>
+      <form id="conta-perfil-form">
+        <label class="label" for="conta-nome">Seu nome</label><input class="input" id="conta-nome" autocomplete="name" maxlength="100" required>
+        <button class="btn" type="submit" id="conta-salvar">Salvar meu nome</button>
+      </form>
+      <label class="label" for="conta-usuario">Seu usuário de acesso</label>
+      <div class="conta-login"><input class="input" id="conta-usuario" readonly><button class="btn-sec" id="conta-copiar-login" type="button">Copiar usuário</button></div>
+      <label class="label" for="conta-whatsapp">WhatsApp cadastrado</label><input class="input" id="conta-whatsapp" readonly>
+      <p class="preco-detalhe">Você pode entrar usando seu usuário ou seu WhatsApp e a senha.</p>
+      <dl class="conta-dados">
+        <div><dt>Tipo de conta</dt><dd id="conta-tipo">—</dd></div>
+        <div><dt>Desconto nos serviços</dt><dd id="conta-desconto">—</dd></div>
+        <div><dt>Conta criada em</dt><dd id="conta-criada">—</dd></div>
+        <div><dt>Última troca de senha</dt><dd id="conta-senha-data">—</dd></div>
+        <div><dt>Chave de API</dt><dd id="conta-api-status">—</dd></div>
+      </dl>
+      <button class="btn-sec" type="button" id="conta-abrir-api">Acessar minha API</button>
+      <p class="msg" id="conta-msg" role="status" aria-live="polite"></p>
+    </div>
+    <div class="card conta-card">
+      <p class="eyebrow">Segurança</p><h2 class="title">Alterar minha senha</h2>
+      <p>Confirme a senha atual e escolha uma nova senha com 8 a 128 caracteres. Após a troca, será necessário entrar novamente em todos os dispositivos.</p>
+      <form id="conta-senha-form">
+        <label class="label" for="conta-senha-atual">Senha atual</label>
+        <div class="conta-password"><input class="input" id="conta-senha-atual" type="password" autocomplete="current-password" maxlength="128" required><button class="btn-sec" type="button" data-conta-password="conta-senha-atual" aria-label="Mostrar senha atual" aria-pressed="false">Mostrar</button></div>
+        <label class="label" for="conta-nova-senha">Nova senha</label>
+        <div class="conta-password"><input class="input" id="conta-nova-senha" type="password" autocomplete="new-password" minlength="8" maxlength="128" required><button class="btn-sec" type="button" data-conta-password="conta-nova-senha" aria-label="Mostrar nova senha" aria-pressed="false">Mostrar</button></div>
+        <label class="label" for="conta-confirmacao">Repita a nova senha</label>
+        <div class="conta-password"><input class="input" id="conta-confirmacao" type="password" autocomplete="new-password" minlength="8" maxlength="128" required><button class="btn-sec" type="button" data-conta-password="conta-confirmacao" aria-label="Mostrar confirmação da nova senha" aria-pressed="false">Mostrar</button></div>
+        <button class="btn" type="submit" id="conta-alterar-senha">Salvar nova senha</button>
+      </form>
+      <p class="msg" id="conta-senha-msg" role="status" aria-live="polite"></p>
     </div>
   </div>
 

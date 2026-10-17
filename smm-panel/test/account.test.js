@@ -1,0 +1,36 @@
+const assert=require('node:assert/strict');
+module.exports=async()=>{
+ const beforeApp=process.env.APP_URL;process.env.APP_URL='https://example.com';
+ const saved=new Map(),paths=['../lib/firebase','../lib/auth','../lib/account','../api/auth-cliente'];
+ for(const p of paths){const id=require.resolve(p);saved.set(id,require.cache[id]);delete require.cache[id];}
+ let root={},queue=Promise.resolve();
+ const clone=v=>v===undefined?undefined:JSON.parse(JSON.stringify(v));
+ const get=p=>p?p.split('/').reduce((v,k)=>v?.[k],root)??null:root;
+ const set=(p,v)=>{if(!p){root=clone(v);return;}const bits=p.split('/'),last=bits.pop();let at=root;for(const bit of bits)at=at[bit]||(at[bit]={});if(v===null)delete at[last];else at[last]=clone(v);};
+ const fake={fbGet:async p=>clone(get(p)),fbPut:async(p,v)=>set(p,v),fbPatch:async(p,v)=>set(p,{...get(p),...v}),key:v=>String(v),fbTransaction:(p,fn)=>{const task=queue.then(()=>{const next=fn(clone(get(p)));if(next===undefined)return{committed:false,value:clone(get(p))};set(p,next);return{committed:true,value:clone(next)};});queue=task.catch(()=>{});return task;}};
+ const fid=require.resolve('../lib/firebase');require.cache[fid]={id:fid,filename:fid,loaded:true,exports:fake};
+ const auth=require('../lib/auth'),handler=require('../api/auth-cliente'),token='a'.repeat(64),second='b'.repeat(64),other='c'.repeat(64);
+ const originalPassword='OldStrongPassword123',newPassword='NewStrongPassword456';
+ const originalHash=await auth.hashPassword(originalPassword);
+ function reset(legacy=false){root={clientes:{me:{nome:'Maria',usuario:'maria',whatsapp:'5511999999999',role:'cliente',desconto:10,criadoEm:1,apiKeyHash:'private-api-hash',...(legacy?{senha:originalPassword}:{passwordHash:originalHash})},other:{nome:'Outra pessoa',usuario:'other',role:'cliente'}},usuarios:{maria:{whatsapp:'me'}},sessions:{[auth.digest(token)]:{clienteId:'me',role:'cliente',expiresAt:Date.now()+60000},[auth.digest(second)]:{clienteId:'me',role:'cliente',expiresAt:Date.now()+60000},[auth.digest(other)]:{clienteId:'other',role:'cliente',expiresAt:Date.now()+60000}},carteiras:{me:{saldo:15,movimentos:{credit:{centavos:1500}}}},pedidos:{test:{clienteId:'me',status:'executando'}}};queue=Promise.resolve();}
+ const req=(body={},method='POST',sessionToken=token)=>({method,body,query:{},headers:{'content-type':'application/json',origin:'https://example.com',cookie:sessionToken?'smm_session='+sessionToken:''},socket:{remoteAddress:'test'}});
+ const call=async r=>{const out={status:200,headers:{}};const res={setHeader:(k,v)=>out.headers[k]=v,status:n=>{out.status=n;return res;},json:v=>(out.body=v)};await handler(r,res);return out;};
+ const change=(extra={},sessionToken=token)=>call(req({acao:'alterar-senha',senhaAtual:originalPassword,novaSenha:newPassword,confirmacaoSenha:newPassword,...extra},'POST',sessionToken));
+ let scenarios=0;
+ try{
+  reset();let r=req({},'GET');r.query={acao:'minha-conta',clienteId:'other'};let data=await call(r);assert.equal(data.status,200);assert.equal(data.body.usuario,'maria');assert.equal(data.body.whatsapp,'5511999999999');assert.equal(data.body.apiAtiva,true);for(const secret of ['passwordHash','senha','apiKeyHash','authVersion'])assert(!(secret in data.body));
+  r=req({},'GET',null);r.query={acao:'minha-conta'};assert.equal((await call(r)).status,401);scenarios++;
+  data=await call(req({acao:'atualizar-perfil',nome:'Maria atualizada',clienteId:'other',usuario:'hacked',role:'admin',desconto:90}));assert.equal(data.status,200);assert.equal(get('clientes/me/nome'),'Maria atualizada');assert.equal(get('clientes/me/role'),'cliente');assert.equal(get('clientes/me/desconto'),10);assert.equal(get('clientes/me/usuario'),'maria');assert.equal(get('clientes/other/nome'),'Outra pessoa');assert.deepEqual(get('usuarios'),{maria:{whatsapp:'me'}});scenarios++;
+  reset();data=await change({senhaAtual:'wrong'});assert.equal(data.status,403);assert.equal(get('clientes/me/passwordHash'),originalHash);assert.equal(get('clientes/me/authVersion'),null);scenarios++;
+  reset();assert.equal((await change({confirmacaoSenha:'DifferentPassword'})).status,400);assert.equal((await change({novaSenha:'short',confirmacaoSenha:'short'})).status,400);assert.equal((await change({novaSenha:originalPassword,confirmacaoSenha:originalPassword})).status,400);assert.equal(get('clientes/me/passwordHash'),originalHash);scenarios++;
+  reset();const walletBefore=clone(get('carteiras')),ordersBefore=clone(get('pedidos'));data=await change();assert.equal(data.status,200);assert.equal(data.body.novoLoginNecessario,true);assert.match(data.headers['Set-Cookie'],/Max-Age=0/);const updated=get('clientes/me');assert.equal(updated.authVersion,1);assert(updated.senhaAlteradaEm>0);assert.equal(updated.senha??null,null);assert(await auth.verifyPassword(newPassword,updated.passwordHash));assert(!await auth.verifyPassword(originalPassword,updated.passwordHash));assert.equal(updated.apiKeyHash,'private-api-hash');assert.deepEqual(get('carteiras'),walletBefore);assert.deepEqual(get('pedidos'),ordersBefore);assert.equal(get('sessions/'+auth.digest(token)),null);assert.equal((await call(req({},'GET',second))).status,401);assert.equal((await call(req({},'GET',other))).status,200);scenarios++;
+  const badLogin=await call(req({acao:'login',usuario:'maria',senha:originalPassword},'POST',null));assert.equal(badLogin.status,401);
+  const login=await call(req({acao:'login',usuario:'maria',senha:newPassword},'POST',null));assert.equal(login.status,200);const newToken=login.headers['Set-Cookie'].split(';')[0].split('=')[1];assert.equal(get('sessions/'+auth.digest(newToken)+'/authVersion'),1);assert.equal((await call(req({},'GET',newToken))).status,200);scenarios++;
+  reset();const concurrent=await Promise.all([change(),change({novaSenha:'AnotherStrongPassword789',confirmacaoSenha:'AnotherStrongPassword789'},second)]);assert.equal(concurrent.filter(r=>r.status===200).length,1);assert(concurrent.filter(r=>r.status!==200).every(r=>[401,409].includes(r.status)));assert.equal(get('clientes/me/authVersion'),1);scenarios++;
+  reset();const verified=await auth.loginPassword('me',originalPassword);set('clientes/me/authVersion',1);await assert.rejects(auth.createSession({setHeader:()=>{}},'me','cliente',Number(verified.authVersion||0)),/senha foi alterada/);scenarios++;
+  reset(true);assert.equal((await change()).status,200);assert.equal(get('clientes/me/senha'),null);assert(await auth.verifyPassword(newPassword,get('clientes/me/passwordHash')));scenarios++;
+  reset(true);const replacement=await auth.hashPassword(newPassword),legacyLogin=auth.loginPassword('me',originalPassword);await Promise.resolve();set('clientes/me',{...get('clientes/me'),senha:null,passwordHash:replacement,authVersion:1});await assert.rejects(legacyLogin,/alterada|incorretos/);assert.equal(get('clientes/me/passwordHash'),replacement);assert.equal(get('clientes/me/authVersion'),1);scenarios++;
+  return{passed:true,scenarios};
+ }finally{if(beforeApp===undefined)delete process.env.APP_URL;else process.env.APP_URL=beforeApp;for(const[id,old]of saved){if(old)require.cache[id]=old;else delete require.cache[id];}}
+};
+if(require.main===module)require('node:test')('account privacy, password changes and session invalidation',module.exports);
