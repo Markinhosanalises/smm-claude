@@ -1,0 +1,54 @@
+const assert=require('node:assert/strict');
+module.exports=async()=>{
+ const previousAppUrl=process.env.APP_URL;process.env.APP_URL='https://example.com';
+ const saved=new Map(),paths=['../lib/firebase','../lib/auth','../lib/wallet','../lib/orders','../lib/payments','../lib/fornecedor','../lib/manual-pix','../api/carteira','../lib/resellers'];
+ for(const p of paths){const id=require.resolve(p);saved.set(id,require.cache[id]);delete require.cache[id];}
+ let root={},queue=Promise.resolve();
+ const clone=v=>v===undefined?undefined:JSON.parse(JSON.stringify(v));
+ const get=p=>p?p.split('/').reduce((v,k)=>v?.[k],root)??null:root;
+ const set=(p,v)=>{if(!p){root=clone(v);return;}const keys=p.split('/'),last=keys.pop();let at=root;for(const k of keys)at=at[k]||(at[k]={});if(v===null)delete at[last];else at[last]=clone(v);};
+ const firebase={fbGet:async p=>clone(get(p)),fbPut:async(p,v)=>set(p,v),fbPatch:async(p,v)=>set(p,{...get(p),...v}),fbQuery:async(p,f,v)=>Object.fromEntries(Object.entries(get(p)||{}).filter(([,c])=>c?.[f]===v)),key:v=>{if(typeof v!=='string'||!v||/[.#$[\]/]/.test(v))throw Object.assign(Error('ID inválido'),{status:400});return v;},fbTransaction:(p,fn)=>{const run=queue.then(()=>{const next=fn(clone(get(p)));if(next===undefined)return{committed:false,value:clone(get(p))};set(p,next);return{committed:true,value:clone(next)};});queue=run.catch(()=>{});return run;}};
+ const id=require.resolve('../lib/firebase');require.cache[id]={id,filename:id,loaded:true,exports:firebase};
+ const manual=require('../lib/manual-pix'),auth=require('../lib/auth'),wallet=require('../lib/wallet');
+ const owner={clienteId:'owner',cliente:{role:'revendedor',nome:'Vendedor'}},other={clienteId:'other',cliente:{role:'revendedor',nome:'Outro vendedor'}},client={clienteId:'client',cliente:{role:'cliente',nome:'Cliente',revendedorId:'owner'}};
+ const config={ativo:true,tipoChave:'email',chave:'vendedor@example.invalid',nomeRecebedor:'Vendedor de teste',whatsapp:'5511999999999',minimo:5,instrucoes:'Envie a referência.'};
+ const reset=()=>{root=clone({clientes:{owner:owner.cliente,other:other.cliente,client:client.cliente,stranger:{role:'cliente',nome:'Outro cliente',revendedorId:'other'}},carteiras:{owner:{saldo:100},client:{saldo:2}},pix_revendedores:{owner:clone(config)}});queue=Promise.resolve();};
+ const request=(body={},method='POST',operation='manual_operation_123456')=>({body,method,headers:{'content-type':'application/json','idempotency-key':operation},query:{},socket:{remoteAddress:'test'}});
+ const call=async(fn,req,s)=>{let data;await fn(req,{json:v=>(data=v)},s);return data;};
+ const ask=async(value=10,operation='manual_operation_123456')=>call(manual.customer,request({valor:value,revendedorId:'other',clienteId:'stranger'},'POST',operation),client);
+ const decide=(p,s=owner,action='aprovar',extra={})=>call(manual.reseller,request({acao:action+'-pix-manual',recargaId:p.recarga.id,confirmado:true,...extra}),s);
+ let assertions=0;
+ try{
+  reset();assert.throws(()=>manual.validateConfig({...config,tipoChave:'url',chave:'https://attacker.test'}));assert.throws(()=>manual.validateConfig({...config,whatsapp:'123'}));assert.equal(manual.validateConfig(config).chave,config.chave);assertions++;
+  await assert.rejects(call(manual.reseller,request({acao:'configurar-pix-manual',...config}),client),/Acesso/);
+  await call(manual.reseller,request({acao:'configurar-pix-manual',...config}),owner);
+  const info=await call(manual.customer,request({},'GET'),client);assert.equal(info.disponivel,true);assert.equal(info.configuracao.chave,config.chave);
+  const noOwner=await call(manual.customer,request({},'GET'),{clienteId:'none',cliente:{role:'cliente'}});assert.equal(noOwner.disponivel,false);assert.equal(noOwner.configuracao,null);assertions++;
+  const pending=await ask();assert.equal(pending.recarga.status,'pendente');assert.equal(get('depositos_manuais/'+pending.recarga.id+'/revendedorId'),'owner');assert.equal(wallet.balanceCents(get('carteiras/owner')),10000);assert.equal(wallet.balanceCents(get('carteiras/client')),200);
+  const duplicate=await ask();assert.equal(duplicate.recarga.id,pending.recarga.id);await assert.rejects(ask(11),/outros dados/);assertions++;
+  await assert.rejects(decide(pending,other),/pertence/);await assert.rejects(decide(pending,owner,'aprovar',{confirmado:false}),/Confirme/);
+  await assert.rejects(call(manual.reseller,request({acao:'creditar-cliente-manual',clienteId:'stranger',valor:10,confirmado:true}),owner),/pertence/);assertions++;
+  const approved=await Promise.all([decide(pending),decide(pending)]);
+  assert(approved.every(x=>x.recarga.status==='aprovado'));assert.equal(wallet.balanceCents(get('carteiras/owner')),9000);assert.equal(wallet.balanceCents(get('carteiras/client')),1200);assert.equal(Object.keys(get('carteiras/client/movimentos')).length,1);await assert.rejects(decide(pending,owner,'rejeitar',{observacao:'não recebido'}),/decidida/);assertions++;
+  const listOther=await call(manual.reseller,request({},'GET'),other);assert.equal(listOther.recargas.length,0);
+  const clientHistory=await call(manual.customer,request({},'GET'),client);assert.equal(clientHistory.recargas[0].status,'aprovado');assertions++;
+  reset();const expensiveA=await ask(60,'manual_operation_amount_a'),expensiveB=await ask(60,'manual_operation_amount_b');
+  const concurrency=await Promise.allSettled([decide(expensiveA),decide(expensiveB)]);assert.equal(concurrency.filter(x=>x.status==='fulfilled').length,1);assert.equal(wallet.balanceCents(get('carteiras/owner')),4000);assert.equal(wallet.balanceCents(get('carteiras/client')),6200);assert.equal(Object.values(get('depositos_manuais')).filter(x=>x.status==='pendente').length,1);assertions++;
+  reset();const rejected=await ask();await assert.rejects(decide(rejected,owner,'rejeitar'),/motivo/);await decide(rejected,owner,'rejeitar',{observacao:'Recebimento não encontrado'});assert.equal(wallet.balanceCents(get('carteiras/owner')),10000);assert.equal(wallet.balanceCents(get('carteiras/client')),200);await assert.rejects(decide(rejected),/decidida/);assertions++;
+  reset();const beforeDisable=await ask();await call(manual.reseller,request({acao:'configurar-pix-manual',ativo:false}),owner);assert.equal(await manual.enabled(client.cliente),false);await assert.rejects(ask(10,'new_after_disabling_1234'),/indisponível/);await decide(beforeDisable);assert.equal(wallet.balanceCents(get('carteiras/client')),1200);assertions++;
+  reset();const directBody={acao:'creditar-cliente-manual',clienteId:'client',valor:15,observacao:'PIX conferido',confirmado:true};
+  const direct=await call(manual.reseller,request(directBody),owner);await call(manual.reseller,request(directBody),owner);
+  assert.equal(direct.recarga.status,'aprovado');assert.equal(wallet.balanceCents(get('carteiras/owner')),8500);assert.equal(wallet.balanceCents(get('carteiras/client')),1700);
+  await assert.rejects(call(manual.reseller,request({...directBody,valor:20}),owner),/outros dados/);assertions++;
+  reset();const insufficient=await ask(101);await assert.rejects(decide(insufficient),/insuficiente/);assert.equal(wallet.balanceCents(get('carteiras/client')),200);
+  set('clientes/client/revendedorId','other');await assert.rejects(decide(insufficient),/pertence/);assertions++;
+  reset();const token='c'.repeat(64);set('sessions/'+auth.digest(token),{clienteId:'client',role:'cliente',expiresAt:Date.now()+60000});
+  const endpoint=require('../api/carteira');const endpointCall=async r=>{let out={};await endpoint(r,{setHeader:()=>{},status:n=>{out.status=n;return{json:v=>(out.body=v)};},json:v=>(out.body=v)});return out;};
+  const noAuth=await endpointCall(request({},'GET'));assert.equal(noAuth.status,401);
+  const auto=request({valor:10});auto.headers.cookie='smm_session='+token;const autoResult=await endpointCall(auto);
+  assert.equal(autoResult.status,409,JSON.stringify(autoResult));assert.match(autoResult.body.erro,/PIX manual/);assertions++;
+  reset();const snapshot=await ask(10);set('clientes/owner/bloqueado',true);await assert.rejects(decide(snapshot),/pertence/);assert.equal(await manual.enabled(client.cliente),false);assertions++;
+  return {passed:true,scenarios:assertions};
+ }finally{if(previousAppUrl===undefined)delete process.env.APP_URL;else process.env.APP_URL=previousAppUrl;for(const [id,prior]of saved){if(prior)require.cache[id]=prior;else delete require.cache[id];}}
+};
+if(require.main===module)require('node:test')('manual PIX ownership, atomic settlement and replay',module.exports);

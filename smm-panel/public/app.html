@@ -324,11 +324,26 @@
         <div style="font-size:42px;font-weight:800;color:var(--accent);" id="saldo-carteira">R$ 0,00</div>
         <p style="font-size:12.5px;color:var(--muted);margin-top:8px;">Use seu saldo pra pagar pedidos instantaneamente</p>
       </div>
-      <label class="label">Valor do depósito</label>
+      <div id="recarga-automatica"><label class="label">Valor do depósito</label>
       <input class="input" id="deposito-valor" type="number" min="5" placeholder="Mínimo R$ 5,00">
       <button class="btn" id="deposito-btn">Gerar PIX pra recarregar</button>
       <div id="deposito-qr" style="display:none;margin-top:16px;text-align:center;"></div>
-      <p class="msg" id="deposito-msg"></p>
+      <p class="msg" id="deposito-msg"></p></div>
+      <section id="pix-manual-cliente" class="hidden" aria-labelledby="pix-manual-titulo">
+        <p class="eyebrow">PIX com aprovação do vendedor</p>
+        <h3 id="pix-manual-titulo">Recarregar meu saldo</h3>
+        <p>Pague para sua revenda, envie o comprovante pelo WhatsApp e aguarde a liberação. O envio do comprovante não libera saldo automaticamente.</p>
+        <label class="label" for="manual-valor">Quanto você quer adicionar?</label>
+        <input class="input" id="manual-valor" type="number" step="0.01" min="5" inputmode="decimal">
+        <button class="btn" id="manual-solicitar">Ver dados para pagar o PIX</button>
+        <div id="manual-dados" class="hidden" aria-live="polite"></div>
+        <p class="msg" id="manual-msg" role="status"></p>
+      </section>
+      <section id="manual-historico-wrap" class="hidden" aria-labelledby="manual-historico-titulo">
+        <h3 id="manual-historico-titulo">Minhas recargas manuais</h3>
+        <button class="btn-sec" id="manual-atualizar">Atualizar saldo e recargas</button>
+        <div id="manual-historico"></div>
+      </section>
     </div>
   </div>
 
@@ -396,6 +411,7 @@
     <div class="tabs" style="display:flex;margin-bottom:16px;">
       <div class="tab ativa" id="tab-rev-clientes" style="cursor:pointer;">👥 Clientes</div>
       <div class="tab" id="tab-rev-pedidos" style="cursor:pointer;">📦 Pedidos</div>
+      <button type="button" class="tab" id="tab-rev-pix">💸 PIX manual</button>
       <div class="tab" id="tab-rev-novo" style="cursor:pointer;">➕ Novo cliente</div>
     </div>
     <div id="painel-rev-clientes" class="card">
@@ -416,6 +432,39 @@
         </table>
       </div>
       <p class="msg" id="rev-pedidos-msg"></p>
+    </div>
+    
+    <div id="painel-rev-pix" class="card hidden">
+      <p class="eyebrow">Receba na sua conta</p>
+      <h2 class="title">PIX manual</h2>
+      <p>O cliente paga a você e envia o comprovante pelo WhatsApp. Confira o recebimento no seu banco antes de liberar o saldo.</p>
+      <p>A liberação transfere o mesmo valor do seu saldo pré-pago para a carteira do cliente. Ela não usa a chave PIX para consultar o banco.</p>
+      <form id="rev-pix-config">
+        <label class="manual-check"><input id="rev-pix-ativo" type="checkbox"> Oferecer PIX manual aos meus clientes</label>
+        <label class="label" for="rev-pix-tipo">Tipo da chave PIX</label>
+        <select class="select" id="rev-pix-tipo"><option value="aleatoria">Chave aleatória</option><option value="email">E-mail</option><option value="telefone">Telefone</option><option value="cpf">CPF</option><option value="cnpj">CNPJ</option></select>
+        <label class="label" for="rev-pix-chave">Sua chave PIX</label><input class="input" id="rev-pix-chave" maxlength="200" autocomplete="off">
+        <label class="label" for="rev-pix-recebedor">Nome que aparece no banco</label><input class="input" id="rev-pix-recebedor" maxlength="100">
+        <label class="label" for="rev-pix-whatsapp">WhatsApp para receber comprovantes</label><input class="input" id="rev-pix-whatsapp" type="tel" placeholder="55 + DDD + número">
+        <label class="label" for="rev-pix-minimo">Recarga mínima em reais</label><input class="input" id="rev-pix-minimo" type="number" min="0.01" step="0.01" value="5">
+        <label class="label" for="rev-pix-instrucoes">Orientação adicional para o cliente (opcional)</label><textarea class="input" id="rev-pix-instrucoes" maxlength="500" rows="3"></textarea>
+        <button class="btn" type="submit">Salvar PIX manual</button><p class="msg" id="rev-pix-config-msg" role="status"></p>
+      </form>
+      <hr>
+      <h3>Recargas para conferir</h3>
+      <button class="btn-sec" id="rev-pix-atualizar">Atualizar recargas</button>
+      <p>Compare a referência e o valor com o comprovante recebido. Confirme o dinheiro na conta; não aprove apenas pela imagem.</p>
+      <div id="rev-pix-recargas"></div><p class="msg" id="rev-pix-msg" role="status"></p>
+      <hr>
+      <h3>Adicionar saldo sem solicitação</h3>
+      <p>Use quando seu cliente já pagou e enviou o comprovante diretamente.</p>
+      <form id="rev-pix-credito">
+        <label class="label" for="rev-pix-cliente">Cliente da sua revenda</label><select class="select" id="rev-pix-cliente" required><option value="">Escolha o cliente</option></select>
+        <label class="label" for="rev-pix-valor">Valor de saldo a liberar</label><input class="input" id="rev-pix-valor" type="number" min="0.01" step="0.01" required>
+        <label class="label" for="rev-pix-observacao">Referência do PIX ou observação (opcional)</label><input class="input" id="rev-pix-observacao" maxlength="300">
+        <label class="manual-check"><input id="rev-pix-confirmado" type="checkbox" required> Conferi o recebimento no meu banco</label>
+        <button class="btn" type="submit">Transferir saldo para o cliente</button><p class="msg" id="rev-pix-credito-msg" role="status"></p>
+      </form>
     </div>
     <div id="painel-rev-novo" class="card hidden">
       <p class="eyebrow">Cadastrar cliente</p>

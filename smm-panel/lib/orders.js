@@ -68,6 +68,7 @@ async function create(customerId, customer, body, operation) {
     fingerprint=digest(JSON.stringify({service,params:normalized.params,payment}));
   }
   if (!p) {
+    if(payment==='pix'&&await require('./manual-pix').enabled(customer))fail('Recarregue pelo PIX manual da sua revenda em Meu saldo e depois pague com saldo.',409);
     const price=forms.amount(s,rate(s,config||{},customer),normalized);
     const link=normalized.link,comments=normalized.params.comments||null;
     const counter = await fbTransaction('config/contadorPedidos', n => Number(n || 0) + 1);

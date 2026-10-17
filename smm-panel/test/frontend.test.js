@@ -121,3 +121,47 @@ test('custom comments and bounded subscriptions show correct fields and checkout
  assert.deepEqual(p.errors,[]);
  }finally{p.dom.window.close();}
 });
+
+test('linked customer requests manual PIX, sees seller instructions and cannot approve',async()=>{
+ const recarga={id:'man_demo',referencia:'PIX-DEMO123',valor:25,status:'pendente',criadoEm:Date.now(),pix:{chave:'vendedor@example.invalid',nomeRecebedor:'Vendedor <img src=x onerror=alert(1)>',whatsapp:'5511999999999',instrucoes:'Envie o comprovante.'}};
+ let requested=false;
+ const p=await page('app.html',(u,o)=>{
+  if(u.pathname==='/api/auth-cliente')return customer;
+  if(u.pathname==='/api/carteira'&&u.searchParams.get('action')==='pix-manual')return{disponivel:true,configuracao:{minimo:5},recargas:requested?[recarga]:[]};
+  if(u.pathname==='/api/carteira'&&o.method==='POST'){assert.equal(JSON.parse(o.body).action,'solicitar-pix-manual');requested=true;return{ok:true,recarga};}
+  return common(u);
+ });
+ try{
+  p.w.document.querySelector('#tab-carteira').click();await wait();
+  assert(p.w.document.querySelector('#recarga-automatica').classList.contains('hidden'));
+  p.w.document.querySelector('#manual-valor').value='25';p.w.document.querySelector('#manual-solicitar').click();await wait();await wait();
+  assert.match(p.w.document.querySelector('#manual-dados').textContent,/PIX-DEMO123/);
+  assert.equal(p.w.document.querySelector('#manual-dados img'),null);
+  const link=p.w.document.querySelector('#manual-dados a');assert.match(link.href,/^https:\/\/wa.me\/5511999999999\?text=/);
+  assert.match(decodeURIComponent(link.href),/PIX-DEMO123/);
+  assert.equal(p.w.document.querySelector('#manual-chave-copia').value,'vendedor@example.invalid');
+  const request=p.calls.find(c=>c.options.method==='POST'&&c.url.pathname==='/api/carteira');assert(request);assert(request.options.headers.get('Idempotency-Key'));
+  assert(!('revendedorId'in JSON.parse(request.options.body)));
+  assert(!p.calls.some(c=>c.url.pathname==='/api/pagamento'));assert.deepEqual(p.errors,[]);
+ }finally{p.dom.window.close();}
+});
+test('reseller verifies receipt before approving and client names remain text',async()=>{
+ const merchant={...customer,role:'revendedor'},deposit={id:'man_demo',referencia:'PIX-DEMO123',clienteId:'child',nomeCliente:'<img src=x onerror=alert(1)>',valor:25,status:'pendente',criadoEm:Date.now()};
+ let approved=false;
+ const p=await page('app.html',(u,o)=>{
+  if(u.pathname==='/api/auth-cliente')return merchant;
+  if(u.pathname==='/api/revendedor'){
+   if(o.method==='POST'){const b=JSON.parse(o.body);assert.equal(b.acao,'aprovar-pix-manual');assert.equal(b.confirmado,true);approved=true;return{ok:true,novoSaldo:75};}
+   if(u.searchParams.get('action')==='clientes')return{clientes:[{clienteId:'child',nome:'Cliente',whatsapp:'5511888888888'}]};
+   if(u.searchParams.get('action')==='pix-manual')return{configuracao:{ativo:true,tipoChave:'email',chave:'vendedor@example.invalid',nomeRecebedor:'Vendedor',whatsapp:'5511999999999',minimo:5},recargas:[{...deposit,status:approved?'aprovado':'pendente'}]};
+   return{nome:'Vendedor',saldo:100,desconto:10};
+  }return common(u);
+ });
+ try{
+  p.w.document.querySelector('#tab-revendedor').click();await wait();p.w.document.querySelector('#tab-rev-pix').click();await wait();await wait();
+  const list=p.w.document.querySelector('#rev-pix-recargas');assert.equal(list.querySelector('img'),null);assert(list.textContent.includes('<img'));
+  const approve=list.querySelector('.btn');assert.equal(approve.disabled,true);approve.click();await wait();assert.equal(approved,false);
+  const check=list.querySelector('input[type=checkbox]');check.checked=true;check.dispatchEvent(new p.w.Event('change'));assert.equal(approve.disabled,false);approve.click();await wait();await wait();
+  assert.equal(approved,true);assert.match(p.w.document.querySelector('#rev-pix-msg').textContent,/uma vez/);assert.deepEqual(p.errors,[]);
+ }finally{p.dom.window.close();}
+});

@@ -12,6 +12,7 @@ module.exports = async (req,res) => {
     }
     const s = await session(req);
     if(s.cliente.role !== 'revendedor') fail('Acesso negado',403);
+    if(req.query.action==='pix-manual')return require('./manual-pix').reseller(req,res,s);
     if(req.query.action === 'clientes') {
       const cs = await fbQuery('clientes','revendedorId',s.clienteId);
       return res.json({clientes:Object.entries(cs||{}).map(([id,c])=>({clienteId:id,nome:c.nome,usuario:c.usuario,whatsapp:c.whatsapp}))});
@@ -20,7 +21,7 @@ module.exports = async (req,res) => {
   }
   mutation(req);
   const b=req.body||{};
-  if(admin && b.acao !== 'criar-cliente') {
+  if(admin && !['criar-cliente','configurar-pix-manual','aprovar-pix-manual','rejeitar-pix-manual','creditar-cliente-manual'].includes(b.acao)) {
     if(b.acao==='set-desconto') {
       const id=key(b.clienteId);
       const c=await fbGet('clientes/'+id);
@@ -33,6 +34,7 @@ module.exports = async (req,res) => {
     return res.json(result);
   }
   const s=await session(req);
+  if(['configurar-pix-manual','aprovar-pix-manual','rejeitar-pix-manual','creditar-cliente-manual'].includes(b.acao))return require('./manual-pix').reseller(req,res,s);
   if(s.cliente.role!=='revendedor'||b.acao!=='criar-cliente') fail('Acesso negado',403);
   await rateLimit(req,'reseller-register',20,60000);
   const result=await require('../api/auth-cliente').register({nome:b.nomeCliente,whatsapp:b.whatsappCliente,usuario:b.usuarioCliente,senha:b.senhaCliente,origem:'revendedor'},s.clienteId);

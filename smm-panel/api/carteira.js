@@ -6,6 +6,7 @@ const { createPix } = require('../lib/payments');
 const { requestKey } = require('../lib/orders');
 module.exports = endpoint(async (req, res) => {
   if (req.method === 'GET') {
+    if(req.query.action==='pix-manual')return require('../lib/manual-pix').customer(req,res,await session(req));
     const admin = await session(req, 'admin', true);
     if (req.query.todos === '1') {
       if (!admin) await requireAdmin(req);
@@ -37,6 +38,8 @@ module.exports = endpoint(async (req, res) => {
     return res.json({ ok: true, novoSaldo: await change(id, cents, 'admin_' + digest(requestKey(req))) });
   }
   const s = await session(req);
+  if(b.action==='solicitar-pix-manual')return require('../lib/manual-pix').customer(req,res,s);
+  if(await require('../lib/manual-pix').enabled(s.cliente))fail('Use o PIX manual da sua revenda em Meu saldo.',409);
   await rateLimit(req, 'deposit', 20, 60000);
   const config = await fbGet('config');
   const value = number(b.valor, 'Valor', Math.max(0.01, Number(config?.minRecarga || 5)), 1000000);

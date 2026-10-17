@@ -14,7 +14,7 @@
       options = { ...options, body: JSON.stringify(body) };
     }
     const method = options.method || 'GET';
-    const operation = body && method === 'POST' && ['/api/order', '/api/carteira'].includes(url.pathname);
+    const operation = body && method === 'POST' && (['/api/order', '/api/carteira'].includes(url.pathname)||(url.pathname==='/api/revendedor'&&body.acao==='creditar-cliente-manual'));
     const signature = operation ? url.pathname + ':' + options.body : null;
     const headers = new Headers(options.headers);
     if (operation) {
