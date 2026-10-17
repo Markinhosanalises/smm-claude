@@ -115,3 +115,11 @@ A troca de senha exige sessão válida, senha atual, nova senha com 8 a 128 cara
 Todas as sessões web anteriores tornam-se inválidas após a troca e o usuário precisa entrar novamente. Sessões antigas sem versão são compatíveis com a versão inicial zero. A emissão de sessão após login confere a versão das credenciais verificadas para fechar a corrida entre login e troca de senha. Chaves de API, saldos, vínculos comerciais e pedidos permanecem inalterados; a troca não revoga automaticamente a API.
 
 Rotas reutilizadas: GET `/api/auth-cliente?acao=minha-conta`; POST com `acao=atualizar-perfil` (nome) ou `acao=alterar-senha` (senhaAtual, novaSenha, confirmacaoSenha). A resposta do perfil usa uma lista explícita de campos e não retorna senhas, hashes ou chaves de API.
+
+### Solicitação de cancelamento pelo cliente
+
+Em Meus pedidos, serviços em andamento marcados com cancel=true exibem Solicitar cancelamento. O servidor autentica o dono do pedido, confirma a capacidade no catálogo atual do fornecedor e consulta o status antes de enviar action=cancel com orders. Uma transação impede envios repetidos; timeout ou resposta sem confirmação ficam em conferência, sem reenvio automático. A resposta cancel=1 significa solicitação recebida, nunca cancelamento definitivo.
+
+As consultas de status centralizadas conciliam Cancelled/Canceled ou Partial após uma solicitação. O valor não entregue é creditado em saldo do painel (inclusive pedidos pagos diretamente por PIX), proporcional à quantidade restante, com pedido, carteira e lançamento atômicos. Pedido concluído não gera crédito. Dados inválidos, assinaturas, pacote parcialmente entregue e pedidos legados sem comprovação do débito ficam para revisão do suporte. Não há estorno bancário automático neste fluxo. A tela explica isso antes da solicitação e mostra a situação da devolução.
+
+A conferência ocorre nas consultas de status e na atualização a cada 30 segundos enquanto Meus pedidos estiver aberta; ainda não há trabalhador agendado para esta conciliação. Reabrir ou atualizar a tela retoma a conferência. O botão não cancela pedidos não elegíveis nem garante que o fornecedor aceitará.

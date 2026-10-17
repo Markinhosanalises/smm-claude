@@ -247,3 +247,30 @@ test('password form validates confirmation, toggles visibility and clears secret
   assert(!JSON.stringify(p.w.localStorage).includes('StrongPassword'));assert(!JSON.stringify(p.w.sessionStorage).includes('StrongPassword'));assert.deepEqual(p.errors,[]);
  }finally{p.dom.window.close();}
 });
+
+test('customer requests cancellation only after confirmation and sees pending state without fake progress',async()=>{
+ let requested=false,posts=0;
+ const order={id:'order-demo',numeroPedido:'#00123',nomeServico:'Instagram Curtidas',status:'executando',quantidade:100,restam:'100',startCount:0,valorTotal:10,criadoEm:Date.now(),orderIdFornecedor:55,podeSolicitarCancelamento:true,pagamento:'saldo'};
+ const p=await page('app.html',(u,o)=>{
+  if(u.pathname==='/api/auth-cliente')return customer;
+  if(u.pathname==='/api/pedidos'){
+   if(o.method==='POST'){posts++;assert.deepEqual(JSON.parse(o.body),{action:'solicitar-cancelamento',pedidoId:'order-demo'});requested=true;return{ok:true};}
+   return{pedidos:[{...order,...(requested?{podeSolicitarCancelamento:false,cancelamento:{estado:'solicitado'}}:{})}]};
+  }
+  return common(u);
+ });
+ try{
+  p.w.document.querySelector('#tab-pedidos').click();await wait();await wait();
+  assert.match(p.w.document.querySelector('#lista-pedidos').textContent,/0% concluído/);
+  const button=p.w.document.querySelector('.btn-cancelar-pedido');assert(button);
+  p.w.confirm=()=>false;button.click();await wait();assert.equal(posts,0);
+  p.w.confirm=()=>true;button.click();await wait();await wait();
+  assert.equal(posts,1);assert.equal(p.w.document.querySelector('.btn-cancelar-pedido'),null);
+  assert.match(p.w.document.querySelector('#lista-pedidos').textContent,/Aguardando confirmação do fornecedor/);
+  assert.deepEqual(p.errors,[]);
+ }finally{p.dom.window.close();}
+});
+test('non-cancellable services show explanation without a cancellation button',async()=>{
+ const p=await page('app.html',(u)=>{if(u.pathname==='/api/auth-cliente')return customer;if(u.pathname==='/api/pedidos')return{pedidos:[{id:'one',status:'executando',quantidade:100,restam:0,startCount:0,valorTotal:1,criadoEm:1,podeSolicitarCancelamento:false}]};return common(u);});
+ try{p.w.document.querySelector('#tab-pedidos').click();await wait();await wait();assert.equal(p.w.document.querySelector('.btn-cancelar-pedido'),null);assert.match(p.w.document.querySelector('#lista-pedidos').textContent,/não oferece cancelamento/);assert.match(p.w.document.querySelector('#lista-pedidos').textContent,/100% concluído/);}finally{p.dom.window.close();}
+});

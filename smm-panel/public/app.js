@@ -332,12 +332,14 @@
       const lista=$('lista-pedidos'); lista.innerHTML=safeHTML('');
       if(!data.pedidos||data.pedidos.length===0){ $('pedidos-msg').textContent='Você ainda não fez nenhum pedido.'; return; }
       $('pedidos-msg').textContent='';
-      const emAndamento=(data.pedidos||[]).filter(p=>p.status==='executando'&&p.orderIdFornecedor);
+      const emAndamento=(data.pedidos||[]).filter(p=>p.orderIdFornecedor&&(p.status==='executando'||(p.cancelamento&&['cancelado','parcial'].includes(p.status)&&!['creditado','sem_valor'].includes(p.cancelamento.reembolsoEstado))));
       await Promise.all(emAndamento.map(p=>fetch(`${API_BASE}/api/pedidos?pedidoId=${escapeHTML(encodeURIComponent(p.id))}`).catch(()=>{})));
       const r2=await fetch(`${API_BASE}/api/pedidos?clienteId=${encodeURIComponent(clienteId)}`);
       const data2=await r2.json();
+      if((data2.pedidos||data.pedidos).some(p=>p.cancelamento?.reembolsoEstado==='creditado')) await carregarSaldo();
       (data2.pedidos||data.pedidos).forEach(p=>{
-        const progresso=p.startCount&&p.quantidade?Math.min(100,Math.round(((p.quantidade-(p.restam||p.quantidade))/p.quantidade)*100)):(p.status==='concluido'?100:p.status==='executando'?50:0);
+        const restamValidos=p.restam!==null&&p.restam!==undefined&&String(p.restam).trim()!==''&&Number.isFinite(Number(p.restam))&&Number(p.restam)>=0&&Number(p.restam)<=Number(p.quantidade);
+        const progresso=p.status==='concluido'?100:restamValidos&&Number(p.quantidade)>0?Math.max(0,Math.min(100,Math.round((1-Number(p.restam)/Number(p.quantidade))*100))):0;
         const corStatus={aguardando_pagamento:'#8b929b',executando:'#ffc97c',concluido:'#7CFFB2',cancelado:'#ff8b8b',erro_fornecedor:'#ff8b8b'};
         const cor=corStatus[p.status]||'#8b929b';
         const div=document.createElement('div'); div.className='pedido-item';
@@ -345,7 +347,36 @@
           <div class="pedido-top"><span>${escapeHTML(nomeAmigavel(p.nomeServico||'Serviço'))}</span><span class="status-pill ${escapeHTML(p.status)}">${escapeHTML(formatarStatus(p.status))}</span></div>
           <div class="pedido-sub">${p.numeroPedido?`<strong style="color:var(--accent)">${escapeHTML(p.numeroPedido)}</strong> · `:''}Qtd: ${escapeHTML(p.quantidade)} · R$ ${escapeHTML(Number(p.valorTotal).toFixed(2))} · ${escapeHTML(new Date(p.criadoEm).toLocaleDateString('pt-BR'))}${escapeHTML(p.pagamento==='saldo'?' · 💰 Saldo':'')}</div>
           ${p.link?`<div style="font-size:11.5px;margin-top:4px;"><a href="${escapeHTML(p.link)}" target="_blank" style="color:var(--muted);text-decoration:none;">🔗 ${escapeHTML(p.link.length>50?p.link.slice(0,50)+'...':p.link)}</a></div>`:''}
-          ${p.status==='executando'||p.status==='concluido'?`<div style="margin-top:8px;"><div style="height:4px;background:var(--line);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${progresso}%;background:${cor};border-radius:4px;transition:width .5s;"></div></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">${progresso}% concluído${p.restam?` · ${escapeHTML(p.restam)} restando`:''}</div></div>`:''}`);
+          ${p.status==='executando'||p.status==='concluido'?`<div style="margin-top:8px;"><div style="height:4px;background:var(--line);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${progresso}%;background:${cor};border-radius:4px;transition:width .5s;"></div></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">${progresso}% concluído${restamValidos?` · ${escapeHTML(p.restam)} restando`:''}</div></div>`:''}`);
+        const cancel=p.cancelamento;
+        if(cancel){
+          const notice=document.createElement('p'); notice.className='pedido-cancelamento-msg'; notice.setAttribute('role','status');
+          notice.textContent=cancel.reembolsoEstado==='creditado'?'Cancelamento confirmado. R$ '+(Number(cancel.reembolsoCentavos)/100).toFixed(2).replace('.',',')+' devolvidos ao seu saldo.':
+            cancel.reembolsoEstado==='revisao'?'Cancelamento confirmado. A devolução está em análise pelo suporte.':
+            cancel.reembolsoEstado==='sem_valor'?'Pedido finalizado. Não há valor de serviços não entregues para devolver.':
+            p.status==='concluido'?'O pedido foi concluído pelo fornecedor antes do cancelamento.':
+            cancel.estado==='recusado'?'O fornecedor recusou a solicitação de cancelamento. Se precisar, fale com o suporte.':
+            cancel.estado==='incerto'||cancel.estado==='enviando'?'A solicitação está em conferência. Atualize o pedido para acompanhar; ainda não há cancelamento confirmado.':
+            'Cancelamento solicitado. Aguardando confirmação do fornecedor.';
+          div.appendChild(notice);
+        } else if(p.podeSolicitarCancelamento){
+          const button=document.createElement('button'); button.type='button'; button.className='btn-cancelar-pedido'; button.textContent='Solicitar cancelamento';
+          button.setAttribute('aria-label','Solicitar cancelamento do pedido '+(p.numeroPedido||''));
+          button.addEventListener('click',async()=>{
+            if(!confirm('Solicitar o cancelamento deste pedido? O fornecedor precisa aceitar. Após a confirmação, o valor da parte não entregue será devolvido ao saldo do painel.'))return;
+            button.disabled=true; button.textContent='Enviando solicitação...';
+            try{
+              const response=await fetch(API_BASE+'/api/pedidos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'solicitar-cancelamento',pedidoId:p.id})});
+              const result=await response.json();
+              if(!response.ok)throw new Error(result.erro||'Não foi possível solicitar o cancelamento.');
+              await carregarMeusPedidos();
+              await carregarSaldo();
+            }catch(error){$('pedidos-msg').textContent=error.message||'Falha de conexão. Atualize os pedidos para conferir a solicitação.';button.disabled=false;button.textContent='Solicitar cancelamento';}
+          });
+          div.appendChild(button);
+        } else if(p.status==='executando'){
+          const notice=document.createElement('p');notice.className='pedido-cancelamento-msg';notice.textContent='Este serviço não oferece cancelamento pelo fornecedor.';div.appendChild(notice);
+        }
         lista.appendChild(div);
       });
     }catch(e){ $('pedidos-msg').textContent='Erro ao carregar pedidos.'; }

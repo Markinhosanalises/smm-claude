@@ -61,6 +61,10 @@ async function statusPedidos(orderIds) {
   return chamarFornecedor({ action: 'status', orders: orderIds.join(',') });
 }
 
+async function cancelarPedido(orderId) {
+  return chamarFornecedor({ action: 'cancel', orders: String(orderId) });
+}
+
 async function saldoFornecedor() {
   return chamarFornecedor({ action: 'balance' });
 }
@@ -72,5 +76,6 @@ module.exports = {
   statusPedido,
   statusPedidos,
   saldoFornecedor,
+  cancelarPedido,
 };
 
