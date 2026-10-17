@@ -31,6 +31,9 @@ module.exports=async function checkAllServiceForms(){
  const text=catalog.translate('Mea Own Measmm.com Meafol Measeg Instagram Followers NoRefill 30 Days');
  assert(!/measmm|meafol|measeg|\bmea\b/i.test(text));assert(/Fênix Social/.test(text));assert(/seguidores/.test(text));assert(/sem reposição/.test(text));assert(/30 dias/.test(text));
  assert(catalog.score({refill:true,cancel:true})>catalog.score({refill:true,cancel:false}));
+ assert.equal(forms.target({tipo:'Default',redeSocial:'facebook',nome:'Facebook página curtidas + seguidores'}).kind,'profile');
+ assert.equal(catalog.translate(catalog.translate('Cancel Button Natural Increase')),catalog.translate('Cancel Button Natural Increase'));
+ const current=catalog.present({nomeOriginal:'Twitter Followers',nomeCustomizado:'~~~~~~~~~',taxaCusto:1});assert.equal(current.nome,'Twitter seguidores');
  return {modalities:forms.types.length,passed:true};
 };
 if(require.main===module)require('node:test')('all service forms, billing and branding contracts',module.exports);

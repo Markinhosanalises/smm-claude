@@ -335,7 +335,7 @@
         const cor=corStatus[p.status]||'#8b929b';
         const div=document.createElement('div'); div.className='pedido-item';
         div.innerHTML=safeHTML(`
-          <div class="pedido-top"><span>${escapeHTML(p.nomeServico||'Serviço')}</span><span class="status-pill ${escapeHTML(p.status)}">${escapeHTML(formatarStatus(p.status))}</span></div>
+          <div class="pedido-top"><span>${escapeHTML(nomeAmigavel(p.nomeServico||'Serviço'))}</span><span class="status-pill ${escapeHTML(p.status)}">${escapeHTML(formatarStatus(p.status))}</span></div>
           <div class="pedido-sub">${p.numeroPedido?`<strong style="color:var(--accent)">${escapeHTML(p.numeroPedido)}</strong> · `:''}Qtd: ${escapeHTML(p.quantidade)} · R$ ${escapeHTML(Number(p.valorTotal).toFixed(2))} · ${escapeHTML(new Date(p.criadoEm).toLocaleDateString('pt-BR'))}${escapeHTML(p.pagamento==='saldo'?' · 💰 Saldo':'')}</div>
           ${p.link?`<div style="font-size:11.5px;margin-top:4px;"><a href="${escapeHTML(p.link)}" target="_blank" style="color:var(--muted);text-decoration:none;">🔗 ${escapeHTML(p.link.length>50?p.link.slice(0,50)+'...':p.link)}</a></div>`:''}
           ${p.status==='executando'||p.status==='concluido'?`<div style="margin-top:8px;"><div style="height:4px;background:var(--line);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${progresso}%;background:${cor};border-radius:4px;transition:width .5s;"></div></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">${progresso}% concluído${p.restam?` · ${escapeHTML(p.restam)} restando`:''}</div></div>`:''}`);
