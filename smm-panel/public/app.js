@@ -25,12 +25,11 @@
     } else {
       $('auth-hero').classList.remove('hidden');
       $('area-logada').classList.add('hidden');
-      ['pedidos','carteira','suporte','api','vitrine','revendedor'].forEach(p => $(`painel-${p}`)?.classList.add('hidden'));
+      ['pedidos','carteira','suporte','api','vitrine','revendedor','conta'].forEach(p => $(`painel-${p}`)?.classList.add('hidden'));
     }
   }
 
-  $('btn-login-logout').addEventListener('click', async () => {
-    await fetch('/api/auth-cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'logout'})});
+  function encerrarSessaoLocal(){
     localStorage.removeItem('eng_clienteId'); localStorage.removeItem('eng_clienteNome');
     clienteId = null; clienteNome = ''; isRevendedor = false;
     pixManualAtivo=false;pixManualSelecionado=null;pixRevCarregado=false;$('rev-sub-link').value='';$('rev-sub-link-wrap').classList.add('hidden');$('rev-sub-lista').replaceChildren();$('rev-sub-convites').replaceChildren();$('manual-dados').replaceChildren();$('manual-dados').classList.add('hidden');$('recarga-automatica').classList.remove('hidden');$('pix-manual-cliente').classList.add('hidden');$('manual-historico-wrap').classList.add('hidden');
@@ -38,7 +37,9 @@
     $('api-key-msg').textContent='';
     for(const k of Object.keys(sessionStorage))if(k.startsWith('smm_pending:'))sessionStorage.removeItem(k);
     atualizarTopBar();
-  });
+    limparDadosConta();$('auth-senha').value='';$('auth-senha-cad').value='';
+  }
+  $('btn-login-logout').addEventListener('click',async()=>{await fetch('/api/auth-cliente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'logout'})});encerrarSessaoLocal();});
 
   // ===== AUTH =====
   $('btn-toggle-cadastro').addEventListener('click', () => { $('bloco-login').classList.add('hidden'); $('bloco-cadastro').classList.remove('hidden'); $('auth-msg').textContent=''; });
@@ -86,7 +87,7 @@
 
   // ===== ABAS =====
   function ativarAba(aba){
-    ['engajar','pedidos','carteira','suporte','api','vitrine','revendedor'].forEach(a=>{
+    ['engajar','pedidos','carteira','suporte','api','vitrine','revendedor','conta'].forEach(a=>{
       $(`tab-${a}`)?.classList.remove('ativa');
       $(`painel-${a}`)?.classList.add('hidden');
     });
@@ -430,6 +431,52 @@
     }catch(e){}
   }
 
+
+
+  // ===== MINHA CONTA =====
+  let contaCarregada=false;
+  function limparDadosConta(){
+    contaCarregada=false;
+    $('conta-perfil-form').reset();$('conta-senha-form').reset();
+    $('conta-usuario').value='';$('conta-whatsapp').value='';
+    for(const id of ['conta-tipo','conta-desconto','conta-criada','conta-senha-data','conta-api-status'])$(id).textContent='—';
+    $('conta-msg').textContent='';$('conta-senha-msg').textContent='';
+    for(const b of document.querySelectorAll('[data-conta-password]')){const input=$(b.dataset.contaPassword);input.type='password';b.textContent='Mostrar';b.setAttribute('aria-pressed','false');b.setAttribute('aria-label','Mostrar '+input.labels[0].textContent.toLowerCase());}
+  }
+  function mostrarDadosConta(c){
+    $('conta-nome').value=c.nome||'';$('conta-usuario').value=c.usuario||'';$('conta-usuario').placeholder=c.usuario?'':'Use seu WhatsApp para entrar';$('conta-copiar-login').disabled=!c.usuario;$('conta-whatsapp').value=c.whatsapp||'';
+    $('conta-tipo').textContent=c.role==='revendedor'?'Revendedor':'Cliente';
+    $('conta-desconto').textContent=Number(c.desconto||0).toLocaleString('pt-BR')+'%';
+    $('conta-criada').textContent=c.criadoEm?new Date(c.criadoEm).toLocaleDateString('pt-BR'):'Não informado';
+    $('conta-senha-data').textContent=c.senhaAlteradaEm?new Date(c.senhaAlteradaEm).toLocaleString('pt-BR'):'Sem alteração registrada';
+    $('conta-api-status').textContent=c.apiAtiva?'Chave ativa':'Nenhuma chave ativa';
+    contaCarregada=true;
+  }
+  async function carregarMinhaConta(){
+    const requestedClient=clienteId;if(!requestedClient)return;
+    $('conta-msg').textContent='Carregando seus dados...';$('conta-salvar').disabled=true;
+    try{const d=await manualRequest('/api/auth-cliente?acao=minha-conta');if(clienteId!==requestedClient)return;mostrarDadosConta(d);$('conta-msg').textContent='';}
+    catch(e){if(clienteId===requestedClient)$('conta-msg').textContent=e.message;}
+    finally{$('conta-salvar').disabled=!contaCarregada;}
+  }
+  $('tab-conta').addEventListener('click',()=>{ativarAba('conta');carregarMinhaConta();});
+  $('conta-perfil-form').addEventListener('submit',async e=>{
+    e.preventDefault();if(!contaCarregada)return;const b=$('conta-salvar');b.disabled=true;
+    try{const d=await manualRequest('/api/auth-cliente',{acao:'atualizar-perfil',nome:$('conta-nome').value});mostrarDadosConta(d.conta);clienteNome=d.conta.nome;$('saudacao').textContent='Olá, '+clienteNome;localStorage.setItem('eng_clienteNome',clienteNome);$('conta-msg').textContent='Seu nome foi atualizado.';}
+    catch(e){$('conta-msg').textContent=e.message;}finally{b.disabled=false;}
+  });
+  $('conta-copiar-login').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('conta-usuario').value);$('conta-msg').textContent='Usuário copiado.';}catch{$('conta-msg').textContent='Selecione e copie seu usuário no campo acima.';}});
+  $('conta-abrir-api').addEventListener('click',()=>ativarAba('api'));
+  for(const b of document.querySelectorAll('[data-conta-password]'))b.addEventListener('click',()=>{const input=$(b.dataset.contaPassword),show=input.type==='password';input.type=show?'text':'password';b.textContent=show?'Ocultar':'Mostrar';b.setAttribute('aria-pressed',String(show));b.setAttribute('aria-label',(show?'Ocultar ':'Mostrar ')+input.labels[0].textContent.toLowerCase());});
+  $('conta-senha-form').addEventListener('submit',async e=>{
+    e.preventDefault();const current=$('conta-senha-atual').value,password=$('conta-nova-senha').value,confirmation=$('conta-confirmacao').value;
+    if(password!==confirmation){$('conta-senha-msg').textContent='A confirmação deve ser igual à nova senha.';return;}
+    if(password===current){$('conta-senha-msg').textContent='Escolha uma senha diferente da atual.';return;}
+    const button=$('conta-alterar-senha');button.disabled=true;$('conta-senha-msg').textContent='Atualizando sua senha...';
+    try{const login=$('conta-usuario').value;await manualRequest('/api/auth-cliente',{acao:'alterar-senha',senhaAtual:current,novaSenha:password,confirmacaoSenha:confirmation});encerrarSessaoLocal();$('bloco-login').classList.remove('hidden');$('bloco-cadastro').classList.add('hidden');$('auth-login-id').value=login;$('auth-senha').value='';msgAuth('Senha alterada com sucesso. Entre novamente com sua nova senha.','ok');$('auth-senha').focus();}
+    catch(e){$('conta-senha-msg').textContent=e.message;}
+    finally{button.disabled=false;}
+  });
 
   // ===== PIX MANUAL DA REVENDA =====
   let pixManualAtivo=false,pixManualMinimo=5,pixManualCarregando=null,pixManualSelecionado=null;

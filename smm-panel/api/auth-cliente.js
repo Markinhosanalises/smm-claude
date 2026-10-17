@@ -28,6 +28,7 @@ module.exports = endpoint(async (req, res) => {
     if(req.query.acao==='convite-subrevenda')return require('../lib/subresellers').publicInfo(req,res);
     if (req.query.acao === 'admin-session') { await auth.requireAdmin(req); return res.json({ ok: true }); }
     const s = await auth.session(req);
+    if(req.query.acao==='minha-conta')return require('../lib/account').handle(req,res,s);
     return res.json({ clienteId: s.clienteId, nome: s.cliente.nome, usuario: s.cliente.usuario, role: s.cliente.role || 'cliente', desconto: s.cliente.desconto || 0 });
   }
   mutation(req);
@@ -44,6 +45,7 @@ module.exports = endpoint(async (req, res) => {
     await auth.logout(req, res, acao === 'admin-logout' ? 'admin' : 'cliente');
     return res.json({ ok: true });
   }
+  if(['atualizar-perfil','alterar-senha'].includes(acao))return require('../lib/account').handle(req,res,await auth.session(req));
   if (acao === 'set-desconto') {
     await auth.requireAdmin(req);
     const id = key(b.clienteId), desconto = number(b.desconto, 'Desconto', 0, 90);
@@ -65,15 +67,15 @@ module.exports = endpoint(async (req, res) => {
     else { const idx = await fbGet('usuarios/' + usuario(b.usuario)); id = idx?.whatsapp; }
     if (!id) fail('Usuário ou senha incorretos', 401);
     const c = await auth.loginPassword(id, b.senha);
-    await auth.createSession(res, id);
+    await auth.createSession(res, id,'cliente',Number(c.authVersion||0));
     return res.json({ clienteId: id, nome: c.nome || '', usuario: c.usuario || '', role: c.role || 'cliente' });
   }
   if (['gerar-chave', 'revogar-chave'].includes(acao)) {
     const s = await auth.session(req);
     await auth.rateLimit(req, 'api-key');
-    await auth.loginPassword(s.clienteId, b.senha);
+    const verified=await auth.loginPassword(s.clienteId, b.senha);
     const newKey = acao === 'gerar-chave' ? 'fsx_' + crypto.randomBytes(24).toString('hex') : null;
-    const r = await fbTransaction('clientes/' + s.clienteId, c => c ? { ...c, apiKeyHash: newKey ? auth.digest(newKey) : null, apiKey: null } : undefined);
+    const r = await fbTransaction('clientes/' + s.clienteId, c => c&&!c.bloqueado&&Number(c.authVersion||0)===Number(verified.authVersion||0) ? { ...c, apiKeyHash: newKey ? auth.digest(newKey) : null, apiKey: null } : undefined);
     if (!r.committed) fail('Conta indisponível', 409);
     // Old plain keys may remain in the index, but authentication also checks the current hash.
     if (newKey) await fbPut('api_keys/' + auth.digest(newKey), { clienteId: s.clienteId, criadoEm: Date.now() });

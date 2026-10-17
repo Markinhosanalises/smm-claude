@@ -206,3 +206,44 @@ test('reseller generates a shareable one-use invitation from own panel',async()=
   const call=p.calls.find(c=>c.url.pathname==='/api/revendedor'&&c.options.method==='POST');assert.deepEqual(JSON.parse(call.options.body),{acao:'criar-convite-subrevenda'});assert.deepEqual(p.errors,[]);
  }finally{p.dom.window.close();}
 });
+
+test('my account shows own login, edits name and treats profile text safely',async()=>{
+ const profile={nome:'Maria',usuario:'maria',whatsapp:'5511999999999',role:'cliente',desconto:20,criadoEm:1,apiAtiva:true};
+ const p=await page('app.html',(u,o)=>{
+  if(u.pathname==='/api/auth-cliente'){
+   if(o.method==='POST'){const b=JSON.parse(o.body);assert.equal(b.acao,'atualizar-perfil');assert.deepEqual(Object.keys(b).sort(),['acao','nome']);return{ok:true,conta:{...profile,nome:b.nome}};}
+   if(u.searchParams.get('acao')==='minha-conta')return profile;
+   return customer;
+  }return common(u);
+ });
+ try{
+  p.w.document.querySelector('#tab-conta').click();await wait();
+  assert.equal(p.w.document.querySelector('#conta-usuario').value,'maria');assert.equal(p.w.document.querySelector('#conta-usuario').readOnly,true);
+  assert.equal(p.w.document.querySelector('#conta-whatsapp').readOnly,true);assert.equal(p.w.document.querySelector('#conta-desconto').textContent,'20%');
+  const name='<img src=x onerror=alert(1)>';p.w.document.querySelector('#conta-nome').value=name;p.w.document.querySelector('#conta-perfil-form').dispatchEvent(new p.w.Event('submit',{bubbles:true,cancelable:true}));await wait();
+  assert.equal(p.w.document.querySelector('#saudacao').textContent,'Olá, '+name);assert.equal(p.w.document.querySelector('#saudacao img'),null);assert.match(p.w.document.querySelector('#conta-msg').textContent,/atualizado/);assert.deepEqual(p.errors,[]);
+ }finally{p.dom.window.close();}
+});
+test('password form validates confirmation, toggles visibility and clears secrets on success',async()=>{
+ let logged=true;
+ const profile={nome:'Maria',usuario:'maria',whatsapp:'5511999999999',role:'cliente'};
+ const p=await page('app.html',(u,o)=>{
+  if(u.pathname==='/api/auth-cliente'){
+   if(o.method==='POST'){const b=JSON.parse(o.body);assert.equal(b.acao,'alterar-senha');logged=false;return{ok:true,novoLoginNecessario:true};}
+   if(u.searchParams.get('acao')==='minha-conta')return profile;
+   return logged?customer:{status:401,body:{erro:'Login'}};
+  }return common(u);
+ });
+ try{
+  p.w.document.querySelector('#tab-conta').click();await wait();
+  const current=p.w.document.querySelector('#conta-senha-atual'),next=p.w.document.querySelector('#conta-nova-senha'),confirmation=p.w.document.querySelector('#conta-confirmacao'),form=p.w.document.querySelector('#conta-senha-form');
+  current.value='OldStrongPassword123';next.value='NewStrongPassword456';confirmation.value='MismatchPassword';
+  form.dispatchEvent(new p.w.Event('submit',{bubbles:true,cancelable:true}));await wait();
+  assert.match(p.w.document.querySelector('#conta-senha-msg').textContent,/confirmação/);assert(!p.calls.some(c=>c.options.method==='POST'));
+  const toggle=p.w.document.querySelector('[data-conta-password="conta-nova-senha"]');toggle.click();assert.equal(next.type,'text');assert.equal(toggle.getAttribute('aria-pressed'),'true');toggle.click();assert.equal(next.type,'password');
+  confirmation.value=next.value;form.dispatchEvent(new p.w.Event('submit',{bubbles:true,cancelable:true}));await wait();await wait();
+  assert.equal(p.w.document.querySelector('#area-logada').classList.contains('hidden'),true);assert.match(p.w.document.querySelector('#auth-msg').textContent,/Senha alterada com sucesso/);assert.equal(p.w.document.querySelector('#auth-login-id').value,'maria');
+  for(const input of [current,next,confirmation])assert.equal(input.value,'');assert.equal(p.w.document.querySelector('#conta-usuario').value,'');
+  assert(!JSON.stringify(p.w.localStorage).includes('StrongPassword'));assert(!JSON.stringify(p.w.sessionStorage).includes('StrongPassword'));assert.deepEqual(p.errors,[]);
+ }finally{p.dom.window.close();}
+});
