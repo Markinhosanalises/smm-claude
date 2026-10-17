@@ -1,3 +1,4 @@
+const policy=require('../lib/catalog-policy');
 const { fbGet } = require('../lib/firebase');
 const { rate } = require('../lib/pricing');
 const { session } = require('../lib/auth');
@@ -9,7 +10,7 @@ module.exports=endpoint(async(req,res)=>{
  if(req.method!=='GET')return res.status(405).json({erro:'Método não permitido'});
  const customer=(await session(req,'cliente',true))?.cliente||{};
  const [data,config]=await Promise.all([fbGet('catalogo'),fbGet('config')]);
- const active=Object.values(data||{}).filter(s=>s&&s.ativo&&!s.indisponivel&&!catalog.technical(s)&&forms.describe(s).supported);
+ const active=Object.values(data||{}).filter(s=>s&&s.ativo&&!s.indisponivel&&!policy.reason(s)&&!catalog.technical(s)&&forms.describe(s).supported);
  const query=req.query||{},network=String(query.redeSocial||'').toLowerCase(),objective=String(query.servicoTipo||'').toLowerCase();
  if(!network&&!objective){
   const counts=new Map(),objectives=new Set();
@@ -25,6 +26,6 @@ module.exports=endpoint(async(req,res)=>{
   const spec=forms.describe(s);
   result.push({...p,id:s.idFornecedor,tipo:s.tipo||'Default',icone:s.icone||'',min:s.min,max:s.max,refill:!!s.refill,cancel:!!s.cancel,dripfeed:!!s.dripfeed,precoPorMil:rate(s,config||{},customer),cobranca:spec.package?'pacote':spec.subscription?'publicacao':'mil'});
  }
- result.sort((a,b)=>b.ordemRecursos-a.ordemRecursos||a.precoPorMil-b.precoPorMil||String(a.id).localeCompare(String(b.id)));
+ result.sort(catalog.compare);
  return res.json({servicos:result,total:result.length});
 });

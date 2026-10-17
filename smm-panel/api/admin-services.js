@@ -1,3 +1,4 @@
+const policy=require('../lib/catalog-policy');
 // api/admin-services.js
 const { fbGet, fbPatch, key } = require('../lib/firebase');
 const { requireAdmin, session } = require('../lib/auth');
@@ -87,7 +88,9 @@ module.exports = endpoint(async (req, res) => {
       update.lucroPercentual = lucroPercentual === '' || lucroPercentual === null ? null : number(lucroPercentual, 'Margem', 0, 100000);
     }
 
-    await fbPatch(`catalogo/${key(idFornecedor)}`, update);
+    const prior = await fbGet('catalogo/'+key(idFornecedor));
+    if (update.ativo && policy.reason({...prior,...update})) fail('Serviço bloqueado pela seleção comercial do catálogo.',409);
+    await fbPatch('catalogo/'+key(idFornecedor), update);
     return res.status(200).json({ ok: true });
   }
 

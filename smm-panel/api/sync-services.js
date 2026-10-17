@@ -1,3 +1,4 @@
+const policy=require('../lib/catalog-policy');
 // api/sync-services.js
 // POST { pin } → sincroniza catálogo com o fornecedor (admin)
 // GET  Authorization: Bearer CRON_SECRET → verifica serviços indisponíveis (cron)
@@ -82,7 +83,10 @@ module.exports = endpoint(async (req, res) => {
       const alteracoes = [];
 
       for (const [id, servico] of Object.entries(catalogo)) {
-        if (!servico || !servico.ativo) continue;
+        if (!servico) continue;
+        const blocked = policy.reason(servico);
+        if (blocked) { if(servico.ativo) { await fbPatch('catalogo/'+id,{ativo:false,bloqueioComercial:blocked});desativados++; } continue; }
+        if (!servico.ativo) continue;
         const existeNoFornecedor = idsAtivos.has(String(id));
 
         if (!existeNoFornecedor && !servico.indisponivel) {
@@ -196,7 +200,8 @@ module.exports = endpoint(async (req, res) => {
             if (!Number.isFinite(next.min)) next.min = 0;
             if (!Number.isFinite(next.max)) next.max = 0;
           }
-          merged[id] = next;
+          next.adicionadoEm = prior ? (prior.adicionadoEm || 0) : Date.now();
+          merged[id] = policy.apply(next);
         }
         for (const [id, prior] of Object.entries(current || {})) {
           if (prior && !novoCatalogo[id]) merged[id] = { ...prior, indisponivel: true };

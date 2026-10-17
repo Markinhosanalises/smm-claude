@@ -1,3 +1,4 @@
+const policy=require('../lib/catalog-policy');
 const { fbGet, fbQuery } = require('../lib/firebase');
 const { endpoint, fail } = require('../lib/http');
 const { digest, equal, rateLimit } = require('../lib/auth');
@@ -28,7 +29,7 @@ module.exports = endpoint(async (req,res) => {
   await rateLimit(req,'public-api',120,60000);
   if (action === 'services') {
     const [catalog, config] = await Promise.all([fbGet('catalogo'),fbGet('config')]);
-    return res.json(Object.values(catalog || {}).filter(s=>s?.ativo&&!s.indisponivel&&!catalogText.technical(s)&&forms.describe(s).supported).map(s=>({
+    return res.json(Object.values(catalog || {}).filter(s=>s?.ativo&&!s.indisponivel&&!policy.reason(s)&&!catalogText.technical(s)&&forms.describe(s).supported).sort(catalogText.compare).map(s=>({
       service:s.idFornecedor,name:catalogText.present(s).nome,category:catalogText.present(s).categoria,type:s.tipo||'',
       billing:forms.isPackage(s)?'package':s.tipo==='Subscriptions'?'subscription':'per_1000',
       rate:rate(s,config||{},a.customer),min:s.min,max:s.max,refill:!!s.refill
