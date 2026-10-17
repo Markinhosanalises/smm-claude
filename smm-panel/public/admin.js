@@ -495,50 +495,40 @@
   });
 
   // ===== Tickets =====
-  async function carregarTickets(){
-    const r = await fetch(`${API_BASE}/api/tickets?`);
-    const data = await r.json();
-    const tbody = $('tabela-tickets-body');
-    tbody.innerHTML = safeHTML('');
-    (data.tickets||[]).forEach((t) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = safeRowHTML(`
-        <td>${escapeHTML(t.nome||'')}</td><td>${escapeHTML(t.whatsapp||t.clienteId||'')}</td>
-        <td style="max-width:200px;">${escapeHTML(t.mensagem||'')}</td>
-        <td>${escapeHTML(t.pedidoId?t.pedidoId.slice(-6):'-')}</td>
-        <td><span class="tag ${escapeHTML(t.status==='resolvido'?'ativo':'inativo')}">${escapeHTML(t.status)}</span></td>
-        <td style="min-width:180px;">
-          <input value="${escapeHTML(t.resposta||'')}" data-resposta="${escapeHTML(t.id)}" placeholder="Resposta..." style="margin-bottom:6px;">
-          <div style="display:flex;gap:6px;">
-            <button class="secundario btn-responder-ticket" data-id="${escapeHTML(t.id)}" style="flex:1;font-size:12px;padding:6px;">💬 Responder</button>
-            <button class="secundario btn-resolver-ticket" data-id="${escapeHTML(t.id)}" style="flex:1;font-size:12px;padding:6px;">${escapeHTML(t.status==='resolvido'?'🔄 Reabrir':'✅ Resolver')}</button>
-          </div>
-        </td>`);
-      tbody.appendChild(tr);
-    });
-    document.querySelectorAll('.btn-responder-ticket').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        const inp = document.querySelector(`[data-resposta="${id}"]`);
-        if(!inp.value.trim()){ btn.textContent='Digite algo!'; setTimeout(()=>btn.textContent='💬 Responder',1500); return; }
-        btn.disabled=true;
-        const r2 = await fetch(`${API_BASE}/api/tickets`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticketId:id,resposta:inp.value})});
-        btn.textContent=r2.ok?'Enviado ✓':'Erro'; btn.disabled=false;
-        setTimeout(()=>btn.textContent='💬 Responder',1500);
-      });
-    });
-    document.querySelectorAll('.btn-resolver-ticket').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        const inp = document.querySelector(`[data-resposta="${id}"]`);
-        const t = (data.tickets||[]).find(t=>t.id===id);
-        const novoStatus = t.status==='resolvido'?'aberto':'resolvido';
-        await fetch(`${API_BASE}/api/tickets`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticketId:id,status:novoStatus,resposta:inp.value})});
-        carregarTickets();
-      });
-    });
+  async function carregarConfiguracaoAssistente(){
+    try{const r=await fetch('/api/tickets?action=configuracao-assistente');if(!r.ok)return;const c=await r.json();$('assistente-ativo').checked=c.ativo;$('assistente-usar-ia').checked=c.usarIA;$('assistente-limite').value=c.limiteDiario||50;$('assistente-status').textContent=(c.ativo?'Atendimento automático ativo':'Atendimento automático desligado')+' · '+(c.usarIA&&c.chaveConfigurada?'Classificação por IA ativada':'Modo básico')+' · '+(c.chaveConfigurada?'Chave configurada':'Chave OpenAI pendente')+' · '+(c.consultasHoje||0)+' consultas de IA hoje.';}catch{$('assistente-status').textContent='Não foi possível carregar a configuração.';}
   }
-  $('tickets-btn').addEventListener('click', carregarTickets);
+  $('assistente-config-form').addEventListener('submit',async event=>{
+    event.preventDefault();$('assistente-salvar').disabled=true;$('assistente-msg').textContent='Salvando…';
+    const body={action:'configurar-assistente',ativo:$('assistente-ativo').checked,usarIA:$('assistente-usar-ia').checked,limiteDiario:Number($('assistente-limite').value),removerChave:$('assistente-remover-chave').checked,...($('assistente-chave').value.trim()?{chave:$('assistente-chave').value.trim()}:{})};
+    try{const r=await fetch('/api/tickets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await r.json();if(!r.ok)throw Error(data.erro||'Não foi possível salvar.');$('assistente-msg').textContent='Atendimento salvo.';$('assistente-remover-chave').checked=false;await carregarConfiguracaoAssistente();}catch(error){$('assistente-msg').textContent=error.message;}finally{$('assistente-chave').value='';$('assistente-salvar').disabled=false;}
+  });
+  $('assistente-testar').addEventListener('click',async()=>{
+    $('assistente-testar').disabled=true;$('assistente-msg').textContent='Testando com uma pergunta fictícia…';
+    try{const r=await fetch('/api/tickets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'testar-assistente'})});const d=await r.json();if(!r.ok)throw Error(d.erro||'Falha no teste.');$('assistente-msg').textContent=d.ok?'IA conectada. Teste aprovado.':'IA indisponível ou limite atingido. O atendimento básico continua funcionando.';await carregarConfiguracaoAssistente();}catch(error){$('assistente-msg').textContent=error.message;}finally{$('assistente-testar').disabled=false;}
+  });
+  async function carregarTickets(){
+    carregarConfiguracaoAssistente();
+    const r=await fetch(API_BASE+'/api/tickets');if(!r.ok)return;const data=await r.json(),tbody=$('tabela-tickets-body');tbody.replaceChildren();
+    for(const t of data.tickets||[]){
+      const tr=document.createElement('tr');tr.innerHTML=safeRowHTML('<td>'+escapeHTML(t.nome||'')+'</td><td>'+escapeHTML(t.whatsapp||t.clienteId||'')+'</td><td class="ticket-admin-question"></td><td>'+escapeHTML(t.consultaPedido?.pedido?.numero||t.pedidoId?.slice(-6)||'-')+'</td><td>'+escapeHTML(t.status==='resolvido'?'Resolvido':t.humanoAtivo?'Aguardando equipe':t.atendimento==='aguardando_cliente'?'Respondido automaticamente':'Aguardando')+'</td><td class="ticket-admin-actions" style="min-width:260px;"></td>');
+      const question=tr.querySelector('.ticket-admin-question');question.style.maxWidth='380px';question.style.minWidth='230px';question.style.whiteSpace='normal';
+      const title=document.createElement('p');title.textContent=t.mensagem;question.append(title);
+      const detail=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Ver conversa e consulta do pedido';detail.append(summary);
+      const messages=Array.isArray(t.mensagens)?t.mensagens:Object.values(t.mensagens||{});
+      if(messages.length)for(const m of messages){const p=document.createElement('p');p.style.whiteSpace='pre-wrap';p.textContent=(m.autor==='cliente'?'Cliente':m.autor==='assistente'?'Assistente automático':'Equipe')+': '+m.texto;detail.append(p);}
+      else if(t.resposta){const p=document.createElement('p');p.textContent=t.resposta;detail.append(p);}
+      if(t.consultaPedido){const p=document.createElement('p');p.textContent='Última consulta: '+new Date(t.consultaPedido.consultadoEm||t.respondidoEm).toLocaleString('pt-BR')+' · '+(t.consultaPedido.fornecedorConsultado?'Fornecedor: '+t.consultaPedido.statusFornecedor:'Fornecedor não confirmado nesta consulta');detail.append(p);}
+      question.append(detail);
+      const actions=tr.querySelector('.ticket-admin-actions'),input=document.createElement('textarea');input.rows=3;input.maxLength=5000;input.dataset.resposta=t.id;input.placeholder='Sua resposta para o cliente…';input.setAttribute('aria-label','Resposta para '+(t.nome||'cliente'));actions.append(input);
+      const button=(label,action)=>{const b=document.createElement('button');b.type='button';b.className='secundario';b.style.margin='5px 4px 0 0';b.style.fontSize='12px';b.textContent=label;b.addEventListener('click',async()=>{b.disabled=true;try{const body=action();if(!body){b.disabled=false;return;}const r=await fetch('/api/tickets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticketId:t.id,...body})});const d=await r.json();if(!r.ok)throw Error(d.erro||'Falha ao atualizar.');await carregarTickets();}catch(error){b.textContent=error.message;b.disabled=false;}});actions.append(b);return b;};
+      const reply=button('💬 Responder',()=>input.value.trim()?{resposta:input.value.trim()}:null);reply.classList.add('btn-responder-ticket');reply.dataset.id=t.id;
+      const solve=button(t.status==='resolvido'?'🔄 Reabrir':'✅ Resolver',()=>({status:t.status==='resolvido'?'aberto':'resolvido',...(input.value.trim()?{resposta:input.value.trim()}:{})}));solve.classList.add('btn-resolver-ticket');solve.dataset.id=t.id;
+      if(t.status!=='resolvido')button(t.humanoAtivo?'Retomar assistente':'Assumir atendimento',()=>({action:t.humanoAtivo?'retomar-automatico':'assumir'}));
+      tbody.append(tr);
+    }
+  }
+  $('tickets-btn').addEventListener('click',carregarTickets);
 
   // ===== Clientes =====
   let todosClientes = [];

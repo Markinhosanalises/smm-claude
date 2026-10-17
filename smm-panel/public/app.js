@@ -32,6 +32,7 @@
 
   function encerrarSessaoLocal(){
     fecharObjetivos();
+    pedidosSuporteCarregados=false;envioTicketPendente=null;rascunhosTickets.clear();ticketsEnviando.clear();enviosConversa.clear();
     localStorage.removeItem('eng_clienteId'); localStorage.removeItem('eng_clienteNome');
     clienteId = null; clienteNome = ''; isRevendedor = false;
     pixManualAtivo=false;pixManualSelecionado=null;pixRevCarregado=false;$('rev-sub-link').value='';$('rev-sub-link-wrap').classList.add('hidden');$('rev-sub-lista').replaceChildren();$('rev-sub-convites').replaceChildren();$('manual-dados').replaceChildren();$('manual-dados').classList.add('hidden');$('recarga-automatica').classList.remove('hidden');$('pix-manual-cliente').classList.add('hidden');$('manual-historico-wrap').classList.add('hidden');
@@ -446,33 +447,53 @@
   function formatarStatus(s){ return {aguardando_pagamento:'Aguardando pagamento',executando:'Em andamento',concluido:'Concluído',cancelado:'Cancelado',erro_fornecedor:'Recusado pelo fornecedor',pago:'Pago — aguardando envio',enviando:'Enviando ao fornecedor',processando_saldo:'Processando saldo',revisao_fornecedor:'Em conferência pelo suporte',estorno_pix_pendente:'Estorno PIX em processamento',estornado:'Estornado',saldo_insuficiente:'Não pago — saldo insuficiente',parcial:'Concluído parcialmente'}[s]||s; }
 
   // ===== SUPORTE =====
-  $('ticket-enviar').addEventListener('click', async()=>{
-    const mensagem=$('ticket-mensagem').value;
-    if(!mensagem) return;
-    try{
-      const r=await fetch(`${API_BASE}/api/tickets`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clienteId,nome:clienteNome,mensagem})});
-      if(r.ok){ $('ticket-msg').textContent='Mensagem enviada!'; $('ticket-msg').className='msg ok'; $('ticket-mensagem').value=''; }
-      else { $('ticket-msg').textContent='Erro ao enviar.'; $('ticket-msg').className='msg erro'; }
-    }catch(e){ $('ticket-msg').textContent='Erro de conexão.'; $('ticket-msg').className='msg erro'; }
-  });
-
-  async function carregarTicketsCliente(){
-    if(!clienteId) return;
-    try{
-      const r=await fetch(`${API_BASE}/api/tickets?clienteId=${encodeURIComponent(clienteId)}`);
-      const data=await r.json();
-      const lista=$('lista-tickets'); lista.innerHTML=safeHTML('');
-      if(!data.tickets||data.tickets.length===0){ $('tickets-cliente-msg').textContent='Nenhum ticket ainda.'; return; }
-      $('tickets-cliente-msg').textContent='';
-      data.tickets.forEach(t=>{
-        const div=document.createElement('div'); div.className='pedido-item';
-        div.innerHTML=safeHTML(`<div class="pedido-top"><span style="font-size:12.5px;">${escapeHTML(t.mensagem)}</span><span class="status-pill ${escapeHTML(t.status==='resolvido'?'concluido':'executando')}">${escapeHTML(t.status==='resolvido'?'Resolvido':'Aberto')}</span></div>
-          <div class="pedido-sub">${escapeHTML(new Date(t.criadoEm).toLocaleDateString('pt-BR'))}</div>
-          ${t.resposta?`<div style="margin-top:10px;background:#0e1013;border-left:3px solid var(--accent);padding:10px 12px;border-radius:0 8px 8px 0;"><div style="font-size:11px;color:var(--accent);margin-bottom:4px;">💬 Resposta do suporte</div><div style="font-size:13px;">${escapeHTML(t.resposta)}</div></div>`:'<div style="font-size:11px;color:var(--muted);margin-top:6px;">⏳ Aguardando resposta</div>'}`);
-        lista.appendChild(div);
-      });
-    }catch(e){ $('tickets-cliente-msg').textContent='Erro ao carregar tickets.'; }
+  let pedidosSuporteCarregados=false,envioTicketPendente=null;
+  const rascunhosTickets=new Map(),ticketsEnviando=new Set(),enviosConversa=new Map();
+  function operacaoTicket(){return crypto.randomUUID();}
+  async function carregarPedidosSuporte(){
+    if(pedidosSuporteCarregados||!clienteId)return;
+    try{const r=await fetch(API_BASE+'/api/pedidos?clienteId='+encodeURIComponent(clienteId));if(!r.ok)return;const data=await r.json(),select=$('ticket-pedido');const prior=select.value;select.replaceChildren();const empty=document.createElement('option');empty.value='';empty.textContent='Outra dúvida / informar o número na mensagem';select.append(empty);for(const p of data.pedidos||[]){const option=document.createElement('option');option.value=p.id;option.textContent=(p.numeroPedido||'Pedido')+' · '+nomeAmigavel(p.nomeServico||'Serviço')+' · '+formatarStatus(p.status);select.append(option);}select.value=prior;pedidosSuporteCarregados=true;}catch{}
   }
+  $('ticket-enviar').addEventListener('click',async()=>{
+    const mensagem=$('ticket-mensagem').value.trim(),pedidoId=$('ticket-pedido').value||null;if(!mensagem){$('ticket-msg').textContent='Escreva sua dúvida para enviar.';return;}
+    if(!envioTicketPendente||envioTicketPendente.mensagem!==mensagem||envioTicketPendente.pedidoId!==pedidoId)envioTicketPendente={mensagem,pedidoId,requestId:operacaoTicket()};
+    $('ticket-enviar').disabled=true;$('ticket-msg').textContent='Recebendo sua pergunta e conferindo os dados…';
+    try{const r=await fetch(API_BASE+'/api/tickets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(envioTicketPendente)});const data=await r.json();if(!r.ok)throw Error(data.erro||'Não foi possível enviar.');$('ticket-msg').textContent=data.resposta?'Pergunta recebida. Veja a resposta na conversa abaixo.':'Pergunta recebida. Você pode acompanhar a resposta abaixo.';$('ticket-msg').className='msg ok';$('ticket-mensagem').value='';envioTicketPendente=null;await carregarTicketsCliente();}
+    catch(error){$('ticket-msg').textContent=error.message||'Falha de conexão. Atualize as conversas antes de tentar novamente.';$('ticket-msg').className='msg erro';}
+    finally{$('ticket-enviar').disabled=false;}
+  });
+  function mensagemTicket(container,autor,texto,at){
+    const box=document.createElement('div');box.className='ticket-message ticket-message-'+autor;const label=document.createElement('strong');label.textContent=autor==='cliente'?'Você':autor==='assistente'?'Assistente automático':'Equipe de suporte';const content=document.createElement('p');content.textContent=texto;box.append(label,content);if(at){const stamp=document.createElement('small');stamp.textContent=new Date(at).toLocaleString('pt-BR');box.append(stamp);}container.append(box);
+  }
+  async function acaoTicket(id,action,mensagem){
+    ticketsEnviando.add(id);const pending=enviosConversa.get(id);const requestId=pending?.mensagem===mensagem&&pending?.action===action?pending.requestId:operacaoTicket();enviosConversa.set(id,{requestId,mensagem,action});
+    try{const r=await fetch(API_BASE+'/api/tickets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticketId:id,action,...(mensagem?{mensagem}:{}),requestId})});const data=await r.json();if(!r.ok)throw Error(data.erro||'Não foi possível enviar.');enviosConversa.delete(id);if(mensagem)rascunhosTickets.delete(id);await carregarTicketsCliente();}
+    catch(error){$('tickets-cliente-msg').textContent=error.message||'Falha de conexão. Atualize a conversa para conferir se sua pergunta foi recebida.';}
+    finally{ticketsEnviando.delete(id);document.querySelectorAll('[data-ticket-action]').forEach(b=>{b.disabled=false;if(b.textContent==='Conferindo…')b.textContent='Enviar pergunta';});}
+  }
+  async function carregarTicketsCliente(){
+    if(!clienteId)return;carregarPedidosSuporte();
+    try{const r=await fetch(API_BASE+'/api/tickets?clienteId='+encodeURIComponent(clienteId));if(!r.ok)throw Error();const data=await r.json(),lista=$('lista-tickets');lista.replaceChildren();if(!data.tickets?.length){$('tickets-cliente-msg').textContent='Nenhuma conversa ainda. Envie sua primeira pergunta acima.';return;}$('tickets-cliente-msg').textContent='';
+      for(const t of data.tickets){
+        const div=document.createElement('article');div.className='pedido-item support-thread';
+        const header=document.createElement('div');header.className='pedido-top';const title=document.createElement('strong');title.textContent=t.consultaPedido?.pedido?.numero||'Conversa de suporte';const state=document.createElement('span');state.className='status-pill';state.textContent=t.status==='resolvido'?'Resolvido':t.humanoAtivo?'Aguardando equipe':t.atendimento==='aguardando_cliente'?'Respondido':t.atendimento==='analisando'?'Conferindo dados':'Recebido';header.append(title,state);div.append(header);
+        const history=document.createElement('div');history.className='ticket-history';const messages=Array.isArray(t.mensagens)?t.mensagens.filter(Boolean):Object.values(t.mensagens||{}).filter(Boolean);
+        if(messages.length)for(const m of messages)mensagemTicket(history,m.autor==='cliente'?'cliente':m.autor==='assistente'?'assistente':'equipe',m.texto,m.criadoEm);
+        else{mensagemTicket(history,'cliente',t.mensagem,t.criadoEm);if(t.resposta)mensagemTicket(history,'equipe',t.resposta,t.respondidoEm);}
+        div.append(history);
+        if(t.status!=='resolvido'){
+          const label=document.createElement('label');label.className='label';label.htmlFor='ticket-reply-'+t.id;label.textContent='Continuar esta conversa';const input=document.createElement('textarea');input.className='input';input.id=label.htmlFor;input.rows=3;input.maxLength=5000;input.placeholder='Acrescente uma dúvida ou detalhe…';input.value=rascunhosTickets.get(t.id)||'';input.addEventListener('input',()=>rascunhosTickets.set(t.id,input.value));
+          const actions=document.createElement('div');actions.className='ticket-actions';const send=document.createElement('button');send.type='button';send.className='btn-sec';send.textContent='Enviar pergunta';send.dataset.ticketAction=t.id;send.disabled=ticketsEnviando.has(t.id);send.addEventListener('click',()=>{if(!input.value.trim())return;send.disabled=true;send.textContent='Conferindo…';acaoTicket(t.id,'continuar',input.value.trim());});actions.append(send);
+          if(!t.humanoAtivo){const human=document.createElement('button');human.type='button';human.className='btn-sec';human.textContent='Falar com a equipe';human.dataset.ticketAction=t.id;human.disabled=ticketsEnviando.has(t.id);human.addEventListener('click',()=>{human.disabled=true;acaoTicket(t.id,'pedir-humano');});actions.append(human);}
+          if(['aguardando','analisando'].includes(t.atendimento)&&!t.humanoAtivo){const retry=document.createElement('button');retry.type='button';retry.className='btn-sec';retry.textContent='Conferir resposta';retry.dataset.ticketAction=t.id;retry.addEventListener('click',()=>{retry.disabled=true;acaoTicket(t.id,'reconsultar');});actions.append(retry);}
+          div.append(label,input,actions);
+        }
+        lista.append(div);
+      }
+    }catch{$('tickets-cliente-msg').textContent='Não foi possível atualizar as conversas. Tente novamente.';}
+  }
+  $('tickets-cliente-atualizar').addEventListener('click',carregarTicketsCliente);
+  setInterval(()=>{if(clienteId&&!$('painel-suporte').classList.contains('hidden')&&!document.activeElement?.closest('#lista-tickets'))carregarTicketsCliente();},20000);
 
   // ===== API KEY =====
   $('btn-gerar-chave')?.addEventListener('click', async()=>{

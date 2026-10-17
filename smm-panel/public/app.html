@@ -423,14 +423,14 @@
   <div id="painel-suporte" class="hidden">
     <div class="card">
       <p class="eyebrow">Fale conosco</p>
-      <h2 class="title">Suporte</h2>
+      <h2 class="title">Como podemos ajudar?</h2><p class="sub">O assistente consulta seu pedido e o fornecedor para explicar a situação. Se precisar, você pode chamar a equipe. Não envie senhas, chaves de API ou comprovantes com dados pessoais.</p><label class="label" for="ticket-pedido">Sua dúvida é sobre qual pedido?</label><select class="select" id="ticket-pedido"><option value="">Outra dúvida / informar o número na mensagem</option></select><label class="label" for="ticket-mensagem">Escreva sua pergunta</label>
       <textarea class="input" id="ticket-mensagem" rows="3" placeholder="Descreva sua dúvida ou problema..." style="resize:vertical;height:80px;"></textarea>
       <button class="btn" id="ticket-enviar">📩 Enviar mensagem</button>
-      <p class="msg" id="ticket-msg"></p>
+      <p class="msg" id="ticket-msg" role="status" aria-live="polite"></p><p class="preco-detalhe">Quando a IA estiver ativada, a pergunta com dados sensíveis removidos e um resumo do pedido poderão ser enviados à OpenAI para identificar o assunto. Você pode pedir atendimento humano.</p>
     </div>
     <div class="card">
       <p class="eyebrow">Histórico</p>
-      <h2 class="title" style="font-size:16px;">Meus tickets</h2>
+      <h2 class="title" style="font-size:16px;">Minhas conversas</h2><button type="button" class="btn-sec" id="tickets-cliente-atualizar">Atualizar conversas</button>
       <div id="lista-tickets"></div>
       <p class="msg" id="tickets-cliente-msg"></p>
     </div>
