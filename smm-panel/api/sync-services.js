@@ -4,6 +4,8 @@
 
 const { fbGet, fbPut, fbPatch, fbTransaction, key } = require('../lib/firebase');
 const { listarServicos } = require('../lib/fornecedor');
+const catalogText=require('../public/catalog-text');
+const forms=require('../public/service-forms');
 
 const { requireAdmin, session } = require('../lib/auth');
 const { endpoint, mutation, number, url, fail } = require('../lib/http');
@@ -118,8 +120,8 @@ module.exports = endpoint(async (req, res) => {
         for (const [id, s] of Object.entries(catalogo)) {
           if (!s) continue;
           // força redetecção em TODOS (não só os vazios)
-          const rede = detectarRede(s.categoriaOriginal || '', s.nomeOriginal || s.nomeCustomizado || '');
-          const tipo = detectarTipo(s.categoriaOriginal || '', s.nomeOriginal || s.nomeCustomizado || '');
+          const rede = catalogText.network(s.categoriaOriginal || '', s.nomeOriginal || s.nomeCustomizado || '');
+          const tipo = catalogText.objective(s.categoriaOriginal || '', s.nomeOriginal || s.nomeCustomizado || '',s.tipo);
           const update = {};
           if (rede && rede !== s.redeSocial) { update.redeSocial = rede; }
           if (tipo && tipo !== s.servicoTipo) { update.servicoTipo = tipo; }
@@ -143,6 +145,7 @@ module.exports = endpoint(async (req, res) => {
       }
 
       const catalogoAtual = (await fbGet('catalogo')) || {};
+      const ativarNovosServicos=!!(await fbGet('config/ativarNovosServicos'));
       const novoCatalogo = {};
 
       for (const s of servicosFornecedor) {
@@ -152,8 +155,8 @@ module.exports = endpoint(async (req, res) => {
         const existente = catalogoAtual[id] || {};
         const categoriaOrig = s.categoria ?? s.category ?? '';
         const nomeOrig = s.nome ?? s.name ?? '';
-        const redeDetectada = existente.redeSocial || detectarRede(categoriaOrig, nomeOrig);
-        const tipoDetectado = existente.servicoTipo || detectarTipo(categoriaOrig, nomeOrig);
+        const redeDetectada = catalogText.network(categoriaOrig,nomeOrig);
+        const tipoDetectado = catalogText.objective(categoriaOrig,nomeOrig,s.tipo??s.type??'Default');
 
         novoCatalogo[id] = {
           idFornecedor: id,
@@ -166,7 +169,9 @@ module.exports = endpoint(async (req, res) => {
           max: Number(s.máximo ?? s.max ?? 0),
           refill: !!(s.reabastecer ?? s.refill),
           cancel: !!(s.cancelar ?? s.cancel),
-          ativo: existente.ativo ?? false,
+          dripfeed: !!s.dripfeed,
+          descricaoOriginal: String(s.description??s.descricao??''),
+          ativo: ativarNovosServicos ? true : (existente.ativo ?? false),
           redeSocial: redeDetectada,
           servicoTipo: tipoDetectado,
           icone: existente.icone || '',
@@ -185,7 +190,7 @@ module.exports = endpoint(async (req, res) => {
           if (prior) for (const field of ['ativo','nomeCustomizado','redeSocial','servicoTipo','icone','lucroPercentual']) {
             if (prior[field] !== undefined) next[field] = prior[field];
           }
-          if (!Number.isFinite(next.taxaCusto) || next.taxaCusto <= 0 || !Number.isSafeInteger(next.min) || !Number.isSafeInteger(next.max) || next.min < 1 || next.max < next.min) {
+          if (catalogText.technical(next) || !forms.describe(next).supported || !Number.isFinite(next.taxaCusto) || next.taxaCusto <= 0 || !Number.isSafeInteger(next.min) || !Number.isSafeInteger(next.max) || next.min < 1 || next.max < next.min) {
             next.ativo = false; next.indisponivel = true;
             if (!Number.isFinite(next.taxaCusto)) next.taxaCusto = 0;
             if (!Number.isFinite(next.min)) next.min = 0;

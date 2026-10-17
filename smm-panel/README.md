@@ -42,7 +42,7 @@ A implantação depende de acesso à Vercel, às regras/credenciais do Firebase 
 - No admin, **Conciliar envio** permite vincular um pedido já encontrado no fornecedor ou registrar que foi conferido e não foi criado, liberando o estorno. A decisão exige justificativa, é gravada no pedido e só fica disponível dois minutos após o início do envio.
 - Tickets e os demais fragmentos HTML passam por DOMPurify; campos de texto do cliente são escapados. A política CSP permite scripts apenas da própria origem, sem scripts ou handlers inline. Os hosts da API do fornecedor têm lista de permissão, timeout e bloqueio de redirects.
 - Tarifas por mil mantêm até oito casas decimais para preservar frações de centavo; o total final do pedido é arredondado para centavos. A área do cliente mostra uma quantidade inicial que atinge pelo menos R$ 0,01, valida link e quantidade e apresenta um resumo antes do pagamento.
-- Serviços novos chegam desativados. Preço, desconto e indisponibilidade são validados pelo servidor tanto na interface quanto na API pública.
+- Serviços novos chegam desativados por padrão; a configuração administrativa pode ativar automaticamente os identificáveis. Preço, desconto e indisponibilidade são validados pelo servidor tanto na interface quanto na API pública.
 
 Transações de cadastro usam a raiz do banco para reservar WhatsApp e usuário juntos. Carteiras mantêm o histórico de operações dentro da própria carteira. Essas escolhas priorizam consistência para este painel; em grande volume, planeje separar reservas e migrar o ledger para um banco transacional com índices, paginação e política de retenção. A listagem administrativa ainda carrega a coleção completa; as consultas por cliente usam índices.
 
@@ -69,3 +69,13 @@ Para recuperação administrativa: `POST /api/pedidos` com `{"action":"recuperar
 Exemplos da API pública ficam em `/api-docs.html`. Nas tentativas de um mesmo pedido, preserve a chave de idempotência; use uma nova apenas para uma compra nova. Status `estornado` significa que houve recusa e devolução; `revisao_fornecedor` exige conferência, não uma nova compra automática.
 
 Referências de implementação: [transações Firebase](https://firebase.google.com/docs/database/admin/save-data), [assinatura dos webhooks Mercado Pago](https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/additional-content/notifications/webhooks), [DOMPurify](https://github.com/cure53/DOMPurify).
+
+## Catálogo completo e formulários
+
+A importação conserva os dados originais para o administrador e apresenta nomes e categorias traduzidos na área do cliente, sob a marca Fênix Social. Separadores, itens de teste, nomes internos como `space5`, valores inválidos e modalidades desconhecidas ficam fora da venda. `config.ativarNovosServicos=true` permite ativar novos serviços identificáveis nas sincronizações manuais, preservando alterações administrativas e margens individuais. O cron diário confere disponibilidade; a sincronização manual atualiza preços e dados do catálogo.
+
+A ordem padrão `recursos` prioriza a disponibilidade de reposição e cancelamento, seguida de preço. Esses recursos vêm dos campos da API; a classificação não comprova qualidade, velocidade ou resultado. Prazos e alegações no título são informações anunciadas, não garantias.
+
+O módulo compartilhado `public/service-forms.js` valida as 13 modalidades no navegador e no servidor. Comentários e listas calculam a quantidade pelas linhas; pacotes cobram uma tarifa única. Acompanhamentos exigem quantidade por publicação, limite de publicações futuras e antigas (até 100 no total), espera e data final; o valor máximo é cobrado antecipadamente e não há renovação automática. Entregas parceladas multiplicam a quantidade pelo número de parcelas. O total é arredondado para centavos e pedidos positivos têm mínimo de R$ 0,01.
+
+O envio ao fornecedor usa somente os parâmetros documentados de cada modalidade. Pedidos antigos conservam a identificação idempotente anterior; pedidos novos armazenam a especificação e os parâmetros normalizados para recuperação sem mudança do conteúdo. Os testes de compra usam um fornecedor simulado, sem gastos reais.

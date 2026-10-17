@@ -3,6 +3,8 @@ const { endpoint, fail } = require('../lib/http');
 const { digest, equal, rateLimit } = require('../lib/auth');
 const { balanceCents } = require('../lib/wallet');
 const { rate } = require('../lib/pricing');
+const catalogText=require('../public/catalog-text');
+const forms=require('../public/service-forms');
 const { create, requestKey } = require('../lib/orders');
 async function authenticate(req) {
   const header = req.headers.authorization || '';
@@ -26,8 +28,9 @@ module.exports = endpoint(async (req,res) => {
   await rateLimit(req,'public-api',120,60000);
   if (action === 'services') {
     const [catalog, config] = await Promise.all([fbGet('catalogo'),fbGet('config')]);
-    return res.json(Object.values(catalog || {}).filter(s=>s?.ativo&&!s.indisponivel).map(s=>({
-      service:s.idFornecedor,name:s.nomeCustomizado||s.nomeOriginal,category:s.categoriaOriginal||'',type:s.tipo||'',
+    return res.json(Object.values(catalog || {}).filter(s=>s?.ativo&&!s.indisponivel&&!catalogText.technical(s)&&forms.describe(s).supported).map(s=>({
+      service:s.idFornecedor,name:catalogText.present(s).nome,category:catalogText.present(s).categoria,type:s.tipo||'',
+      billing:forms.isPackage(s)?'package':s.tipo==='Subscriptions'?'subscription':'per_1000',
       rate:rate(s,config||{},a.customer),min:s.min,max:s.max,refill:!!s.refill
     })));
   }

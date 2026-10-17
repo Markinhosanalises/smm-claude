@@ -1,123 +1,30 @@
-// api/services.js
 const { fbGet } = require('../lib/firebase');
-
-function traduzirNome(nome) {
-  if (!nome) return nome;
-  const termos = {
-    'Followers': 'Seguidores','followers': 'seguidores',
-    'Likes': 'Curtidas','likes': 'curtidas',
-    'Views': 'Visualizações','views': 'visualizações',
-    'Comments': 'Comentários','comments': 'comentários',
-    'Shares': 'Compartilhamentos','shares': 'compartilhamentos',
-    'Subscribers': 'Inscritos','subscribers': 'inscritos',
-    'Real': 'Reais','real': 'reais',
-    'Brazilian': 'Brasileiros','brazilian': 'brasileiros',
-    'Fast': 'Rápido','fast': 'rápido',
-    'Instant': 'Instantâneo','instant': 'instantâneo',
-    'High Quality': 'Alta Qualidade','high quality': 'alta qualidade',
-    'No Refill': 'Sem Reposição','no refill': 'sem reposição',
-    'With Refill': 'Com Reposição','with refill': 'com reposição',
-    'Refill': 'Reposição','refill': 'reposição',
-    'Story': 'Story','Impressions': 'Impressões','impressions': 'impressões',
-    'Reach': 'Alcance','reach': 'alcance',
-    'Profile Visit': 'Visitas ao Perfil','profile visit': 'visitas ao perfil',
-    'Save': 'Salvamentos','save': 'salvamentos',
-    'Mixed': 'Misturados','mixed': 'misturados',
-    'Worldwide': 'Mundial','worldwide': 'mundial',
-    'Global': 'Global','Organic': 'Orgânico','organic': 'orgânico',
-    'Bot': 'Bot','Max': 'Máx','Min': 'Mín',
-    'Custom': 'Personalizado','custom': 'personalizado',
-    'Targeted': 'Segmentado','targeted': 'segmentado',
-    'Arabic': 'Árabe','Indian': 'Indiano','USA': 'EUA','UK': 'Reino Unido',
-    'Stable': 'Estável','stable': 'estável',
-    'Cheap': 'Econômico','cheap': 'econômico',
-    'Premium': 'Premium','HQ': 'Alta Qualidade',
-    'Old Accounts': 'Contas Antigas','old accounts': 'contas antigas',
-    'Drop': 'Queda','drop': 'queda',
-    'Non Drop': 'Sem Queda','non drop': 'sem queda','Non-Drop': 'Sem Queda',
-    'Reels': 'Reels','Live': 'Ao Vivo','live': 'ao vivo',
-    'Poll': 'Enquete','poll': 'enquete',
-    'Mention': 'Menção','mention': 'menção',
-    'Auto': 'Auto','auto': 'auto',
-  };
-  let resultado = nome;
-  for (const [en, pt] of Object.entries(termos)) {
-    resultado = resultado.replace(new RegExp(`\\b${en}\\b`, 'g'), pt);
-  }
-  return resultado;
-}
-
 const { rate } = require('../lib/pricing');
 const { session } = require('../lib/auth');
 const { endpoint } = require('../lib/http');
-
-module.exports = endpoint(async (req, res) => {
-  const customer = (await session(req, 'cliente', true))?.cliente || {};
-  if (req.method !== 'GET') {
-    return res.status(405).json({ erro: 'Método não permitido' });
-  }
-  try {
-    const [catalogo, config] = await Promise.all([
-      fbGet('catalogo'),
-      fbGet('config'),
-    ]);
-
-    const lucroGlobal = config?.lucroPercentualGlobal ?? 30;
-    const cotacao = config?.cotacaoUSDBRL || null;
-    const ativos = Object.values(catalogo || {}).filter((s) => s && s.ativo && !s.indisponivel);
-
-    const { redeSocial, servicoTipo } = req.query;
-
-    // Sem filtros: devolve redes e tipos disponíveis
-    if (!redeSocial && !servicoTipo) {
-      // deduplicar ignorando maiúsculas/minúsculas — mantém o primeiro encontrado
-      const redesMap = new Map();
-      const tiposMap = new Map();
-      ativos.forEach(s => {
-        if (s.redeSocial) {
-          const key = s.redeSocial.toLowerCase();
-          if (!redesMap.has(key)) redesMap.set(key, s.redeSocial);
-        }
-        if (s.servicoTipo) {
-          const key = s.servicoTipo.toLowerCase();
-          if (!tiposMap.has(key)) tiposMap.set(key, s.servicoTipo);
-        }
-      });
-      return res.status(200).json({
-        redesSociais: [...redesMap.values()],
-        tiposServico: [...tiposMap.values()],
-      });
-    }
-
-    // Filtra com case-insensitive
-    let filtrados = ativos;
-    if (redeSocial) {
-      const rLower = redeSocial.toLowerCase();
-      filtrados = filtrados.filter((s) => (s.redeSocial || '').toLowerCase() === rLower);
-    }
-    if (servicoTipo) {
-      const tLower = servicoTipo.toLowerCase();
-      filtrados = filtrados.filter((s) => (s.servicoTipo || '').toLowerCase() === tLower);
-    }
-
-    const resultado = filtrados.map((s) => {
-      const nomeBase = s.nomeCustomizado || s.nomeOriginal || '';
-      const nomeExibido = s.nomeCustomizado ? nomeBase : traduzirNome(nomeBase);
-      return {
-        id: s.idFornecedor,
-        nome: nomeExibido,
-        servicoTipo: s.servicoTipo,
-        tipo: s.tipo || '',
-        icone: s.icone || '',
-        min: s.min,
-        max: s.max,
-        refill: s.refill,
-        precoPorMil: rate(s, config || {}, customer),
-      };
-    });
-
-    return res.status(200).json({ servicos: resultado });
-  } catch (err) {
-    return res.status(500).json({ erro: 'Não foi possível carregar os serviços.' });
-  }
+const catalog = require('../public/catalog-text');
+const forms = require('../public/service-forms');
+const networksOrder=['instagram','tiktok','youtube','facebook','twitter','telegram','spotify','whatsapp'];
+module.exports=endpoint(async(req,res)=>{
+ if(req.method!=='GET')return res.status(405).json({erro:'Método não permitido'});
+ const customer=(await session(req,'cliente',true))?.cliente||{};
+ const [data,config]=await Promise.all([fbGet('catalogo'),fbGet('config')]);
+ const active=Object.values(data||{}).filter(s=>s&&s.ativo&&!s.indisponivel&&!catalog.technical(s)&&forms.describe(s).supported);
+ const query=req.query||{},network=String(query.redeSocial||'').toLowerCase(),objective=String(query.servicoTipo||'').toLowerCase();
+ if(!network&&!objective){
+  const counts=new Map(),objectives=new Set();
+  for(const s of active){const p=catalog.present(s);counts.set(p.redeSocial,(counts.get(p.redeSocial)||0)+1);objectives.add(p.servicoTipo);}
+  const redesSociais=[...counts.keys()].sort((a,b)=>{const ia=networksOrder.indexOf(a),ib=networksOrder.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b,'pt-BR');});
+  return res.json({redesSociais,tiposServico:[...objectives],redes:redesSociais.map(nome=>({nome,total:counts.get(nome)})),total:active.length});
+ }
+ const result=[];
+ for(const s of active){
+  const p=catalog.present(s);
+  if(network&&p.redeSocial.toLowerCase()!==network)continue;
+  if(objective&&p.servicoTipo.toLowerCase()!==objective)continue;
+  const spec=forms.describe(s);
+  result.push({...p,id:s.idFornecedor,tipo:s.tipo||'Default',icone:s.icone||'',min:s.min,max:s.max,refill:!!s.refill,cancel:!!s.cancel,dripfeed:!!s.dripfeed,precoPorMil:rate(s,config||{},customer),cobranca:spec.package?'pacote':spec.subscription?'publicacao':'mil'});
+ }
+ result.sort((a,b)=>b.ordemRecursos-a.ordemRecursos||a.precoPorMil-b.precoPorMil||String(a.id).localeCompare(String(b.id)));
+ return res.json({servicos:result,total:result.length});
 });

@@ -1,0 +1,54 @@
+
+#area-logada .container{max-width:1040px}
+#painel-engajar>.card:first-of-type{padding:clamp(20px,4vw,36px);background:radial-gradient(ellipse at top right,rgba(124,255,178,.09),transparent 65%),var(--card)}
+#painel-engajar>.card .title{font-size:clamp(24px,3vw,34px);letter-spacing:-.035em}
+.redes-tabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:12px;margin:8px 0 0}
+.rede-tab{display:grid;grid-template-columns:42px 1fr;gap:4px 10px;align-items:center;border-radius:16px;white-space:normal;text-align:left;padding:16px 12px;min-height:88px;border:1px solid #2c353b;background:#101519;font-family:inherit;color:#eef1f4}
+.rede-tab[hidden]{display:none}
+.rede-tab small{grid-column:2;font-weight:400;font-size:11px;color:#a2adb5}
+.rede-tab.ativa{background:linear-gradient(130deg,rgba(124,255,178,.13),transparent);box-shadow:0 0 0 1px var(--accent)}
+.network-logo{display:flex;width:42px;height:42px;border-radius:13px;background:var(--network-color,#348461);align-items:center;justify-content:center;grid-row:1/3}
+.network-logo img{width:25px;height:25px;filter:invert(1);object-fit:contain}
+.rede-tab:hover .network-logo{transform:translateY(-2px)}
+.rede-tab span:not(.network-logo){line-height:1.3}
+.catalog-filters{display:grid;grid-template-columns:1.2fr 1.2fr 1fr;gap:14px;margin:18px 0 0}
+.servicos-lista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+button.servico-card{display:flex;flex-direction:column;align-items:stretch;gap:12px;min-width:0;border-radius:16px;padding:20px;background:#101519}
+.servico-card-nome{line-height:1.55;font-size:14px;font-weight:600}
+.service-category{font-size:10px;color:#96a6ad;text-transform:uppercase;letter-spacing:.05em;line-height:1.5;overflow-wrap:anywhere}
+.service-badges{display:flex;gap:6px;flex-wrap:wrap}
+.service-badges>span{font-size:10.5px;padding:5px 8px;border:1px solid #345044;border-radius:6px;color:#abdfc0;background:#19271f}
+.service-price{color:#b9ffd2;font-weight:750;font-size:20px;margin-top:auto}
+.service-price small{display:block;color:#9daab1;font-size:11px;font-weight:400;margin-top:3px}
+.service-open{padding-top:10px;border-top:1px solid #293237;color:#7cffb2;font-size:12px;font-weight:600}
+#painel-form-pedido{max-width:700px;margin:0 auto;scroll-margin-top:20px}
+#eng-campos-extra>div{padding-top:12px;margin-top:12px;border-top:1px solid var(--line)}
+#eng-campos-extra textarea{min-height:130px;resize:vertical}
+.service-details{margin:16px 0;padding:12px;border:1px solid var(--line);border-radius:10px}
+.service-details summary{cursor:pointer;font-size:13px;color:var(--accent)}
+#eng-caracteristicas{white-space:pre-line;overflow-wrap:anywhere}
+#eng-instrucao{line-height:1.8!important}
+#eng-validacao:empty{min-height:0;margin:0}
+#eng-validacao:not(:empty){color:#ffb4ad;background:#2b1c1c;border-radius:8px;padding:10px 12px}
+#eng-resultado{border-top:1px solid var(--line);padding-top:16px;margin-top:18px}
+#eng-resumo{overflow-wrap:anywhere}
+input,select,textarea{font-size:16px!important}
+.compra-passos li{flex:1;min-width:120px;text-align:center}
+#redes-busca{max-width:480px}
+@media(max-width:700px){
+ #area-logada .container{padding:0 14px}
+ .catalog-filters{grid-template-columns:1fr}
+ .catalog-filters .input,.catalog-filters .select{margin-bottom:0}
+ .servicos-lista{grid-template-columns:1fr}
+ .redes-tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .rede-tab{grid-template-columns:36px 1fr;gap:3px 8px;padding:13px 10px;font-size:12px}
+ .network-logo{width:36px;height:36px;border-radius:11px}
+ .network-logo img{width:22px;height:22px}
+ .rede-tab small{font-size:10px}
+ .card{padding:20px}
+ .compra-passos{gap:6px}
+ .compra-passos li{min-width:40%;padding:9px 6px}
+ .service-price{font-size:23px}
+ #eng-resultado .btn{font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){.rede-tab:hover .network-logo{transform:none}}

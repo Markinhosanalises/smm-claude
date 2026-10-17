@@ -84,12 +84,40 @@ test('beginner purchase flow explains steps, quantities and total before payment
  try{
   const d=p.w.document;p.w.HTMLElement.prototype.scrollIntoView=()=>{};
   d.querySelector('.rede-tab').click();await wait();assert.equal(d.querySelector('#passo-tipo').getAttribute('aria-current'),'step');
-  d.querySelector('.tipo-chip').click();const card=d.querySelector('.servico-card');assert.equal(card.tagName,'BUTTON');assert.match(card.textContent,/Sem reposição/);assert(!card.textContent.includes('/un'));
+  d.querySelector('.tipo-chip').click();const card=d.querySelector('.servico-card');assert.equal(card.tagName,'BUTTON');assert.match(card.textContent,/sem reposição/i);assert(!card.textContent.includes('/un'));
   card.click();assert.equal(d.querySelector('#passo-pagar').getAttribute('aria-current'),'step');assert.equal(d.querySelector('#eng-qtd').value,'13');
   const link=d.querySelector('#eng-link'),qty=d.querySelector('#eng-qtd');link.value='invalido';link.dispatchEvent(new p.w.Event('input'));assert.match(d.querySelector('#eng-validacao').textContent,/https/);
   link.value='https://instagram.com/p/post';link.dispatchEvent(new p.w.Event('input'));assert.equal(d.querySelector('#eng-resultado').classList.contains('hidden'),false);assert.match(d.querySelector('#eng-preco').textContent,/0,01/);
-  qty.value='2.5';qty.dispatchEvent(new p.w.Event('input'));assert.equal(d.querySelector('#eng-resultado').classList.contains('hidden'),true);assert.match(d.querySelector('#eng-validacao').textContent,/inteira/);
+  qty.value='2.5';qty.dispatchEvent(new p.w.Event('input'));assert.equal(d.querySelector('#eng-resultado').classList.contains('hidden'),true);assert.match(d.querySelector('#eng-validacao').textContent,/inteir/);
   qty.value='1000';qty.dispatchEvent(new p.w.Event('input'));assert.match(d.querySelector('#eng-preco').textContent,/0,40/);assert.match(d.querySelector('#eng-resumo').textContent,/Instagram/);
   assert(!p.calls.some(c=>c.url.pathname==='/api/order'));assert.deepEqual(p.errors,[]);
+ }finally{p.dom.window.close();}
+});
+
+test('custom comments and bounded subscriptions show correct fields and checkout payload',async()=>{
+ const entries=[
+ {id:'comments',nome:'Instagram Custom Comments',redeSocial:'instagram',servicoTipo:'Comentários',tipo:'Custom Comments',precoPorMil:10,min:2,max:100},
+ {id:'subscription',nome:'Instagram Auto Likes',redeSocial:'instagram',servicoTipo:'Acompanhamento automático',tipo:'Subscriptions',precoPorMil:10,min:10,max:1000}
+ ];
+ const p=await page('app.html',(u,o)=>{
+  if(u.pathname==='/api/auth-cliente')return customer;
+  if(u.pathname==='/api/services')return u.searchParams.has('redeSocial')?{servicos:entries}:{redesSociais:['instagram']};
+  if(u.pathname==='/api/order')return{status:'executando',novoSaldo:100,pedidoId:'fake'};
+  return common(u);
+ });
+ try{
+ const d=p.w.document;p.w.HTMLElement.prototype.scrollIntoView=()=>{};
+ d.querySelector('.rede-tab').click();await wait();
+ [...d.querySelectorAll('.tipo-chip')].find(b=>b.textContent==='Comentários').click();d.querySelector('.servico-card').click();
+ assert(d.querySelector('#eng-qtd-wrap').classList.contains('hidden'));assert(!d.querySelector('#eng-comments-wrap').classList.contains('hidden'));
+ d.querySelector('#eng-link').value='https://instagram.com/p/post';d.querySelector('#eng-comments').value='Primeiro\nSegundo\nTerceiro';d.querySelector('#eng-comments').dispatchEvent(new p.w.Event('input'));
+ assert(!d.querySelector('#eng-resultado').classList.contains('hidden'));assert.match(d.querySelector('#eng-preco').textContent,/0,03/);
+ d.querySelector('#eng-pagar-saldo').click();await wait();const first=p.calls.find(c=>c.url.pathname==='/api/order');assert.equal(JSON.parse(first.options.body).quantidade,3);
+ [...d.querySelectorAll('.tipo-chip')].find(b=>b.textContent==='Acompanhamento automático').click();d.querySelector('.servico-card').click();
+ assert(d.querySelector('#eng-link-wrap').classList.contains('hidden'));assert(d.querySelector('#pedido-username'));assert(d.querySelector('#pedido-posts'));assert(d.querySelector('#pedido-expiry'));
+ d.querySelector('#pedido-username').value='meuperfil';d.querySelector('#eng-qtd').value='100';d.querySelector('#pedido-posts').value='2';d.querySelector('#pedido-posts').dispatchEvent(new p.w.Event('input'));
+ assert.match(d.querySelector('#eng-preco').textContent,/2,00/);assert.match(d.querySelector('#eng-resumo').textContent,/sem renovação/);
+ d.querySelector('#eng-pagar-saldo').click();await wait();const calls=p.calls.filter(c=>c.url.pathname==='/api/order');assert.equal(calls.length,2);const body=JSON.parse(calls[1].options.body);assert.equal(Number(body.posts),2);assert.equal(body.username,'meuperfil');assert(body.expiry);
+ assert.deepEqual(p.errors,[]);
  }finally{p.dom.window.close();}
 });
