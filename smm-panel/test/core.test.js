@@ -54,13 +54,21 @@ test('percentage configuration and overrides persist and price consistently acro
  assert.equal((await call(require('../api/config'),admin({lucroPercentualGlobal:50,cotacaoUSDBRL:5.4}))).statusCode,200);
  set('catalogo/1/taxaCusto',0.7469);
  assert.equal((await call(require('../api/admin-services'),admin({idFornecedor:'1',lucroPercentual:200}))).statusCode,200);
- assert.equal(pricing.rate(get('catalogo/1'),get('config')),12.1);
+ assert.equal(pricing.rate(get('catalogo/1'),get('config')),12.09978);
  assert.equal((await call(require('../api/admin-services'),admin({idFornecedor:'1',lucroPercentual:''}))).statusCode,200);
- assert.equal(pricing.rate(get('catalogo/1'),get('config')),6.05);
+ assert.equal(pricing.rate(get('catalogo/1'),get('config')),6.04989);
  assert.equal((await call(require('../api/config'),admin({lucroPercentualGlobal:0}))).statusCode,200);
- assert.equal(pricing.rate(get('catalogo/1'),get('config')),4.03);
+ assert.equal(pricing.rate(get('catalogo/1'),get('config')),4.03326);
  assert.equal((await call(require('../api/admin-services'),admin({idFornecedor:'1',lucroPercentual:-1}))).statusCode,400);
  const apiToken='fsx_'+'c'.repeat(48),hash=auth.digest(apiToken);set('api_keys/'+hash,{clienteId:'5511999999999'});set('clientes/5511999999999/apiKeyHash',hash);
  const result=await call(require('../api/public-api'),request({method:'GET',query:{action:'services'},headers:{authorization:'Bearer '+apiToken}}));
- assert.equal(result.statusCode,200);assert.equal(result.body.find(s=>String(s.service)==='1').rate,3.63);
+ assert.equal(result.statusCode,200);assert.equal(result.body.find(s=>String(s.service)==='1').rate,3.629934);
+});
+
+test('sub-cent tariffs keep precision and round only final order money',()=>{
+ const s={ativo:true,taxaCusto:0.0001,min:1,max:100000000};
+ const config={cotacaoUSDBRL:5.4,lucroPercentualGlobal:250};
+ assert.equal(pricing.rate(s,config),0.00189);
+ assert.equal(pricing.total(s,config,{},100000).cents,19);
+ assert.throws(()=>pricing.total(s,config,{},1),/Valor/);
 });

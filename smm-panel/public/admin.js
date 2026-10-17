@@ -637,7 +637,7 @@
   function calcularPrecoFinal(custo, lucroPercentual){
     const lucro=(lucroPercentual===''||lucroPercentual===null||lucroPercentual===undefined)?lucroGlobalAtual:Number(lucroPercentual);
     const custoConvertido=Number(custo)*(cotacaoAtual||1);
-    return (Math.round(custoConvertido*(1+lucro/100)*100)/100).toFixed(2);
+    return Number((custoConvertido*(1+lucro/100)).toFixed(8)).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:8,useGrouping:false});
   }
 
 

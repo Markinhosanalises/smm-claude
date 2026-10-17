@@ -7,9 +7,9 @@
 <meta name="theme-color" content="#7CFFB2">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Engaja aí">
+<meta name="apple-mobile-web-app-title" content="Fênix Social">
 <link rel="manifest" href="/manifest.json">
-<title>Engaja aí</title>
+<title>Fênix Social — Área do cliente</title>
 <style>
   :root{--bg:#0b0d10;--card:#15181c;--line:#23272d;--text:#eef1f4;--muted:#8b929b;--accent:#7CFFB2;--accent-dim:#1f3a2c;}
   *{box-sizing:border-box;}
@@ -32,10 +32,10 @@
   .msg.ok{color:var(--accent);}
 
   /* ===== TABS PRINCIPAIS ===== */
-  .tabs{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px;}
+  .tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:16px;}
   .tabs::-webkit-scrollbar{height:2px;}
   .tabs::-webkit-scrollbar-thumb{background:var(--line);}
-  .tab{flex-shrink:0;text-align:center;padding:9px 14px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:var(--card);border:1px solid var(--line);color:var(--muted);white-space:nowrap;}
+  .tab{flex-shrink:0;text-align:center;padding:9px 14px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:var(--card);border:1px solid var(--line);color:var(--muted);white-space:normal;}
   .tab.ativa{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
 
   /* ===== ABAS DE REDE SOCIAL ===== */
@@ -54,6 +54,20 @@
   .servico-card{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .15s;}
   .servico-card:hover,.servico-card.selecionado{border-color:var(--accent);}
   .servico-card.selecionado{background:var(--accent-dim);}
+  button.servico-card{width:100%;text-align:left;color:var(--text);font:inherit;}
+  button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:3px;}
+  .compra-passos{display:flex;gap:6px;list-style:none;padding:0;margin:0 0 18px;flex-wrap:wrap;}
+  .compra-passos li{font-size:12px;color:var(--muted);background:var(--card);padding:8px 10px;border-radius:8px;}
+  .compra-passos li[aria-current="step"]{color:var(--accent);background:var(--accent-dim);}
+  .quantidades-rapidas{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}
+  .quantidades-rapidas button{background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 12px;cursor:pointer;}
+  .preco-detalhe{font-size:12px;color:var(--muted);line-height:1.5;}
+  .economico{display:inline-block;font-size:11px;color:var(--accent);margin-bottom:6px;}
+  .servico-card-top{gap:12px;align-items:flex-start;}
+  .servico-card-nome{overflow-wrap:anywhere;}
+  .servico-card-preco{flex-shrink:0;text-align:right;}
+  .tab{font-family:inherit;}
+  @media(prefers-reduced-motion:reduce){.fi{animation:none!important;}}
   .servico-card-top{display:flex;justify-content:space-between;align-items:center;}
   .servico-card-nome{font-size:13.5px;font-weight:600;}
   .servico-card-preco{font-size:13px;color:var(--accent);font-weight:700;}
@@ -120,11 +134,11 @@
 
 <!-- HERO DE LOGIN -->
 <div class="auth-hero" id="auth-hero">
-  <div class="floating-icons" id="floating-icons"></div>
+  <div class="floating-icons" id="floating-icons" aria-hidden="true"></div>
   <div class="auth-card" id="auth-card">
     <div class="auth-logo">
       <div class="logo-circle">🚀</div>
-      <h1>Engaja aí</h1>
+      <h1>Fênix Social</h1>
       <p>Impulsione seu perfil nas redes sociais</p>
     </div>
     <div class="redes-badges">
@@ -166,7 +180,7 @@
 
 <!-- ÁREA LOGADA -->
 <div class="hidden" id="area-logada">
-<div class="area-logada-bg"><div class="floating-icons" id="floating-icons-logado"></div></div>
+<div class="area-logada-bg"><div class="floating-icons" id="floating-icons-logado" aria-hidden="true"></div></div>
 <div class="container">
   <div class="top-bar" id="top-bar">
     <span id="saudacao">Visitante</span>
@@ -178,21 +192,27 @@
 
   <!-- ABAS PRINCIPAIS -->
   <div class="tabs hidden" id="tabs">
-    <div class="tab ativa" id="tab-engajar">🚀 Engajar</div>
-    <div class="tab" id="tab-vitrine">🛍️ Vitrine</div>
-    <div class="tab" id="tab-pedidos">📦 Pedidos</div>
-    <div class="tab" id="tab-carteira">💰 Carteira</div>
-    <div class="tab" id="tab-suporte">🎧 Suporte</div>
-    <div class="tab" id="tab-api">🔑 API</div>
-    <div class="tab hidden" id="tab-revendedor">🤝 Revendedor</div>
+    <button type="button" class="tab ativa" id="tab-engajar">🛒 Fazer pedido</button>
+    <button type="button" class="tab" id="tab-vitrine">🛍️ Vitrine</button>
+    <button type="button" class="tab" id="tab-pedidos">📦 Meus pedidos</button>
+    <button type="button" class="tab" id="tab-carteira">💰 Meu saldo</button>
+    <button type="button" class="tab" id="tab-suporte">🎧 Preciso de ajuda</button>
+    <button type="button" class="tab" id="tab-api">🔑 API</button>
+    <button type="button" class="tab hidden" id="tab-revendedor">🤝 Revendedor</button>
   </div>
 
   <!-- WIDGET DE ENGAJAMENTO - NOVO VISUAL -->
   <div id="painel-engajar" class="hidden">
+    <ol class="compra-passos" aria-label="Etapas da compra">
+      <li id="passo-rede" aria-current="step">1. Rede social</li>
+      <li id="passo-tipo">2. Objetivo</li>
+      <li id="passo-servico">3. Opção</li>
+      <li id="passo-pagar">4. Conferir e pagar</li>
+    </ol>
     <div class="card">
       <p class="eyebrow">Disponível agora</p>
-      <h2 class="title">Escolha a rede social</h2>
-      <p class="sub">Selecione abaixo e veja os serviços disponíveis</p>
+      <h2 class="title">Onde você quer divulgar?</h2>
+      <p class="sub">Escolha uma rede. Depois, informe o que deseja, o link e a quantidade. Você verá o total antes de pagar.</p>
       <!-- Botões de rede social -->
       <div class="redes-tabs" id="redes-tabs">
         <div style="color:var(--muted);font-size:13px;">Carregando redes...</div>
@@ -203,7 +223,7 @@
     <div id="painel-tipos" class="hidden">
       <div class="card">
         <p class="eyebrow" id="rede-selecionada-label">Instagram</p>
-        <h2 class="title" style="font-size:16px;">Tipo de serviço</h2>
+        <h2 class="title" style="font-size:16px;">O que você quer aumentar?</h2>
         <div class="tipos-chips" id="tipos-chips"></div>
       </div>
     </div>
@@ -212,7 +232,8 @@
     <div id="painel-servicos-lista" class="hidden">
       <div class="card">
         <p class="eyebrow" id="tipo-selecionado-label">Seguidores</p>
-        <h2 class="title" style="font-size:16px;">Escolha o serviço</h2>
+        <h2 class="title" style="font-size:16px;">Escolha uma opção</h2>
+        <p class="sub">Compare o preço para a quantidade mínima. O total muda conforme a quantidade escolhida.</p>
         <div class="servicos-lista" id="servicos-lista"></div>
       </div>
     </div>
@@ -227,11 +248,15 @@
 
         <div id="eng-instrucao" style="display:none;background:#1a2a1a;border:1px solid rgba(124,255,178,.2);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12.5px;color:#a8e6c0;line-height:1.6;"></div>
 
-        <label class="label">Link do perfil ou post</label>
-        <input class="input" id="eng-link" type="url" placeholder="https://instagram.com/seuperfil">
+        <details class="preco-detalhe" style="margin-bottom:16px;"><summary style="cursor:pointer;color:var(--accent)">Como copiar o link?</summary><p>Abra o perfil ou a publicação na rede social. Procure Compartilhar ou o menu de três pontos e escolha Copiar link. Volte aqui e cole o endereço completo.</p></details>
+        <label class="label" for="eng-link">Cole o link do perfil ou da publicação</label>
+        <input class="input" id="eng-link" type="url" inputmode="url" autocomplete="url" placeholder="https://instagram.com/seuperfil" aria-describedby="eng-instrucao eng-validacao">
 
-        <label class="label">Quantidade</label>
-        <input class="input" id="eng-qtd" type="number" placeholder="Ex: 500">
+        <label class="label" for="eng-qtd">Quantos você quer?</label>
+        <input class="input" id="eng-qtd" type="number" inputmode="numeric" step="1" placeholder="Ex.: 500" aria-describedby="eng-qtd-ajuda eng-validacao">
+        <p class="preco-detalhe" id="eng-qtd-ajuda"></p>
+        <div class="quantidades-rapidas" id="eng-quantidades" aria-label="Sugestões de quantidade"></div>
+        <p class="msg" id="eng-validacao" role="status" aria-live="polite"></p>
 
         <div id="eng-comments-wrap" class="hidden">
           <label class="label">Seus comentários (um por linha)</label>
@@ -240,16 +265,17 @@
         </div>
 
         <div id="eng-resultado" class="hidden">
+          <p class="preco-detalhe" id="eng-resumo"></p>
           <div class="preco-row">
-            <span class="preco-label">Valor total</span>
+            <span class="preco-label">Total a pagar</span>
             <span class="preco" id="eng-preco">R$ 0,00</span>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:14px;">
             <button class="btn" id="eng-pagar-saldo" style="flex:1;background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);">💰 Pagar com saldo</button>
-            <button class="btn" id="eng-pagar-pix" style="flex:1;">📱 Gerar PIX</button>
+            <button class="btn" id="eng-pagar-pix" style="flex:1;">📱 Pagar com PIX</button>
           </div>
         </div>
-        <p class="msg" id="eng-msg"></p>
+        <p class="msg" id="eng-msg" role="status" aria-live="polite"></p>
 
         <button class="btn-sec" id="btn-voltar-servicos" style="margin-top:8px;">← Voltar aos serviços</button>
       </div>
